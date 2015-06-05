@@ -1,7 +1,7 @@
 """
 Created on Sunday April 19, 2015
 
-@author: Andrew Horsfield
+@author: Andrew Horsfield and Marc Coury
 
 This module contains functions that perform input and output operations
 """
@@ -10,6 +10,7 @@ This module contains functions that perform input and output operations
 import TBH
 import numpy as np
 import math as m
+from Verbosity import *
 #
 # This function produces a total density of states (NEEDS TO BE UPDATED TO PLOT THE DOS)
 def DOS(e, nbin):
@@ -17,10 +18,10 @@ def DOS(e, nbin):
     return hist, binedges
 #
 # This function writes out the spin vector for each eigenstate
-def PsiSpin (e, psi):
+def PsiSpin (verbose,e, psi):
     spin = np.zeros(3, dtype='double')
     rho = np.zeros((2,2), dtype='complex')
-    print('state   sx     sy     sz')
+    verboseprint(verbose,'state   sx     sy     sz')
     #
     for n in range(0,TBH.HSOsize):
         #
@@ -36,7 +37,7 @@ def PsiSpin (e, psi):
         spin[2] = (rho[0,0] - rho[1,1]).real
         #
         # Write out the spins
-        print('{0:4d}  {1:5.2f}  {2:5.2f}  {3:5.2f}'.format(n, spin[0], spin[1], spin[2]))
+        verboseprint(verbose,'{0:4d}  {1:5.2f}  {2:5.2f}  {3:5.2f}'.format(n, spin[0], spin[1], spin[2]))
 #
 # This function writes coordinates out to an XYZ file. Note that the file is opened for append,
 # so new frames are added to the end of existing frames.

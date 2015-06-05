@@ -1,7 +1,7 @@
 """
 Created on Thursday, April 16, 2015
 
-@author: Andrew Horsfield
+@author: Andrew Horsfield and Marc Coury
 
 This module builds the tight binding Hamiltonians.
 It merges the old TBH0 and TBHSO modules
@@ -11,7 +11,8 @@ It merges the old TBH0 and TBHSO modules
 import numpy as np
 import math as m
 import TBgeom
-#
+
+
 # Functions used to evauate tight binding models
 def model01(r, coeffs):
     #
@@ -25,60 +26,69 @@ def model01(r, coeffs):
     v[3] = coeffs['vpps']*m.exp(-coeffs['kpp']*(r-coeffs['r0']))
     v[4] = coeffs['vppp']*m.exp(-coeffs['kpp']*(r-coeffs['r0']))
     #
-    # Generate pair of indices for each pair of shells, showing which values of v to use
-    v_bgn = np.zeros((2,2), dtype='double')
-    v_end = np.zeros((2,2), dtype='double')
+    # Generate pair of indices for each pair of shells, showing which values
+    #     of v to use
+    v_bgn = np.zeros((2, 2), dtype='double')
+    v_end = np.zeros((2, 2), dtype='double')
     #
     # ss
-    v_bgn[0,0] = 0
-    v_end[0,0] = 1
+    v_bgn[0, 0] = 0
+    v_end[0, 0] = 1
     #
     # sp
-    v_bgn[0,1] = 1
-    v_end[0,1] = 2
+    v_bgn[0, 1] = 1
+    v_end[0, 1] = 2
     #
     # ps
-    v_bgn[1,0] = 2
-    v_end[1,0] = 3
+    v_bgn[1, 0] = 2
+    v_end[1, 0] = 3
     #
     # pp
-    v_bgn[1,1] = 3
-    v_end[1,1] = 5
+    v_bgn[1, 1] = 3
+    v_end[1, 1] = 5
     #
     # Return integrals and indices
     return v, v_bgn, v_end
 #
 # Atom data
 AtomData = [
-    {'Name':'Helix', 'ChemSymb':'C ',
-     'NElectrons':4, 'NOrbitals':4, 'NShells':2,
-     'l':(0,1), 'U':10.0, 'I':5.0,
-     'e':np.array([[0.0, 0.0, 0.0, 0.0],
+    {'Name': 'Helix', 'ChemSymb': 'C ',
+     'NElectrons': 4, 'NOrbitals': 4, 'NShells': 2,
+     'l': (0, 1), 'U': 10.0, 'I': 5.0,
+     'e': np.array([[0.0, 0.0, 0.0, 0.0],
                    [0.0, 0.0, 0.0, 0.0],
                    [0.0, 0.0, 0.0, 0.0],
                    [0.0, 0.0, 0.0, 0.0]]),
-     'so':(0.0, 0.0)},
-    {'Name':'Carbon', 'ChemSymb':'C ',
-     'NElectrons':4, 'NOrbitals':4, 'NShells':2,
-     'l':(0,1), 'U':10.0, 'I':5.0,
-     'e':np.array([[0.0, 0.0, 0.0, 0.0],
+     'so': (0.0, 0.0)},
+    {'Name': 'Carbon', 'ChemSymb': 'C ',
+     'NElectrons': 4, 'NOrbitals': 4, 'NShells': 2,
+     'l': (0, 1), 'U': 10.0, 'I': 5.0,
+     'e': np.array([[0.0, 0.0, 0.0, 0.0],
                    [0.0, 1.0, 0.0, 0.0],
                    [0.0, 0.0, 1.0, 0.0],
                    [0.0, 0.0, 0.0, 1.0]]),
-     'so':(0.0, 0.0)}
-    ]
+     'so': (0.0, 0.0)}
+]
 #
 # Bond data
 BondData = [
     [
-        {'model':model01, 'kss':1.0,  'ksp':1.0, 'kps':1.0, 'kpp':1.0, 'r0':1.0, 'vsss':0.0, 'vsps':0.0, 'vpss':0.0, 'vpps':-1.0, 'vppp':0.5},
-        {'model':model01, 'kss':1.0,  'ksp':1.0, 'kps':1.0, 'kpp':1.0, 'r0':1.0, 'vsss':0.0, 'vsps':0.0, 'vpss':0.0, 'vpps':-1.0, 'vppp':0.5}
-     ],
+        {'model': model01,
+            'kss': 1.0,  'ksp': 1.0, 'kps': 1.0, 'kpp': 1.0, 'r0': 1.0,
+            'vsss': 0.0, 'vsps': 0.0, 'vpss': 0.0, 'vpps': -1.0, 'vppp': 0.5},
+        {'model': model01,
+            'kss': 1.0,  'ksp': 1.0, 'kps': 1.0, 'kpp': 1.0, 'r0': 1.0,
+            'vsss': 0.0, 'vsps': 0.0, 'vpss': 0.0, 'vpps': -1.0, 'vppp': 0.5}
+    ],
     [
-        {'model':model01, 'kss':1.0,  'ksp':1.0, 'kps':1.0, 'kpp':1.0, 'r0':1.0, 'vsss':0.0, 'vsps':0.0, 'vpss':0.0, 'vpps':-1.0, 'vppp':0.5},
-        {'model':model01, 'kss':1.0,  'ksp':1.0, 'kps':1.0, 'kpp':1.0, 'r0':1.0, 'vsss':0.0, 'vsps':0.0, 'vpss':0.0, 'vpps':-1.0, 'vppp':0.5}
-     ]
+        {'model': model01,
+            'kss': 1.0,  'ksp': 1.0, 'kps': 1.0, 'kpp': 1.0, 'r0': 1.0,
+            'vsss': 0.0, 'vsps': 0.0, 'vpss': 0.0, 'vpps': -1.0, 'vppp': 0.5},
+        {'model': model01,
+            'kss': 1.0,  'ksp': 1.0, 'kps': 1.0, 'kpp': 1.0, 'r0': 1.0,
+            'vsss': 0.0, 'vsps': 0.0, 'vpss': 0.0, 'vpps': -1.0, 'vppp': 0.5}
     ]
+]
 #
 # Spin orbit data
 SOmatrix = {0:np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0)],

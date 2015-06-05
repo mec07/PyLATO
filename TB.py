@@ -1,7 +1,7 @@
 """
 Created on Sunday April 12, 2015
 
-@author: Andrew Horsfield
+@author: Andrew Horsfield and Marc Coury
 
 This is the main program for computing the eigenvalues and eigenfunctions for a
 tight binding model of a helical molecule that includes spin-orbit coupling
@@ -17,13 +17,15 @@ import TBIO
 import TBinit
 import TBelec
 import TBgeom
+from Verbosity import *
 import numpy as np
 import math as m
+import sys
 #
 # Initialise the program
 JobDef = TBinit.init()
 #
-# Build the non-self-consistent Hamiltonian, with spin-orbit terms included
+# Build the non-self-consistent Hamiltonian (incl hopping and spin-orbit)
 TBH.BuildHSO(JobDef)
 #
 # Allocate memory for the eigenvalues and eigenvectors
@@ -32,9 +34,17 @@ psi = np.zeros((TBH.HSOsize, TBH.HSOsize), dtype='complex')
 #
 # Make the Fock matrix self-consistent
 SCFerror = 1.0e+99
-while SCFerror > JobDef['scf_tol']:
+# flag to indicate if self-consistency has been obtained.
+SCFflag = False
+# If self-consistency is not asked for, then only do one iteration
+if JobDef['scf_on'] == 0:
+    max_loops = 1
+else:
+    max_loops=JobDef['scf_max_loops']
+
+for ii in range(max_loops):
     #
-    # Build the fock matrix
+    # Build the fock matrix (adds the density matrix dependent terms)
     TBH.BuildFock(JobDef)
     #
     # Diagonalise the Fock matrix
@@ -47,28 +57,40 @@ while SCFerror > JobDef['scf_tol']:
     TBelec.DensityMatrix(psi)
     #
     # Compute the net charge on each site
-    q = TBelec.ChargePerSite ()
+    q = TBelec.ChargePerSite()
     #
     # Compute the net spin on each site
     s = TBelec.SpinPerSite()
     #
-    # If self-consistency is not asked for, then force the loop to stop
-    if JobDef['scf_on'] == 0:
-        SCFerror = 0.0
+    # Compute the error in the charges, and update the charges and spin
     #
-    # Otherwise, compute the error in the charges, and update the charges and spin
-    else:
-        #
-        # Compute the SCF error
-        SCFerror = m.sqrt(np.vdot(q-TBH.q, q-TBH.q)/TBgeom.NAtom)
-        print('SCF error = ', SCFerror)
+    # Compute the SCF error
+    SCFerror = m.sqrt(np.vdot(q-TBH.q, q-TBH.q)/TBgeom.NAtom)
+    verboseprint(JobDef['verbose'],'SCF error = ', SCFerror)
+    # Check if the SCF error is still larger than the tolerance
+    if SCFerror > JobDef['scf_tol']:
         #
         # Update the input charges and spins
         TBH.q = TBH.q + JobDef['scf_mix']*(q-TBH.q)
         TBH.s = TBH.s + JobDef['scf_mix']*(s-TBH.s)
-print(e)
-print(q)
-print(s.T)
+    # If SCF error is smaller than or equal to the tolerance then leave loop
+    else:
+        SCFflag=True
+        break
+
+# if self-consistency is required then print out number of SCF loops taken
+if JobDef['scf_on']==1:
+    verboseprint(JobDef['verbose'],"Number of SCF loops: ",ii+1)
+    # if self-consistency is not obtained the throw an error and exit.
+    if SCFflag==False:
+        print "ERROR: Self-consistency not obtained within maximum number of cycles, ", max_loops
+        sys.exit()
+
+
+
+verboseprint(JobDef['extraverbose'],e)
+verboseprint(JobDef['extraverbose'],q)
+verboseprint(JobDef['extraverbose'],s.T)
 #
 # Write out the spins for each orbital
-TBIO.PsiSpin (e, psi)
+TBIO.PsiSpin(JobDef['extraverbose'],e, psi)
