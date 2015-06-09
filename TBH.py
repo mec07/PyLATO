@@ -91,15 +91,16 @@ BondData = [
 ]
 #
 # Spin orbit data
-SOmatrix = {0:np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0)],
+SOmatrix = {0: np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0)],
                         [complex( 0.0, 0.0), complex( 0.0, 0.0)]]),
-            1:np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex(-1.0, 0.0), complex( 0.0, 1.0)],
+            1: np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex(-1.0, 0.0), complex( 0.0, 1.0)],
                         [complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 1.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
                         [complex( 0.0, 0.0), complex( 0.0, 1.0), complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
                         [complex( 0.0, 0.0), complex( 1.0, 0.0), complex( 0.0, 1.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
                         [complex(-1.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 1.0)],
                         [complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 0.0, 0.0)]])}
-#
+
+
 # Initialise the module
 def init(JobDef):
     global H0, H0size, Hindex
@@ -109,7 +110,7 @@ def init(JobDef):
     # Build index of starting position in Hamiltonian for each atom
     Hindex = np.zeros(TBgeom.NAtom+1, dtype='int')
     Hindex[0] = 0
-    for a in range(0,TBgeom.NAtom):
+    for a in range(0, TBgeom.NAtom):
         Hindex[a+1] = Hindex[a] + AtomData[TBgeom.AtomType[a]]['NOrbitals']
     #
     # Compute the sizes of the Hamiltonian matrices
@@ -117,14 +118,15 @@ def init(JobDef):
     HSOsize = 2*H0size
     #
     # Allocate memory for the Hamiltonian matrices
-    H0 = np.zeros((H0size,H0size), dtype='double')
-    HSO = np.zeros((HSOsize,HSOsize), dtype='complex')
+    H0 = np.zeros((H0size, H0size), dtype='double')
+    HSO = np.zeros((HSOsize, HSOsize), dtype='complex')
     Fock = np.zeros((HSOsize, HSOsize), dtype='complex')
     #
     # Allocate memeory for the charge and spin
     q = np.zeros(TBgeom.NAtom, dtype='double')
-    s = np.zeros((3,TBgeom.NAtom), dtype='double')
-#
+    s = np.zeros((3, TBgeom.NAtom), dtype='double')
+
+
 # Build the Fock matrix by adding charge and spin terms to the Hamiltonian
 def BuildFock(JobDef):
     global Fock, HSO, H0size, Hindex
@@ -316,8 +318,246 @@ def BuildHSO(JobDef):
         for l in AtomData[ta]['l']: # Step through each shell
             n = 2*l+1 # Compute number of orbitals in the shell
             HSO[       k:       k+n,        k:       k+n] += AtomData[ta]['so'][i]*SOmatrix[l][  0:  n,  0:  n]
-            HSO[       k:       k+n, H0size+k:H0size+k+n] += AtomData[ta]['so'][i]*SOmatrix[l][  0:  n,n+0:n+n]
+            HSO[       k:       k+n, H0size+k:H0size+k+n] += AtomData[ta]['so'][i]*SOmatrix[l][  0:  n, n+0:n+n]
             HSO[H0size+k:H0size+k+n,        k:       k+n] += AtomData[ta]['so'][i]*SOmatrix[l][n+0:n+n,  0:  n]
-            HSO[H0size+k:H0size+k+n, H0size+k:H0size+k+n] += AtomData[ta]['so'][i]*SOmatrix[l][n+0:n+n,n+0:n+n]
-            i += 1 # Advance to the next shell
-            k += n # Advance to the start of the next set of orbitals
+            HSO[H0size+k:H0size+k+n, H0size+k:H0size+k+n] += AtomData[ta]['so'][i]*SOmatrix[l][n+0:n+n, n+0:n+n]
+            i += 1  # Advance to the next shell
+            k += n  # Advance to the start of the next set of orbitals
+
+
+def Kd(a, b):
+    '''
+    Function Kd is the Kronecker delta symbol. If a == b then return 1 otherwise
+    return zero.
+
+    INPUT                 DATA TYPE       DESCRIPTION
+
+    a                     int             Value 1
+
+    b                     int             Value 2
+
+
+    OUTPUT                DATA TYPE       DESCRIPTION
+
+    Kd                    int             delta_{a,b}
+
+    '''
+    if a == b:
+        return 1
+    else:
+        return 0
+
+
+def map_index_to_atomic(index, num_atoms, num_orbitals):
+    '''
+    Function map_index_to_atomic converts the index of the Fock matrix into atom
+    number, orbital number and spin. Index numbering starts at 0 and goes up to
+    the length of the Fock matrix. Atomic numbering starts at 0 and goes up to
+    num_atoms-1, orbital numbering goes starts at 0 and goes up to num_orbitals-1
+    for that particular atom.
+
+    ASSUMPTIONS
+    The function treats orbital number and spin separately. It will work for atoms
+    with different numbers of spatial orbitals -- if only atoms of the same type
+    are going to be used the code could be made to be more efficient.
+
+    This could probably also be improved by providing the length of the side of the
+    Fock matrix.
+
+    INPUT                 DATA TYPE       DESCRIPTION
+
+    index                 int             The index to be converted to atom,
+                                          orbital and spin.
+
+    num_atoms             int             The number of atoms.
+
+    num_orbitals          list of int     The number of orbitals for each atom.
+
+
+    OUTPUT                DATA TYPE       DESCRIPTION
+
+    atom                  int             The atom number.
+
+    orbital               int             The spatial orbital number.
+
+    spin                  int             The spin, either 0 (up) or 1 (down).
+
+    '''
+    upper_bound = 0
+    # loop over spin
+    for ss in range(2):
+        # loop over the atoms
+        for ii in range(num_atoms):
+            upper_bound +=num_orbitals[ii]
+            if index < upper_bound:
+                atom = ii
+                spin = ss
+                # orbital is the index minus the previous upper bound
+                orbital = index-(upper_bound-num_orbitals[ii])
+                return atom, orbital, spin
+
+
+def map_atomic_to_index(atom, orbital, spin, num_atoms, num_orbitals):
+    '''
+    Function map_atomic_to_index converts the atom, orbital number and spin into
+    the corresponding index of the Fock matrix. Index numbering starts at 0 and
+    goes up to the length of the Fock matrix. Atomic numbering starts at 0 and 
+    goes up to num_atoms-1, orbital numbering goes starts at 0 and goes up to 
+    num_orbitals-1 for that particular atom.
+
+    ASSUMPTIONS
+    The function treats orbital number and spin separately. It will work for atoms
+    with different numbers of spatial orbitals -- if only atoms of the same type
+    are going to be used the code could be made to be more efficient.
+
+    This could probably also be improved by providing the length of the side of the
+    Fock matrix.
+
+    INPUT                 DATA TYPE       DESCRIPTION
+
+    atom                  int             The atom number.
+
+    orbital               int             The spatial orbital number.
+
+    spin                  int             The spin, either 0 (up) or 1 (down).
+
+    num_atoms             int             The number of atoms.
+
+    num_orbitals          list of int     The number of orbitals for each atom.
+
+
+    OUTPUT                DATA TYPE       DESCRIPTION
+
+    index                 int             The index to be converted to atom,
+                                          orbital and spin.
+
+    '''
+    index = 0
+    # add atom contribution
+    for ii in range(atom):
+        index += num_orbitals[ii]
+    # add spin contribution
+    if spin == 0:
+        pass
+    elif spin == 1:
+        index = 2*index
+        for ii in range(atom, num_atoms):
+            index += num_orbitals[ii]
+
+    # add orbital contribution
+    index += orbital
+
+
+def H_pcase(ii,jj,U,J_S,J_ph,num_orbitals,rho):
+    '''
+    The function H_pcase takes the noncollinear Hamiltonian and adds to it the
+    on-site contributions for the p-case Hubbard-like Hamiltonian.
+
+    The tensorial form for this is:
+
+    F^{s,s'}_{i a j b} = Kd(i,j) (\sum_{s''}Kd(s,s')(\sum_{a'}U Kd(a,b) rho^{s'',s''}_{i a i a} + J_S rho^{s'',s''}_{i a i b} + J_{ph} rho^{s'',s''}_{i b i a} )
+        - (U rho^{s,s'}_{i a i b} + \sum_{a'} J_S Kd(a,b)rho^{s,s'}_{i a i a} + J_{ph} rho^{s,s'}_{i b i a}) ),
+
+    where Kd is the Kronecker delta symbol; s, s' and s'' are spin indices; i
+    and j are atom indices; a, a' and b are orbital indices; rho is the
+    density matrix; U is the Hartree Coulomb integral and J_S and J_{ph} are
+    the exchange Coulomb integrals. Physically, J_S is equivalent to J_{ph};
+    however for the Stoner Hamiltonian J_S is the same as the Stoner I and
+    J_{ph} is equal to zero.
+
+    INPUT                 DATA TYPE       DESCRIPTION
+
+    ii                    int             Fock matrix index 1.
+
+    jj                    int             Fock matrix index 2.
+
+    U                     float           The Hartree integral.
+
+    J_S                   float           The exchange integral that goes in
+                                          front of magnetism.
+
+    J_ph                  float           The pair hopping integral that goes
+                                          in front of the pair hopping term.
+
+    num_orbitals          list of int     The number of orbitals for each atom.
+
+    rho                   numpy matrix    The density matrix.
+
+
+    OUTPUT                DATA TYPE       DESCRIPTION
+
+    F                     float           The Fock matrix element for p-case
+                                          symmetry on-site contributions for
+                                          provided density matrix.
+
+    '''
+    # atom, spatial orbital and spin for index 1
+    i, a, s = map_index_to_atomic(ii)
+    # atom, spatial orbital and spin for index 2
+    j, b, sp = map_index_to_atomic(jj)
+    F = 0.0
+    if i == j:
+        # The negative terms
+        F -= U*rho[ii, jj]
+        F -= J_ph*rho[map_atomic_to_index(i, b, s), map_atomic_to_index(i, a, sp)]
+        if a == b:
+            F -= J_S*sum(rho[map_atomic_to_index(i, orb, s), map_atomic_to_index(i, orb, sp)] for orb in range(num_orbitals[i]))
+        # The positive terms
+        if s == sp:
+            F += J_S*sum(rho[map_atomic_to_index(i, a, sig), map_atomic_to_index(i, b, sig)] for sig in range(2))
+            F += J_ph*sum(rho[map_atomic_to_index(i, b, sig), map_atomic_to_index(i, a, sig)] for sig in range(2))
+            if a == b:
+                F += U*sum(rho[map_atomic_to_index(i, orb, sig), map_atomic_to_index(i, orb, sig)] for sig in range(2) for orb in range(num_orbitals[i]))
+    # return the matrix element
+    return F
+
+
+def H_dcase():
+    '''
+    The function H_dcase takes the noncollinear Hamiltonian and adds to it the
+    on-site contributions for the d-case Hubbard-like Hamiltonian.
+
+    The tensorial form for this is:
+
+    F^{s,s'}_{i a j b} = Kd(i,j) (\sum_{s''}Kd(s,s')(\sum_{a'}U Kd(a,b) rho^{s'',s''}_{i a i a} 
+        + J'_S rho^{s'',s''}_{i a i b} + J'_{ph} rho^{s'',s''}_{i b i a} 
+        - 48 dJ \sum_{cd stuv} xi_{c st}xi_{a tu}xi_{b uv}xi_{d vs} rho^{})
+        - (U rho^{s,s'}_{i a i b} + \sum_{a'} J_S Kd(a,b)rho^{s,s'}_{i a i a} + J_{ph} rho^{s,s'}_{i b i a}) ),
+
+    where Kd is the Kronecker delta symbol; s, s' and s'' are spin indices; i
+    and j are atom indices; a, a' and b are orbital indices; rho is the
+    density matrix; U is the Hartree Coulomb integral and J_S and J_{ph} are
+    the exchange Coulomb integrals. Physically, J_S is equivalent to J_{ph};
+    however for the Stoner Hamiltonian J_S is the same as the Stoner I and
+    J_{ph} is equal to zero.
+
+    INPUT                 DATA TYPE       DESCRIPTION
+
+    ii                    int             Fock matrix index 1.
+
+    jj                    int             Fock matrix index 2.
+
+    U                     float           The Hartree integral.
+
+    J_S                   float           The average of the t_2g and e_g
+                                          exchange integrals that goes in
+                                          front of magnetism.
+
+    J_ph                  float           Same as J_S except that it goes in
+                                          front of the pair hopping term.
+
+    dJ                    float           The difference in the t_2g and e_g
+                                          d-orbital exchange integrals.
+
+    num_orbitals          list of int     The number of orbitals for each atom.
+
+    rho                   numpy matrix    The density matrix.
+
+
+    OUTPUT                DATA TYPE       DESCRIPTION
+
+    F                     float           The Fock matrix element for p-case
+                                          symmetry on-site contributions for
+                                          provided density matrix.
+
+    '''

@@ -40,7 +40,7 @@ SCFflag = False
 if JobDef['scf_on'] == 0:
     max_loops = 1
 else:
-    max_loops=JobDef['scf_max_loops']
+    max_loops = JobDef['scf_max_loops']
 
 for ii in range(max_loops):
     #
@@ -63,10 +63,8 @@ for ii in range(max_loops):
     s = TBelec.SpinPerSite()
     #
     # Compute the error in the charges, and update the charges and spin
-    #
-    # Compute the SCF error
     SCFerror = m.sqrt(np.vdot(q-TBH.q, q-TBH.q)/TBgeom.NAtom)
-    verboseprint(JobDef['verbose'],'SCF error = ', SCFerror)
+    verboseprint(JobDef['verbose'], 'SCF loop = ', ii+1, '; SCF error = ', SCFerror)
     # Check if the SCF error is still larger than the tolerance
     if SCFerror > JobDef['scf_tol']:
         #
@@ -75,22 +73,22 @@ for ii in range(max_loops):
         TBH.s = TBH.s + JobDef['scf_mix']*(s-TBH.s)
     # If SCF error is smaller than or equal to the tolerance then leave loop
     else:
-        SCFflag=True
+        SCFflag = True
         break
 
 # if self-consistency is required then print out number of SCF loops taken
-if JobDef['scf_on']==1:
-    verboseprint(JobDef['verbose'],"Number of SCF loops: ",ii+1)
+if JobDef['scf_on'] == 1:
+    verboseprint(JobDef['verbose'], "Number of SCF loops: ", ii+1)
     # if self-consistency is not obtained the throw an error and exit.
-    if SCFflag==False:
-        print "ERROR: Self-consistency not obtained within maximum number of cycles, ", max_loops
+    if SCFflag is False:
+        print "ERROR: Self-consistency not obtained within maximum number of cycles: ", max_loops
         sys.exit()
 
 
-
-verboseprint(JobDef['extraverbose'],e)
-verboseprint(JobDef['extraverbose'],q)
-verboseprint(JobDef['extraverbose'],s.T)
+verboseprint(JobDef['verbose'], "Energy eigenvalues: ")
+verboseprint(JobDef['verbose'], e)
+verboseprint(JobDef['extraverbose'], q)
+verboseprint(JobDef['extraverbose'], s.T)
 #
 # Write out the spins for each orbital
-TBIO.PsiSpin(JobDef['extraverbose'],e, psi)
+TBIO.PsiSpin(JobDef['extraverbose'], e, psi)
