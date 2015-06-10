@@ -11,6 +11,8 @@ It merges the old TBH0 and TBHSO modules
 import numpy as np
 import math as m
 import TBgeom
+import TBelec
+from Verbosity import *
 
 
 # Functions used to evauate tight binding models
@@ -158,6 +160,36 @@ def BuildFock(JobDef):
             Fock[       j,H0size+j] +=       des[0,1]  # up/down block
             Fock[H0size+j,       j] +=       des[1,0]  # down/up block
             Fock[H0size+j,H0size+j] += deq + des[1,1]  # down/down block
+
+    #
+    # !!!!!DEBUGGING PURPOSES!!!!!!
+    #
+    Fock2 = np.copy(HSO)
+    norb = [AtomData[TBgeom.AtomType[a]]['NOrbitals'] for a in range(TBgeom.NAtom)]
+    natom = TBgeom.NAtom
+    rho = TBelec.rho
+    for a in range(0,natom):
+        # Get the atom type
+        ta = TBgeom.AtomType[a]
+        for j in range(Hindex[a],Hindex[a+1]):
+            J_ph = 0.0
+            J_S = AtomData[ta]['I']
+            U = AtomData[ta]['U']
+            
+            # up/up block
+            Fock2[       j,        j] += H_pcase(       j,        j, U, J_S, J_ph, natom, norb, rho)
+            # up/down block
+            Fock2[       j, H0size+j] += H_pcase(       j, H0size+j, U, J_S, J_ph, natom, norb, rho)
+            # down/up block
+            Fock2[H0size+j,        j] += H_pcase(H0size+j,        j, U, J_S, J_ph, natom, norb, rho)
+            # down/down block
+            Fock2[H0size+j, H0size+j] += H_pcase(H0size+j, H0size+j, U, J_S, J_ph, natom, norb, rho)
+
+    for i in range(HSOsize):
+        for j in range(i,HSOsize):
+            if abs(Fock[i,j]-Fock2[i,j]) > 0.000001:
+                verboseprint(JobDef['extraverbose'], i, j, round(Fock[i,j].real,4), round(Fock2[i,j].real,4), "|", round(Fock[i,j].imag,4), round(Fock2[i,j].imag,4))
+
 #
 # Evaluate the Slater-Koster table. The input is a pair of angular momentum quantum
 # numbers (l1 and l2), the displacement between atoms 1 and 2 (dr, equal to r1 - r2),
@@ -447,8 +479,10 @@ def map_atomic_to_index(atom, orbital, spin, num_atoms, num_orbitals):
     # add orbital contribution
     index += orbital
 
+    return index
 
-def H_pcase(ii,jj,U,J_S,J_ph,num_orbitals,rho):
+
+def H_pcase(ii, jj, U, J_S, J_ph, num_atoms, num_orbitals, rho):
     '''
     The function H_pcase takes the noncollinear Hamiltonian and adds to it the
     on-site contributions for the p-case Hubbard-like Hamiltonian.
@@ -479,7 +513,10 @@ def H_pcase(ii,jj,U,J_S,J_ph,num_orbitals,rho):
     J_ph                  float           The pair hopping integral that goes
                                           in front of the pair hopping term.
 
-    num_orbitals          list of int     The number of orbitals for each atom.
+    num_atoms             int             The number of atoms.
+
+    num_orbitals          list of int     A list of the number of orbitals for
+                                          each atom.
 
     rho                   numpy matrix    The density matrix.
 
@@ -492,22 +529,22 @@ def H_pcase(ii,jj,U,J_S,J_ph,num_orbitals,rho):
 
     '''
     # atom, spatial orbital and spin for index 1
-    i, a, s = map_index_to_atomic(ii)
+    i, a, s  = map_index_to_atomic(ii, num_atoms, num_orbitals)
     # atom, spatial orbital and spin for index 2
-    j, b, sp = map_index_to_atomic(jj)
+    j, b, sp = map_index_to_atomic(jj, num_atoms, num_orbitals)
     F = 0.0
     if i == j:
         # The negative terms
         F -= U*rho[ii, jj]
-        F -= J_ph*rho[map_atomic_to_index(i, b, s), map_atomic_to_index(i, a, sp)]
+        F -= J_ph*rho[map_atomic_to_index(i, b, s, num_atoms, num_orbitals), map_atomic_to_index(i, a, sp, num_atoms, num_orbitals)]
         if a == b:
-            F -= J_S*sum(rho[map_atomic_to_index(i, orb, s), map_atomic_to_index(i, orb, sp)] for orb in range(num_orbitals[i]))
+            F -= J_S*sum(rho[map_atomic_to_index(i, orb, s, num_atoms, num_orbitals), map_atomic_to_index(i, orb, sp, num_atoms, num_orbitals)] for orb in range(num_orbitals[i]))
         # The positive terms
         if s == sp:
-            F += J_S*sum(rho[map_atomic_to_index(i, a, sig), map_atomic_to_index(i, b, sig)] for sig in range(2))
-            F += J_ph*sum(rho[map_atomic_to_index(i, b, sig), map_atomic_to_index(i, a, sig)] for sig in range(2))
+            F += J_S*sum(rho[map_atomic_to_index(i, a, sig, num_atoms, num_orbitals), map_atomic_to_index(i, b, sig, num_atoms, num_orbitals)] for sig in range(2))
+            F += J_ph*sum(rho[map_atomic_to_index(i, b, sig, num_atoms, num_orbitals), map_atomic_to_index(i, a, sig, num_atoms, num_orbitals)] for sig in range(2))
             if a == b:
-                F += U*sum(rho[map_atomic_to_index(i, orb, sig), map_atomic_to_index(i, orb, sig)] for sig in range(2) for orb in range(num_orbitals[i]))
+                F += U*sum(rho[map_atomic_to_index(i, orb, sig, num_atoms, num_orbitals), map_atomic_to_index(i, orb, sig, num_atoms, num_orbitals)] for sig in range(2) for orb in range(num_orbitals[i]))
     # return the matrix element
     return F
 
@@ -549,7 +586,10 @@ def H_dcase():
     dJ                    float           The difference in the t_2g and e_g
                                           d-orbital exchange integrals.
 
-    num_orbitals          list of int     The number of orbitals for each atom.
+    num_atoms             int             The number of atoms.
+
+    num_orbitals          list of int     A list of the number of orbitals for
+                                          each atom.
 
     rho                   numpy matrix    The density matrix.
 
