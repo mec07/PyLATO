@@ -17,9 +17,8 @@ from Verbosity import *
 
 # Functions used to evauate tight binding models
 def model01(r, coeffs):
-    #
-    # This is a simple exponential model for an sp system
-    #
+    """This is a simple exponential model for an sp system."""
+
     # Compute the hopping integrals for the reference geometry
     v = np.zeros(5, dtype='double')
     v[0] = coeffs['vsss']*m.exp(-coeffs['kss']*(r-coeffs['r0']))
@@ -135,7 +134,7 @@ def BuildFock(JobDef):
     global AtomData
     global q, s
     #
-    # Copy the Hamiltonian, complete with spin-orbit terms, to the Fock matrix 
+    # Copy the Hamiltonian, complete with spin-orbit terms, to the Fock matrix
     Fock = np.copy(HSO)
     #
     # Now add in diagonal corrections for charge and spin
@@ -149,10 +148,10 @@ def BuildFock(JobDef):
         deq = complex(-q[a]*AtomData[ta]['U'], 0.0)
         #
         # Stoner onsite energy shifts are present for all four spins combinations
-        des[0,0] = -0.5*AtomData[ta]['I']*complex( s[2,a],     0.0)
-        des[0,1] = -0.5*AtomData[ta]['I']*complex( s[0,a], -s[1,a])
-        des[1,0] = -0.5*AtomData[ta]['I']*complex( s[0,a],  s[1,a])
-        des[1,1] = -0.5*AtomData[ta]['I']*complex(-s[2,a],     0.0)
+        des[0, 0] = -0.5*AtomData[ta]['I']*complex( s[2, a],     0.0)
+        des[0, 1] = -0.5*AtomData[ta]['I']*complex( s[0, a], -s[1, a])
+        des[1, 0] = -0.5*AtomData[ta]['I']*complex( s[0, a],  s[1, a])
+        des[1, 1] = -0.5*AtomData[ta]['I']*complex(-s[2, a],     0.0)
         #
         # Step through each orbital on the atom
         for j in range(Hindex[a], Hindex[a+1]):
@@ -175,7 +174,7 @@ def BuildFock(JobDef):
             J_ph = 0.0
             J_S = AtomData[ta]['I']
             U = AtomData[ta]['U']
-            
+
             # up/up block
             Fock2[       j,        j] += H_pcase(       j,        j, U, J_S, J_ph, natom, norb, rho)
             # up/down block
@@ -190,37 +189,40 @@ def BuildFock(JobDef):
             if abs(Fock[i,j]-Fock2[i,j]) > 0.000001:
                 verboseprint(JobDef['extraverbose'], i, j, round(Fock[i,j].real,4), round(Fock2[i,j].real,4), "|", round(Fock[i,j].imag,4), round(Fock2[i,j].imag,4))
 
-#
-# Evaluate the Slater-Koster table. The input is a pair of angular momentum quantum
-# numbers (l1 and l2), the displacement between atoms 1 and 2 (dr, equal to r1 - r2),
-# and a tuple that provides the (sigma, pi, delta , ...) hopping matrix elements.
-# The function returns the full block of the Hamiltonian.
-#
-# The sign convention used here is as follows. The tables are computed with the atom
-# corresponding to the second index being at the origin, and the atom with the first
-# index placed vertically above it along the positive z axis.
-#
-# The cubic harmonic (K) orbital convention used is as follows. Let the magnetic quantum number
-# be m. Then:
-#   K(l,2m-1) = sqrt(4 pi/(2l+1)) r^l ((-1)^m Y(l,m) + Y(l,-m))/sqrt(2)
-#   K(l,2m  ) = sqrt(4 pi/(2l+1)) r^l ((-1)^m Y(l,m) - Y(l,-m))/(i sqrt(2))
-# Thus we have
-#   K(0,0) = 1
-#
-#   K(1,0) = z
-#   K(1,1) = x
-#   K(1,2) = y
-#
-#   K(2,0) = (3z^2 - r^2)/2
-#   K(2,1) = sqrt(3) zx
-#   K(2,2) = sqrt(3) zy
-#   K(2,3) = sqrt(3) (x^2-y^2)/2
-#   K(2,4) = sqrt(3) xy
-#
-# etc
+
 def SlaterKoster(l1, l2, dr, v):
-    import math
-    #
+    """
+    Evaluate the Slater-Koster table.
+
+    The input is a pair of angular momentum quantum
+    numbers (l1 and l2), the displacement between atoms 1 and 2 (dr, equal to r1 - r2),
+    and a tuple that provides the (sigma, pi, delta , ...) hopping matrix elements.
+    The function returns the full block of the Hamiltonian.
+
+    The sign convention used here is as follows. The tables are computed with the atom
+    corresponding to the second index being at the origin, and the atom with the first
+    index placed vertically above it along the positive z axis.
+
+    The cubic harmonic (K) orbital convention used is as follows. Let the magnetic quantum number
+    be m. Then:
+    K(l,2m-1) = sqrt(4 pi/(2l+1)) r^l ((-1)^m Y(l,m) + Y(l,-m))/sqrt(2)
+    K(l,2m  ) = sqrt(4 pi/(2l+1)) r^l ((-1)^m Y(l,m) - Y(l,-m))/(i sqrt(2))
+    Thus we have
+    K(0,0) = 1
+
+    K(1,0) = z
+    K(1,1) = x
+    K(1,2) = y
+
+    K(2,0) = (3z^2 - r^2)/2
+    K(2,1) = sqrt(3) zx
+    K(2,2) = sqrt(3) zy
+    K(2,3) = sqrt(3) (x^2-y^2)/2
+    K(2,4) = sqrt(3) xy
+
+    etc.
+    """
+
     # Allocate space for the final block of the Hamiltonian
     block = np.zeros((2*l1+1, 2*l2+1), dtype='double')
     #
@@ -269,13 +271,18 @@ def SlaterKoster(l1, l2, dr, v):
     #
     # Return the Hamiltonian block
     return block
-#
-# Function to buld the hamiltonian one block at a time, with a block corresponding to
-# a pair of atoms. This function invokes a function to compute the hopping
-# integrals for the reference geometry for a tight binding model using the
-# coefficients associated with the model. The block of the Hamiltonian
-# matrix is built using the integrals from the model and Slater-Koster table
+
+
 def BuildH0():
+    """
+    Function to buld the hamiltonian one block at a time, with a block corresponding to
+    a pair of atoms. 
+
+    This function invokes a function to compute the hopping
+    integrals for the reference geometry for a tight binding model using the
+    coefficients associated with the model. The block of the Hamiltonian
+    matrix is built using the integrals from the model and Slater-Koster tables.
+    """
     global H0, H0size, Hindex
     global AtomData, BondData
     #
@@ -284,9 +291,9 @@ def BuildH0():
     #
     # Step through all pairs of atoms
     for a1 in range(0, TBgeom.NAtom):
-        t1 = TBgeom.AtomType[a1] # The type of atom 1
+        t1 = TBgeom.AtomType[a1]  # The type of atom 1
         for a2 in range(0, TBgeom.NAtom):
-            t2 = TBgeom.AtomType[a2] # The type of atom 2
+            t2 = TBgeom.AtomType[a2]  # The type of atom 2
             #
             # If the atoms are the same, compute an onsite block, otherwise compute a hopping block
             if a1 == a2:
@@ -301,24 +308,25 @@ def BuildH0():
                 v, v_bgn, v_end = BondData[t1][t2]['model'](d, BondData[t1][t2])
                 #
                 # Build the block one pair of shells at a time
-                i1 = 0 # Counter for shell
-                k1 = Hindex[a1] # Counter for orbital
-                for l1 in AtomData[t1]['l']: # Step through each shell
-                    n1 = 2*l1+1 # Compute number of orbitals in the shell
+                i1 = 0  # Counter for shell
+                k1 = Hindex[a1]  # Counter for orbital
+                for l1 in AtomData[t1]['l']:  # Step through each shell
+                    n1 = 2*l1+1  # Compute number of orbitals in the shell
                     #
-                    i2 = 0 # Counter for shell
-                    k2 = Hindex[a2] # Counter for orbital
-                    for l2 in AtomData[t2]['l']: # Step through each shell
-                        n2 = 2*l2+1 # Compute number of orbitals in the shell
+                    i2 = 0  # Counter for shell
+                    k2 = Hindex[a2]  # Counter for orbital
+                    for l2 in AtomData[t2]['l']:  # Step through each shell
+                        n2 = 2*l2+1  # Compute number of orbitals in the shell
                         H0[k1:k1+n1, k2:k2+n2] = SlaterKoster(l1, l2, dr, v[v_bgn[i1,i2]:v_end[i1,i2]])
-                        i2 += 1 # Advance to the next shell
-                        k2 += n2 # Advance to the start of the next set of orbitals
+                        i2 += 1  # Advance to the next shell
+                        k2 += n2  # Advance to the start of the next set of orbitals
                     #
-                    i1 += 1 # Advance to the next shell
-                    k1 += n1 # Advance to the start of the next set of orbitals
-#
-# Function to add spin orbit coupling to the Hamiltonian
+                    i1 += 1  # Advance to the next shell
+                    k1 += n1  # Advance to the start of the next set of orbitals
+
+
 def BuildHSO(JobDef):
+    """Add spin orbit coupling to the Hamiltonian."""
     global H0, H0size, Hindex
     global HSO, HSOsize
     global AtomData, SOmatrix
@@ -331,12 +339,12 @@ def BuildHSO(JobDef):
     BuildH0()
     #
     # Copy H0 into the two diagonal blocks
-    HSO[0     :H0size ,0     :H0size ] = np.copy(H0)
-    HSO[H0size:HSOsize,H0size:HSOsize] = np.copy(H0)
+    HSO[0     :H0size , 0     :H0size ] = np.copy(H0)
+    HSO[H0size:HSOsize, H0size:HSOsize] = np.copy(H0)
     #
     # Add in magnetic field contribution
     eB = JobDef['so_eB']
-    for i in range(0,H0size):
+    for i in range(0, H0size):
         HSO[         i,          i] += complex( eB[2],    0.0)
         HSO[         i, H0size + i] += complex( eB[0], -eB[1])
         HSO[H0size + i,          i] += complex( eB[0],  eB[1])
@@ -345,10 +353,10 @@ def BuildHSO(JobDef):
     # Add in the spin-orbit corrections
     for a in range(0, TBgeom.NAtom):
         ta = TBgeom.AtomType[a]
-        i = 0 # Counter for shell
-        k = Hindex[a] # Counter for orbital
+        i = 0  # Counter for shell
+        k = Hindex[a]  # Counter for orbital
         for l in AtomData[ta]['l']: # Step through each shell
-            n = 2*l+1 # Compute number of orbitals in the shell
+            n = 2*l+1  # Compute number of orbitals in the shell
             HSO[       k:       k+n,        k:       k+n] += AtomData[ta]['so'][i]*SOmatrix[l][  0:  n,  0:  n]
             HSO[       k:       k+n, H0size+k:H0size+k+n] += AtomData[ta]['so'][i]*SOmatrix[l][  0:  n, n+0:n+n]
             HSO[H0size+k:H0size+k+n,        k:       k+n] += AtomData[ta]['so'][i]*SOmatrix[l][n+0:n+n,  0:  n]
@@ -358,7 +366,7 @@ def BuildHSO(JobDef):
 
 
 def Kd(a, b):
-    '''
+    """
     Function Kd is the Kronecker delta symbol. If a == b then return 1 otherwise
     return zero.
 
@@ -373,7 +381,7 @@ def Kd(a, b):
 
     Kd                    int             delta_{a,b}
 
-    '''
+    """
     if a == b:
         return 1
     else:
@@ -381,7 +389,7 @@ def Kd(a, b):
 
 
 def map_index_to_atomic(index, num_atoms, num_orbitals):
-    '''
+    """
     Function map_index_to_atomic converts the index of the Fock matrix into atom
     number, orbital number and spin. Index numbering starts at 0 and goes up to
     the length of the Fock matrix. Atomic numbering starts at 0 and goes up to
@@ -414,13 +422,13 @@ def map_index_to_atomic(index, num_atoms, num_orbitals):
 
     spin                  int             The spin, either 0 (up) or 1 (down).
 
-    '''
+    """
     upper_bound = 0
     # loop over spin
     for ss in range(2):
         # loop over the atoms
         for ii in range(num_atoms):
-            upper_bound +=num_orbitals[ii]
+            upper_bound += num_orbitals[ii]
             if index < upper_bound:
                 atom = ii
                 spin = ss
@@ -430,11 +438,11 @@ def map_index_to_atomic(index, num_atoms, num_orbitals):
 
 
 def map_atomic_to_index(atom, orbital, spin, num_atoms, num_orbitals):
-    '''
+    """
     Function map_atomic_to_index converts the atom, orbital number and spin into
     the corresponding index of the Fock matrix. Index numbering starts at 0 and
-    goes up to the length of the Fock matrix. Atomic numbering starts at 0 and 
-    goes up to num_atoms-1, orbital numbering goes starts at 0 and goes up to 
+    goes up to the length of the Fock matrix. Atomic numbering starts at 0 and
+    goes up to num_atoms-1, orbital numbering goes starts at 0 and goes up to
     num_orbitals-1 for that particular atom.
 
     ASSUMPTIONS
@@ -463,7 +471,7 @@ def map_atomic_to_index(atom, orbital, spin, num_atoms, num_orbitals):
     index                 int             The index to be converted to atom,
                                           orbital and spin.
 
-    '''
+    """
     index = 0
     # add atom contribution
     for ii in range(atom):
@@ -483,14 +491,17 @@ def map_atomic_to_index(atom, orbital, spin, num_atoms, num_orbitals):
 
 
 def H_pcase(ii, jj, U, J_S, J_ph, num_atoms, num_orbitals, rho):
-    '''
+    """
     The function H_pcase takes the noncollinear Hamiltonian and adds to it the
     on-site contributions for the p-case Hubbard-like Hamiltonian.
 
     The tensorial form for this is:
 
-    F^{s,s'}_{i a j b} = Kd(i,j) (\sum_{s''}Kd(s,s')(\sum_{a'}U Kd(a,b) rho^{s'',s''}_{i a i a} + J_S rho^{s'',s''}_{i a i b} + J_{ph} rho^{s'',s''}_{i b i a} )
-        - (U rho^{s,s'}_{i a i b} + \sum_{a'} J_S Kd(a,b)rho^{s,s'}_{i a i a} + J_{ph} rho^{s,s'}_{i b i a}) ),
+    F^{s,s'}_{i a j b} = Kd(i,j) (\sum_{s''}Kd(s,s')(\sum_{a'}U Kd(a,b)
+        rho^{s'',s''}_{i a i a} + J_S rho^{s'',s''}_{i a i b}
+        + J_{ph} rho^{s'',s''}_{i b i a} )
+        - (U rho^{s,s'}_{i a i b} + \sum_{a'} J_S Kd(a,b)rho^{s,s'}_{i a i a}
+        + J_{ph} rho^{s,s'}_{i b i a}) ),
 
     where Kd is the Kronecker delta symbol; s, s' and s'' are spin indices; i
     and j are atom indices; a, a' and b are orbital indices; rho is the
@@ -527,7 +538,7 @@ def H_pcase(ii, jj, U, J_S, J_ph, num_atoms, num_orbitals, rho):
                                           symmetry on-site contributions for
                                           provided density matrix.
 
-    '''
+    """
     # atom, spatial orbital and spin for index 1
     i, a, s  = map_index_to_atomic(ii, num_atoms, num_orbitals)
     # atom, spatial orbital and spin for index 2
@@ -550,16 +561,17 @@ def H_pcase(ii, jj, U, J_S, J_ph, num_atoms, num_orbitals, rho):
 
 
 def H_dcase():
-    '''
+    """
     The function H_dcase takes the noncollinear Hamiltonian and adds to it the
     on-site contributions for the d-case Hubbard-like Hamiltonian.
 
     The tensorial form for this is:
 
-    F^{s,s'}_{i a j b} = Kd(i,j) (\sum_{s''}Kd(s,s')(\sum_{a'}U Kd(a,b) rho^{s'',s''}_{i a i a} 
-        + J'_S rho^{s'',s''}_{i a i b} + J'_{ph} rho^{s'',s''}_{i b i a} 
+    F^{s,s'}_{i a j b} = Kd(i,j) (\sum_{s''}Kd(s,s')(\sum_{a'}U Kd(a,b) rho^{s'',s''}_{i a i a}
+        + J'_S rho^{s'',s''}_{i a i b} + J'_{ph} rho^{s'',s''}_{i b i a}
         - 48 dJ \sum_{cd stuv} xi_{c st}xi_{a tu}xi_{b uv}xi_{d vs} rho^{})
-        - (U rho^{s,s'}_{i a i b} + \sum_{a'} J_S Kd(a,b)rho^{s,s'}_{i a i a} + J_{ph} rho^{s,s'}_{i b i a}) ),
+        - (U rho^{s,s'}_{i a i b} + \sum_{a'} J_S Kd(a,b)rho^{s,s'}_{i a i a}
+        + J_{ph} rho^{s,s'}_{i b i a}) ),
 
     where Kd is the Kronecker delta symbol; s, s' and s'' are spin indices; i
     and j are atom indices; a, a' and b are orbital indices; rho is the
@@ -600,4 +612,4 @@ def H_dcase():
                                           symmetry on-site contributions for
                                           provided density matrix.
 
-    '''
+    """
