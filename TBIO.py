@@ -79,7 +79,7 @@ def ReadGeom(FileName):
     # For each atom read in the data
     for i in range(0, NAtom):
         in_line = f_geom.readline()
-        in_line = in_line[0:-1]
+        in_line = in_line.strip()
         AtomType[i], Pos[0,i], Pos[1,i], Pos[2,i] = in_line.split(',')
     #
     # Close the file
