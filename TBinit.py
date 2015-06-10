@@ -10,26 +10,16 @@ This module carries out the needed initialisation tasks
 import TBgeom
 import TBH
 import TBelec
+import commentjson
 
 
 # Initialise the program
 def init():
     #
     # Set up variables that define the job in a dictionary
-    JobDef = {  # atomic geometry
-        'gy_file': 'geom.csv',
-        # magnetic field
-        'so_eB': (0.0, 0.01, 0.0),
-        # electronic temperature in eV
-        'el_kT': 0.025,
-        # self-consistent field parameters
-        'scf_on': 1, 'scf_mix': 0.001, 'scf_tol': 1.0e-10,
-        'scf_max_loops': 500,
-        # number of bins for the density of states
-        'dos_nbin': 20,
-        # Verbosity
-        'verbose': 1, 'extraverbose': 0}
-
+    with open("JobDef.json",'r') as inputfile:
+        JobDef = commentjson.loads(inputfile.read())
+        
     # Initialise the geometry
     TBgeom.init(JobDef)
     #
