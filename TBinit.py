@@ -13,8 +13,8 @@ import TBelec
 import commentjson
 
 
-# Initialise the program
 def init():
+    """Initialise the program."""
     #
     # Set up variables that define the job in a dictionary
     with open("JobDef.json",'r') as inputfile:

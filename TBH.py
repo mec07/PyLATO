@@ -102,8 +102,8 @@ SOmatrix = {0: np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0)],
                         [complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 0.0, 0.0)]])}
 
 
-# Initialise the module
 def init(JobDef):
+    """Initialise the module."""
     global H0, H0size, Hindex
     global HSO, HSOsize
     global Fock, q, s
@@ -128,8 +128,8 @@ def init(JobDef):
     s = np.zeros((3, TBgeom.NAtom), dtype='double')
 
 
-# Build the Fock matrix by adding charge and spin terms to the Hamiltonian
 def BuildFock(JobDef):
+    """Build the Fock matrix by adding charge and spin terms to the Hamiltonian."""
     global Fock, HSO, H0size, Hindex
     global AtomData
     global q, s
@@ -355,7 +355,7 @@ def BuildHSO(JobDef):
         ta = TBgeom.AtomType[a]
         i = 0  # Counter for shell
         k = Hindex[a]  # Counter for orbital
-        for l in AtomData[ta]['l']: # Step through each shell
+        for l in AtomData[ta]['l']:  # Step through each shell
             n = 2*l+1  # Compute number of orbitals in the shell
             HSO[       k:       k+n,        k:       k+n] += AtomData[ta]['so'][i]*SOmatrix[l][  0:  n,  0:  n]
             HSO[       k:       k+n, H0size+k:H0size+k+n] += AtomData[ta]['so'][i]*SOmatrix[l][  0:  n, n+0:n+n]
