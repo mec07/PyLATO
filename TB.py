@@ -25,10 +25,11 @@ import sys
 
 def main():
     """Initialise the program."""
-    JobDef = TBinit.init()
+
+    Job = TBinit.InitJob("JobDef.json")
     #
     # Build the non-self-consistent Hamiltonian (incl hopping and spin-orbit)
-    TBH.BuildHSO(JobDef)
+    Job.Hamilton.buildHSO()
     #
     # Allocate memory for the eigenvalues and eigenvectors
     e = np.zeros(TBH.HSOsize, dtype='double')
@@ -38,6 +39,7 @@ def main():
     SCFerror = 1.0e+99
     # flag to indicate if self-consistency has been obtained.
     SCFflag = False
+
     # If self-consistency is not asked for, then only do one iteration
     if JobDef['scf_on'] == 0:
         max_loops = 1

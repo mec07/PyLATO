@@ -13,21 +13,19 @@ import TBelec
 import commentjson
 
 
-def init():
-    """Initialise the program."""
-    #
-    # Set up variables that define the job in a dictionary
-    with open("JobDef.json",'r') as inputfile:
-        JobDef = commentjson.loads(inputfile.read())
-        
-    # Initialise the geometry
-    TBgeom.init(JobDef)
-    #
-    # Initialise the Hamiltonian module
-    TBH.init(JobDef)
-    #
-    # Initialise the electron module
-    TBelec.init(JobDef)
-    #
-    # Return the job definition
-    return JobDef
+class InitJob:
+    """Sets up the job, builds the initial geometry, hamiltonian, and electronic structure."""
+    def __init__(self, jobfile):
+        """Initialise the job."""
+        # Set up variables that define the job in a dictionary
+        with open(jobfile,'r') as inputfile:
+            self.JobDef = commentjson.loads(inputfile.read())
+            
+        # Initialise the geometry
+        TBgeom.init(self)
+        #
+        # Initialise the Hamiltonian class
+        self.Hamilton = TBH.Hamiltonian(self)
+        #
+        # Initialise the electron module
+        self.Electron = TBelec.Electronic(self)

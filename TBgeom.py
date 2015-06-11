@@ -7,19 +7,21 @@ This module manages the geometry of the system (atomic coordinates etc)
 """
 #
 # Import modules
-#
-#import numpy as np
-#import math
 
 import TBIO
 
 
-def init(JobDef):
+def init(JobClass):
 	"""initialise the geometry."""
 	global NAtom, Pos, AtomType
 	#
 	# Read in the geometry from file
-	NAtom, Pos, AtomType = TBIO.ReadGeom(JobDef['gy_file'])
+	NAtom, Pos, AtomType = TBIO.ReadGeom(JobClass.JobDef['gy_file'])
 	#
 	# Write out the geometry
 	TBIO.WriteXYZ(NAtom, 'Hello', AtomType, Pos)
+	#
+	# Transfer geometry to the JobClass
+	JobClass.NAtom    = NAtom
+	JobClass.Pos      = Pos
+	JobClass.AtomType = AtomType
