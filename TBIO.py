@@ -40,7 +40,7 @@ def PsiSpin(JobClass):
         spin[2] = (rho[0, 0] - rho[1, 1]).real
         #
         # Write out the spins
-        verboseprint(verbose,'{0:4d}  {1:5.2f}  {2:5.2f}  {3:5.2f}'.format(n, spin[0], spin[1], spin[2]))
+        verboseprint(JobClass.Def['verbose'],'{0:4d}  {1:5.2f}  {2:5.2f}  {3:5.2f}'.format(n, spin[0], spin[1], spin[2]))
 
 
 def WriteXYZ(NAtom, Comment, AtomType, Pos):
