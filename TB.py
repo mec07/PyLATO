@@ -19,7 +19,7 @@ import TBelec
 import TBgeom
 from Verbosity import *
 import numpy as np
-import math as m
+import math
 import sys
 #
 # Initialise the program
@@ -63,7 +63,7 @@ for ii in range(max_loops):
     s = TBelec.SpinPerSite()
     #
     # Compute the error in the charges, and update the charges and spin
-    SCFerror = m.sqrt(np.vdot(q-TBH.q, q-TBH.q)/TBgeom.NAtom)
+    SCFerror = math.sqrt(np.vdot(q-TBH.q, q-TBH.q)/TBgeom.NAtom)
     verboseprint(JobDef['verbose'], 'SCF loop = ', ii+1, '; SCF error = ', SCFerror)
     # Check if the SCF error is still larger than the tolerance
     if SCFerror > JobDef['scf_tol']:

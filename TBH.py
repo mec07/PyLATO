@@ -9,7 +9,7 @@ It merges the old TBH0 and TBHSO modules
 #
 # Import the modules that will be needed
 import numpy as np
-import math as m
+import math
 import TBgeom
 import TBelec
 from Verbosity import *
@@ -21,11 +21,11 @@ def model01(r, coeffs):
 
     # Compute the hopping integrals for the reference geometry
     v = np.zeros(5, dtype='double')
-    v[0] = coeffs['vsss']*m.exp(-coeffs['kss']*(r-coeffs['r0']))
-    v[1] = coeffs['vsps']*m.exp(-coeffs['ksp']*(r-coeffs['r0']))
-    v[2] = coeffs['vpss']*m.exp(-coeffs['kps']*(r-coeffs['r0']))
-    v[3] = coeffs['vpps']*m.exp(-coeffs['kpp']*(r-coeffs['r0']))
-    v[4] = coeffs['vppp']*m.exp(-coeffs['kpp']*(r-coeffs['r0']))
+    v[0] = coeffs['vsss']*math.exp(-coeffs['kss']*(r-coeffs['r0']))
+    v[1] = coeffs['vsps']*math.exp(-coeffs['ksp']*(r-coeffs['r0']))
+    v[2] = coeffs['vpss']*math.exp(-coeffs['kps']*(r-coeffs['r0']))
+    v[3] = coeffs['vpps']*math.exp(-coeffs['kpp']*(r-coeffs['r0']))
+    v[4] = coeffs['vppp']*math.exp(-coeffs['kpp']*(r-coeffs['r0']))
     #
     # Generate pair of indices for each pair of shells, showing which values
     #     of v to use
@@ -302,7 +302,7 @@ def BuildH0():
                 #
                 # Compute the atomic displacements
                 dr = (TBgeom.Pos[0,a1]-TBgeom.Pos[0,a2], TBgeom.Pos[1,a1]-TBgeom.Pos[1,a2], TBgeom.Pos[2,a1]-TBgeom.Pos[2,a2])
-                d = m.sqrt(dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2])
+                d = math.sqrt(dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2])
                 #
                 # Build the set of hopping integrals
                 v, v_bgn, v_end = BondData[t1][t2]['model'](d, BondData[t1][t2])

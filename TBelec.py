@@ -9,7 +9,7 @@ populated by electrons.
 #
 # Import the modules that will be needed
 import numpy as np
-import math as m
+import math
 import TBH
 import TBgeom
 
@@ -63,7 +63,7 @@ def Occupy(e, kT, n_tol):
     # Find the correct chemical potential using binary section
     mu = 0.5*(mu_l + mu_u)
     n = np.sum(Fermi(e, mu, kT))
-    while m.fabs(NElectrons-n) > n_tol*NElectrons:
+    while math.fabs(NElectrons-n) > n_tol*NElectrons:
         if n > NElectrons:
             mu_u = mu
         elif n < NElectrons:

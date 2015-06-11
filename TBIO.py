@@ -9,20 +9,21 @@ This module contains functions that perform input and output operations
 # Import modules
 import TBH
 import numpy as np
-import math as m
 from Verbosity import *
-#
-# This function produces a total density of states (NEEDS TO BE UPDATED TO PLOT THE DOS)
+
+
 def DOS(e, nbin):
+    """Produce a total density of states (NEEDS TO BE UPDATED TO PLOT THE DOS)"""
     hist, bin_edges = np.histogram(e, nbin)
     return hist, binedges
-#
-# This function writes out the spin vector for each eigenstate
-def PsiSpin (verbose,e, psi):
+
+
+def PsiSpin(verbose,e, psi):
+    """Write out the spin vector for each eigenstate."""
     spin = np.zeros(3, dtype='double')
     rho = np.zeros((2,2), dtype='complex')
     verboseprint(verbose,'state   sx     sy     sz')
-    #
+    
     for n in range(0,TBH.HSOsize):
         #
         # Build the spin density matrix
@@ -38,34 +39,45 @@ def PsiSpin (verbose,e, psi):
         #
         # Write out the spins
         verboseprint(verbose,'{0:4d}  {1:5.2f}  {2:5.2f}  {3:5.2f}'.format(n, spin[0], spin[1], spin[2]))
-#
-# This function writes coordinates out to an XYZ file. Note that the file is opened for append,
-# so new frames are added to the end of existing frames.
+
+
 def WriteXYZ(NAtom, Comment, AtomType, Pos):
-    #
-    # NAtom is the number of atoms
-    # Comment is a string holding a one line comment
-    # AtomType is a list holding the index for the atom type for each atom
-    # Pos is a 3xNAtom double precision NumPy array holding the atomic positions
+    """
+    Writes coordinates out to an XYZ file.
+
+    Note that the file is opened for append, so new frames are added to the end of existing frames.
+
+    NAtom is the number of atoms
+    Comment is a string holding a one line comment
+    AtomType is a list holding the index for the atom type for each atom
+    Pos is a 3xNAtom double precision NumPy array holding the atomic positions
+
+    """
     f_xyz = open('geometry.xyz', 'a')
     f_xyz.write('{0:d}\n'.format(NAtom))
     f_xyz.write('{0}\n'.format(Comment))
     for i in range(0, NAtom):
         f_xyz.write('{0} {1:11.6f} {2:11.6f} {3:11.6f}\n'.format(TBH.AtomData[AtomType[i]]['ChemSymb'], Pos[0,i], Pos[1,i], Pos[2,i]))
     f_xyz.close()
-#
-# This function reads in the atomic geometry.
+
+
 def ReadGeom(FileName):
-    #The geometry file has the structure:
-    # Number of atoms
-    # Type, x, y, z
-    # Type, x, y, z
-    # Type, x, y, z
-    # Type, x, y, z
-    # Type, x, y, z
-    # Type, x, y, z
-    # etc
-    #
+    """
+    This function reads in the atomic geometry.
+
+    The geometry file has the structure:
+
+    Number of atoms
+    Type, x, y, z
+    Type, x, y, z
+    Type, x, y, z
+    Type, x, y, z
+    Type, x, y, z
+    Type, x, y, z
+
+    etc
+    """
+
     # Open the file
     f_geom = open(FileName, 'r')
     #
