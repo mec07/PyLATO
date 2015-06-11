@@ -18,24 +18,26 @@ def DOS(e, nbin):
     return hist, binedges
 
 
-def PsiSpin(verbose,e, psi):
+def PsiSpin(JobClass):
     """Write out the spin vector for each eigenstate."""
-    spin = np.zeros(3, dtype='double')
-    rho = np.zeros((2,2), dtype='complex')
-    verboseprint(verbose,'state   sx     sy     sz')
+    spin = np.zeros( 3, dtype='double')
+    rho  = np.zeros((2, 2), dtype='complex')
+    verboseprint(JobClass.Def['verbose'],'state   sx     sy     sz')
+
+    jH = JobClass.Hamilton
     
-    for n in range(0,TBH.HSOsize):
+    for n in range(0, jH.HSOsize):
         #
         # Build the spin density matrix
-        rho[0,0] = np.vdot(psi[0:TBH.H0size,n],           psi[0:TBH.H0size,n]          )
-        rho[0,1] = np.vdot(psi[0:TBH.H0size,n],           psi[TBH.H0size:TBH.HSOsize,n])
-        rho[1,0] = np.vdot(psi[TBH.H0size:TBH.HSOsize,n], psi[0:TBH.H0size,n]          )
-        rho[1,1] = np.vdot(psi[TBH.H0size:TBH.HSOsize,n], psi[TBH.H0size:TBH.HSOsize,n])
+        rho[0, 0] = np.vdot(JobClass.psi[0        :jH.H0size,  n], JobClass.psi[        0:jH.H0size, n])
+        rho[0, 1] = np.vdot(JobClass.psi[0        :jH.H0size,  n], JobClass.psi[jH.H0size:jH.HSOsize,n])
+        rho[1, 0] = np.vdot(JobClass.psi[jH.H0size:jH.HSOsize, n], JobClass.psi[        0:jH.H0size, n])
+        rho[1, 1] = np.vdot(JobClass.psi[jH.H0size:jH.HSOsize, n], JobClass.psi[jH.H0size:jH.HSOsize,n])
         #
         # Build the spin expectation values
-        spin[0] = (rho[0,1] + rho[1,0]).real
-        spin[1] = (rho[0,1] - rho[1,0]).imag
-        spin[2] = (rho[0,0] - rho[1,1]).real
+        spin[0] = (rho[0, 1] + rho[1, 0]).real
+        spin[1] = (rho[0, 1] - rho[1, 0]).imag
+        spin[2] = (rho[0, 0] - rho[1, 1]).real
         #
         # Write out the spins
         verboseprint(verbose,'{0:4d}  {1:5.2f}  {2:5.2f}  {3:5.2f}'.format(n, spin[0], spin[1], spin[2]))

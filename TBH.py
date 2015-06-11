@@ -10,8 +10,6 @@ It merges the old TBH0 and TBHSO modules
 # Import the modules that will be needed
 import numpy as np
 import math
-import TBgeom
-import TBelec
 from Verbosity import *
 
 
@@ -108,17 +106,17 @@ class Hamiltonian:
         """Initialise the hamiltonian."""
 
         # Save job reference as an attribute for internal use.
-        self.job = JobClass
+        self.Job = JobClass
 
         # Build index of starting position in Hamiltonian for each atom
-        self.Hindex = np.zeros(TBgeom.NAtom + 1, dtype='int')
+        self.Hindex = np.zeros(self.Job.NAtom + 1, dtype='int')
         self.Hindex[0] = 0
 
-        for a in range(0, TBgeom.NAtom):
-            self.Hindex[a+1] = self.Hindex[a] + AtomData[TBgeom.AtomType[a]]['NOrbitals']
+        for a in range(0, self.Job.NAtom):
+            self.Hindex[a+1] = self.Hindex[a] + AtomData[self.Job.AtomType[a]]['NOrbitals']
         #
         # Compute the sizes of the Hamiltonian matrices
-        self.H0size = self.Hindex[TBgeom.NAtom]
+        self.H0size = self.Hindex[self.Job.NAtom]
         self.HSOsize = 2*self.H0size
         #
         # Allocate memory for the Hamiltonian matrices
@@ -127,8 +125,8 @@ class Hamiltonian:
         self.Fock = np.zeros((self.HSOsize, self.HSOsize), dtype='complex')
         #
         # Allocate memeory for the charge and spin
-        self.q = np.zeros(TBgeom.NAtom, dtype='double')
-        self.s = np.zeros((3, TBgeom.NAtom), dtype='double')
+        self.q = np.zeros(self.Job.NAtom, dtype='double')
+        self.s = np.zeros((3, self.Job.NAtom), dtype='double')
 
 
     def buildfock(self):
@@ -146,10 +144,10 @@ class Hamiltonian:
         # Now add in diagonal corrections for charge and spin
         des = np.zeros((2, 2), dtype='complex')
         
-        for a in range(0, TBgeom.NAtom):
+        for a in range(0, self.Job.NAtom):
             #
             # Get the atom type
-            ta = TBgeom.AtomType[a]
+            ta = self.Job.AtomType[a]
             #
             # Onsite energy shift is U*q
             deq = complex(-self.q[a] * AtomData[ta]['U'], 0.0)
@@ -170,35 +168,36 @@ class Hamiltonian:
         #
         # !!!!!DEBUGGING PURPOSES!!!!!!
         #
+        """
         self.fock2 = np.copy(self.HSO)
-        norb = [AtomData[TBgeom.AtomType[a]]['NOrbitals'] for a in range(TBgeom.NAtom)]
-        natom = TBgeom.NAtom
-        rho = TBelec.rho
+        norb = [AtomData[self.Job.AtomType[a]]['NOrbitals'] for a in range(self.Job.NAtom)]
+        natom = self.Job.NAtom
+        rho = self.Job.Electron.rho
 
         for a in range(0, natom):
             # Get the atom type
-            ta = TBgeom.AtomType[a]
-            for j in range(Hindex[a], Hindex[a+1]):
+            ta = self.Job.AtomType[a]
+            for j in range(self.Hindex[a], self.Hindex[a+1]):
                 J_ph = 0.0
                 J_S = AtomData[ta]['I']
                 U = AtomData[ta]['U']
 
                 # up/up block
-                self.fock2[    j,     j] += H_pcase(    j,     j, U, J_S, J_ph, natom, norb, rho)
+                self.fock2[    j,     j] += add_H_pcase(    j,     j, U, J_S, J_ph, natom, norb, rho)
                 # up/down block
-                self.fock2[    j, h0s+j] += H_pcase(    j, h0s+j, U, J_S, J_ph, natom, norb, rho)
+                self.fock2[    j, h0s+j] += add_H_pcase(    j, h0s+j, U, J_S, J_ph, natom, norb, rho)
                 # down/up block
-                self.fock2[h0s+j,     j] += H_pcase(h0s+j,     j, U, J_S, J_ph, natom, norb, rho)
+                self.fock2[h0s+j,     j] += add_H_pcase(h0s+j,     j, U, J_S, J_ph, natom, norb, rho)
                 # down/down block
-                self.fock2[h0s+j, h0s+j] += H_pcase(h0s+j, h0s+j, U, J_S, J_ph, natom, norb, rho)
+                self.fock2[h0s+j, h0s+j] += add_H_pcase(h0s+j, h0s+j, U, J_S, J_ph, natom, norb, rho)
 
         for i in range(h0s):
             for j in range(i, h0s):
                 if abs(self.fock[i,j] - self.fock2[i,j]) > 0.000001:
-                    verboseprint(self.job.JobDef['extraverbose'], i, j,
+                    verboseprint(self.Job.Def['extraverbose'], i, j,
                                  round(self.fock[i,j].real, 4), round(self.fock2[i,j].real, 4), "|",
                                  round(self.fock[i,j].imag, 4), round(self.fock2[i,j].imag, 4))
-
+        """
 
     def slaterkoster(self, l1, l2, dr, v):
         """
@@ -300,10 +299,10 @@ class Hamiltonian:
 
         #
         # Step through all pairs of atoms
-        for a1 in range(0, TBgeom.NAtom):
-            t1 = TBgeom.AtomType[a1]  # The type of atom 1
-            for a2 in range(0, TBgeom.NAtom):
-                t2 = TBgeom.AtomType[a2]  # The type of atom 2
+        for a1 in range(0, self.Job.NAtom):
+            t1 = self.Job.AtomType[a1]  # The type of atom 1
+            for a2 in range(0, self.Job.NAtom):
+                t2 = self.Job.AtomType[a2]  # The type of atom 2
                 #
                 # If the atoms are the same, compute an onsite block, otherwise compute a hopping block
                 if a1 == a2:
@@ -312,9 +311,9 @@ class Hamiltonian:
                 else:
                     #
                     # Compute the atomic displacements
-                    dr = (TBgeom.Pos[0,a1]-TBgeom.Pos[0,a2], 
-                          TBgeom.Pos[1,a1]-TBgeom.Pos[1,a2], 
-                          TBgeom.Pos[2,a1]-TBgeom.Pos[2,a2])
+                    dr = (self.Job.Pos[0,a1]-self.Job.Pos[0,a2], 
+                          self.Job.Pos[1,a1]-self.Job.Pos[1,a2], 
+                          self.Job.Pos[2,a1]-self.Job.Pos[2,a2])
 
                     d = math.sqrt(dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2])
                     #
@@ -340,7 +339,7 @@ class Hamiltonian:
 
 
     def buildHSO(self):
-        """Add spin orbit coupling to the Hamiltonian."""
+        """Build the Hamiltonian with spin orbit coupling."""
         global AtomData, SOmatrix
 
         h0s = self.H0size
@@ -353,11 +352,11 @@ class Hamiltonian:
         self.buildH0()
         #
         # Copy H0 into the two diagonal blocks
-        self.HSO[0  :h0s,   0:h0s] = np.copy(self.H0)
-        self.HSO[h0s:h0s, h0s:h0s] = np.copy(self.H0)
+        self.HSO[0           :h0s,            0:h0s] = np.copy(self.H0)
+        self.HSO[h0s:self.HSOsize, h0s:self.HSOsize] = np.copy(self.H0)
         #
         # Add in magnetic field contribution
-        eB = self.job.JobDef['so_eB']
+        eB = self.Job.Def['so_eB']
         for i in range(0, h0s):
             self.HSO[      i,       i] += complex( eB[2],    0.0)
             self.HSO[      i, h0s + i] += complex( eB[0], -eB[1])
@@ -365,10 +364,10 @@ class Hamiltonian:
             self.HSO[h0s + i, h0s + i] += complex(-eB[2],    0.0)
         #
         # Add in the spin-orbit corrections
-        for a in range(0, TBgeom.NAtom):
-            ta = TBgeom.AtomType[a]
+        for a in range(0, self.Job.NAtom):
+            ta = self.Job.AtomType[a]
             i = 0  # Counter for shell
-            k = Hindex[a]  # Counter for orbital
+            k = self.Hindex[a]  # Counter for orbital
             for l in AtomData[ta]['l']:  # Step through each shell
                 n = 2*l+1  # Compute number of orbitals in the shell
                 self.HSO[    k:    k+n,     k:    k+n] += AtomData[ta]['so'][i]*SOmatrix[l][  0:  n,   0:  n]

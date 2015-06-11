@@ -11,7 +11,6 @@ populated by electrons.
 import numpy as np
 import math
 import TBH
-import TBgeom
 
 
 class Electronic:
@@ -20,19 +19,19 @@ class Electronic:
         """Compute the total number of electrons in the system, allocate space for occupancies"""
 
         # Save job reference as an attribute for internal use.
-        self.job = JobClass
+        self.Job = JobClass
 
         # Set up the core charges, and count the number of electrons
-        self.zcore = np.zeros(TBgeom.NAtom, dtype='double')
+        self.zcore = np.zeros(self.Job.NAtom, dtype='double')
 
-        for a in range(0, TBgeom.NAtom):
-            self.zcore[a] = TBH.AtomData[TBgeom.AtomType[a]]['NElectrons']
+        for a in range(0, self.Job.NAtom):
+            self.zcore[a] = TBH.AtomData[self.Job.AtomType[a]]['NElectrons']
         self.NElectrons = np.sum(self.zcore)
 
         #
         # Allocate memory for the level occupancies and density matrix
-        self.occ = np.zeros( self.job.Hamilton.HSOsize, dtype='double')
-        self.rho = np.zeros((self.job.Hamilton.HSOsize, self.job.Hamilton.HSOsize), dtype='complex')
+        self.occ = np.zeros( self.Job.Hamilton.HSOsize, dtype='double')
+        self.rho = np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
 
 
     def fermi(self, e, mu, kT):
@@ -54,53 +53,53 @@ class Electronic:
         This function uses binary section."""
         #
         # Find the lower bound to the chemical potential
-        mu_l = e[0]
-        while np.sum(Fermi(e, mu_l, kT)) > self.NElectrons:
+        mu_l = self.Job.e[0]
+        while np.sum(self.fermi(self.Job.e, mu_l, kT)) > self.NElectrons:
             mu_l -= 10.0*kT
         #
         # Find the upper bound to the chemical potential
-        mu_u = e[-1]
-        while np.sum(Fermi(e, mu_u, kT)) < self.NElectrons:
+        mu_u = self.Job.e[-1]
+        while np.sum(self.fermi(self.Job.e, mu_u, kT)) < self.NElectrons:
             mu_u += 10.0*kT
         #
         # Find the correct chemical potential using binary section
         mu = 0.5*(mu_l + mu_u)
-        n = np.sum(self.fermi(e, mu, kT))
+        n = np.sum(self.fermi(self.Job.e, mu, kT))
         while math.fabs(self.NElectrons-n) > n_tol*self.NElectrons:
             if n > self.NElectrons:
                 mu_u = mu
             elif n < self.NElectrons:
                 mu_l = mu
             mu = 0.5*(mu_l + mu_u)
-            n = np.sum(self.fermi(e, mu, kT))
-        self.occ = self.fermi(e, mu, kT)
+            n = np.sum(self.fermi(self.Job.e, mu, kT))
+        self.occ = self.fermi(self.Job.e, mu, kT)
 
 
-    def densitymatrix(self, psi):
+    def densitymatrix(self):
         """Build the density matrix."""
-        self.rho = np.matrix(psi)*np.diag(self.occ)*np.matrix(psi).H
+        self.rho = np.matrix(self.Job.psi)*np.diag(self.occ)*np.matrix(self.Job.psi).H
 
 
     def chargepersite(self):
         """Compute the net charge on each site."""
         norb = np.diag(self.rho)
-        qsite = np.zeros(TBgeom.NAtom, dtype='double')
-        jH = self.job.Hamilton
+        qsite = np.zeros(self.Job.NAtom, dtype='double')
+        jH = self.Job.Hamilton
 
-        for a in range(0, TBgeom.NAtom):
+        for a in range(0, self.Job.NAtom):
             qsite[a] = (self.zcore[a] -
                         (np.sum(norb[jH.Hindex[a]:jH.Hindex[a+1]].real) +
-                        np.sum(norb[jH.H0size+jH.Hindex[a]:jH.H0size+jH.Hindex[a+1]].real)))
+                         np.sum(norb[jH.H0size+jH.Hindex[a]:jH.H0size+jH.Hindex[a+1]].real)))
         return qsite
 
 
     def spinpersite(self):
         """Compute the net spin on each site."""
-        ssite = np.zeros((3,TBgeom.NAtom), dtype='double')
-        jH = self.job.Hamilton
+        ssite = np.zeros((3, self.Job.NAtom), dtype='double')
+        jH = self.Job.Hamilton
 
-        for a in range(0,TBgeom.NAtom):
-            srho = np.zeros((2,2), dtype='complex')
+        for a in range(0, self.Job.NAtom):
+            srho = np.zeros((2, 2), dtype='complex')
             for j in range(jH.Hindex[a], jH.Hindex[a+1]):
                 #
                 # Sum over orbitals on one site to produce a 2x2 spin density matrix for the site

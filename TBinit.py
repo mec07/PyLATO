@@ -19,7 +19,7 @@ class InitJob:
         """Initialise the job."""
         # Set up variables that define the job in a dictionary
         with open(jobfile,'r') as inputfile:
-            self.JobDef = commentjson.loads(inputfile.read())
+            self.Def = commentjson.loads(inputfile.read())
             
         # Initialise the geometry
         TBgeom.init(self)

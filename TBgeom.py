@@ -12,11 +12,10 @@ import TBIO
 
 
 def init(JobClass):
-	"""initialise the geometry."""
-	global NAtom, Pos, AtomType
+	"""initialise the geometry."""	
 	#
 	# Read in the geometry from file
-	NAtom, Pos, AtomType = TBIO.ReadGeom(JobClass.JobDef['gy_file'])
+	NAtom, Pos, AtomType = TBIO.ReadGeom(JobClass.Def['gy_file'])
 	#
 	# Write out the geometry
 	TBIO.WriteXYZ(NAtom, 'Hello', AtomType, Pos)
