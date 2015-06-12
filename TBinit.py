@@ -15,12 +15,17 @@ import commentjson
 
 class InitJob:
     """Sets up the job, builds the initial geometry, hamiltonian, and electronic structure."""
-    def __init__(self, jobfile):
+    def __init__(self, jobfile, atomicfile):
         """Initialise the job."""
         # Set up variables that define the job in a dictionary
         with open(jobfile,'r') as inputfile:
             self.Def = commentjson.loads(inputfile.read())
-            
+
+        with open(atomicfile,'r') as afile:
+            self.Atomic = commentjson.loads(afile.read())
+        print "self.Atomic = ", self.Atomic
+        # print "self.Atomic[0] = ", self.Atomic[0]
+        print "self.Atomic['0'] = ", self.Atomic['0']
         # Initialise the geometry
         TBgeom.init(self)
         #

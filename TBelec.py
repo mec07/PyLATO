@@ -25,7 +25,7 @@ class Electronic:
         self.zcore = np.zeros(self.Job.NAtom, dtype='double')
 
         for a in range(0, self.Job.NAtom):
-            self.zcore[a] = TBH.AtomData[self.Job.AtomType[a]]['NElectrons']
+            self.zcore[a] = self.Job.Atomic[str(self.Job.AtomType[a])]['NElectrons']
         self.NElectrons = np.sum(self.zcore)
 
         #

@@ -23,7 +23,7 @@ import sys
 def main():
     """Initialise the program."""
 
-    Job = TBinit.InitJob("JobDef.json")
+    Job = TBinit.InitJob("JobDef.json","AtomicData.json")
     #
     # Build the non-self-consistent Hamiltonian (incl hopping and spin-orbit)
     Job.Hamilton.buildHSO()

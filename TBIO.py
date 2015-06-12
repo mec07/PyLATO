@@ -43,7 +43,7 @@ def PsiSpin(JobClass):
         verboseprint(JobClass.Def['verbose'],'{0:4d}  {1:5.2f}  {2:5.2f}  {3:5.2f}'.format(n, spin[0], spin[1], spin[2]))
 
 
-def WriteXYZ(NAtom, Comment, AtomType, Pos):
+def WriteXYZ(JobClass, NAtom, Comment, AtomType, Pos):
     """
     Writes coordinates out to an XYZ file.
 
@@ -59,7 +59,7 @@ def WriteXYZ(NAtom, Comment, AtomType, Pos):
     f_xyz.write('{0:d}\n'.format(NAtom))
     f_xyz.write('{0}\n'.format(Comment))
     for i in range(0, NAtom):
-        f_xyz.write('{0} {1:11.6f} {2:11.6f} {3:11.6f}\n'.format(TBH.AtomData[AtomType[i]]['ChemSymb'], Pos[0,i], Pos[1,i], Pos[2,i]))
+        f_xyz.write('{0} {1:11.6f} {2:11.6f} {3:11.6f}\n'.format(JobClass.Atomic[str(AtomType[i])]['ChemSymb'], Pos[0,i], Pos[1,i], Pos[2,i]))
     f_xyz.close()
 
 
