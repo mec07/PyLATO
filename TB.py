@@ -53,7 +53,7 @@ def main():
         Job.e, Job.psi = np.linalg.eigh(Job.Hamilton.fock)
         #
         # Occupy the orbitals according to the Fermi distribution
-        Job.Electron.occupy(Job.e, Job.Def['el_kT'], 1.0e-15)
+        Job.Electron.occupy(Job.e, Job.Def['el_kT'], Job.Def['mu_tol'], Job.Def['mu_max_loops'])
         #
         # Build the density matrix
         Job.Electron.densitymatrix()

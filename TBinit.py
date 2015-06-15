@@ -23,9 +23,6 @@ class InitJob:
 
         with open(atomicfile,'r') as afile:
             self.Atomic = commentjson.loads(afile.read())
-        print "self.Atomic = ", self.Atomic
-        # print "self.Atomic[0] = ", self.Atomic[0]
-        print "self.Atomic['0'] = ", self.Atomic['0']
         # Initialise the geometry
         TBgeom.init(self)
         #

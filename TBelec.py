@@ -11,7 +11,7 @@ populated by electrons.
 import numpy as np
 import math
 import TBH
-
+import sys
 
 class Electronic:
     """Initialise and build the density matrix."""
@@ -48,7 +48,7 @@ class Electronic:
         return f
 
 
-    def occupy(self, s, kT, n_tol):
+    def occupy(self, s, kT, n_tol, max_loops):
         """Populate the eigenstates using the Fermi function.
         This function uses binary section."""
         #
@@ -65,7 +65,12 @@ class Electronic:
         # Find the correct chemical potential using binary section
         mu = 0.5*(mu_l + mu_u)
         n = np.sum(self.fermi(self.Job.e, mu, kT))
+        count = 0
         while math.fabs(self.NElectrons-n) > n_tol*self.NElectrons:
+            count+=1
+            if count>max_loops:
+                print "ERROR: The chemical potential could not be found. Exiting."
+                sys.exit()
             if n > self.NElectrons:
                 mu_u = mu
             elif n < self.NElectrons:

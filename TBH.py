@@ -125,64 +125,81 @@ class Hamiltonian:
         self.fock = np.copy(self.HSO)
         h0s = self.H0size
 
-        #
-        # Now add in diagonal corrections for charge and spin
-        des = np.zeros((2, 2), dtype='complex')
+        if self.Job.Def['Hamiltonian'] == "standard":
+            # Now add in diagonal corrections for charge and spin
+            des = np.zeros((2, 2), dtype='complex')
+            
+            for a in range(0, self.Job.NAtom):
+                #
+                # Get the atom type
+                ta = self.Job.AtomType[a]
+                #
+                # Onsite energy shift is U*q
+                deq = complex(-self.q[a] * self.Job.Atomic[str(ta)]['U'], 0.0)
+                #
+                # Stoner onsite energy shifts are present for all four spins combinations
+                des[0, 0] = -0.5*self.Job.Atomic[str(ta)]['I'] * complex( self.s[2, a],           0.0)
+                des[0, 1] = -0.5*self.Job.Atomic[str(ta)]['I'] * complex( self.s[0, a], -self.s[1, a])
+                des[1, 0] = -0.5*self.Job.Atomic[str(ta)]['I'] * complex( self.s[0, a],  self.s[1, a])
+                des[1, 1] = -0.5*self.Job.Atomic[str(ta)]['I'] * complex(-self.s[2, a],           0.0)
+                #
+                # Step through each orbital on the atom
+                for j in range(self.Hindex[a], self.Hindex[a+1]):
+                    self.fock[    j,     j] += deq + des[0, 0]  # up/up block
+                    self.fock[    j, h0s+j] +=       des[0, 1]  # up/down block
+                    self.fock[h0s+j,     j] +=       des[1, 0]  # down/up block
+                    self.fock[h0s+j, h0s+j] += deq + des[1, 1]  # down/down block
+
+        elif self.Job.Def['Hamiltonian'] == "vectorS":
+            norb = [self.Job.Atomic[str(self.Job.AtomType[a])]['NOrbitals'] for a in range(self.Job.NAtom)]
+            natom = self.Job.NAtom
+            rho = self.Job.Electron.rho
+            J_ph = 0.0
+
+            for a in range(0, natom):
+                # Get the atom type
+                ta = self.Job.AtomType[a]
+                for j in range(self.Hindex[a], self.Hindex[a+1]):
+                    J_S = self.Job.Atomic[str(ta)]['I']
+                    U = self.Job.Atomic[str(ta)]['U']
+
+                    # up/up block
+                    self.fock[    j,     j] += self.add_H_pcase(    j,     j, U, J_S, J_ph, natom, norb, rho)
+                    # up/down block
+                    self.fock[    j, h0s+j] += self.add_H_pcase(    j, h0s+j, U, J_S, J_ph, natom, norb, rho)
+                    # down/up block
+                    self.fock[h0s+j,     j] += self.add_H_pcase(h0s+j,     j, U, J_S, J_ph, natom, norb, rho)
+                    # down/down block
+                    self.fock[h0s+j, h0s+j] += self.add_H_pcase(h0s+j, h0s+j, U, J_S, J_ph, natom, norb, rho)
+
+        elif self.Job.Def['Hamiltonian'] == "pcase":
+            norb = [self.Job.Atomic[str(self.Job.AtomType[a])]['NOrbitals'] for a in range(self.Job.NAtom)]
+            natom = self.Job.NAtom
+            rho = self.Job.Electron.rho
+
+            for a in range(0, natom):
+                # Get the atom type
+                ta = self.Job.AtomType[a]
+                for j in range(self.Hindex[a], self.Hindex[a+1]):
+                    J = self.Job.Atomic[str(ta)]['I']
+                    U = self.Job.Atomic[str(ta)]['U']
+
+                    # up/up block
+                    self.fock[    j,     j] += self.add_H_pcase(    j,     j, U, J, J, natom, norb, rho)
+                    # up/down block
+                    self.fock[    j, h0s+j] += self.add_H_pcase(    j, h0s+j, U, J, J, natom, norb, rho)
+                    # down/up block
+                    self.fock[h0s+j,     j] += self.add_H_pcase(h0s+j,     j, U, J, J, natom, norb, rho)
+                    # down/down block
+                    self.fock[h0s+j, h0s+j] += self.add_H_pcase(h0s+j, h0s+j, U, J, J, natom, norb, rho)
+
+        # for i in range(h0s):
+        #     for j in range(i, h0s):
+        #         if abs(self.fock[i,j] - self.fock[i,j]) > 0.000001:
+        #             verboseprint(self.Job.Def['extraverbose'], i, j,
+        #                          round(self.fock[i,j].real, 4), round(self.fock2[i,j].real, 4), "|",
+        #                          round(self.fock[i,j].imag, 4), round(self.fock2[i,j].imag, 4))
         
-        for a in range(0, self.Job.NAtom):
-            #
-            # Get the atom type
-            ta = self.Job.AtomType[a]
-            #
-            # Onsite energy shift is U*q
-            deq = complex(-self.q[a] * self.Job.Atomic[str(ta)]['U'], 0.0)
-            #
-            # Stoner onsite energy shifts are present for all four spins combinations
-            des[0, 0] = -0.5*self.Job.Atomic[str(ta)]['I'] * complex( self.s[2, a],           0.0)
-            des[0, 1] = -0.5*self.Job.Atomic[str(ta)]['I'] * complex( self.s[0, a], -self.s[1, a])
-            des[1, 0] = -0.5*self.Job.Atomic[str(ta)]['I'] * complex( self.s[0, a],  self.s[1, a])
-            des[1, 1] = -0.5*self.Job.Atomic[str(ta)]['I'] * complex(-self.s[2, a],           0.0)
-            #
-            # Step through each orbital on the atom
-            for j in range(self.Hindex[a], self.Hindex[a+1]):
-                self.fock[    j,     j] += deq + des[0, 0]  # up/up block
-                self.fock[    j, h0s+j] +=       des[0, 1]  # up/down block
-                self.fock[h0s+j,     j] +=       des[1, 0]  # down/up block
-                self.fock[h0s+j, h0s+j] += deq + des[1, 1]  # down/down block
-
-        #
-        # !!!!!DEBUGGING PURPOSES!!!!!!
-        #
-        """
-        self.fock2 = np.copy(self.HSO)
-        norb = [self.Job.Atomic[str(self.Job.AtomType[a])]['NOrbitals'] for a in range(self.Job.NAtom)]
-        natom = self.Job.NAtom
-        rho = self.Job.Electron.rho
-
-        for a in range(0, natom):
-            # Get the atom type
-            ta = self.Job.AtomType[a]
-            for j in range(self.Hindex[a], self.Hindex[a+1]):
-                J_ph = 0.0
-                J_S = self.Job.Atomic[str(ta)]['I']
-                U = self.Job.Atomic[str(ta)]['U']
-
-                # up/up block
-                self.fock2[    j,     j] += add_H_pcase(    j,     j, U, J_S, J_ph, natom, norb, rho)
-                # up/down block
-                self.fock2[    j, h0s+j] += add_H_pcase(    j, h0s+j, U, J_S, J_ph, natom, norb, rho)
-                # down/up block
-                self.fock2[h0s+j,     j] += add_H_pcase(h0s+j,     j, U, J_S, J_ph, natom, norb, rho)
-                # down/down block
-                self.fock2[h0s+j, h0s+j] += add_H_pcase(h0s+j, h0s+j, U, J_S, J_ph, natom, norb, rho)
-
-        for i in range(h0s):
-            for j in range(i, h0s):
-                if abs(self.fock[i,j] - self.fock2[i,j]) > 0.000001:
-                    verboseprint(self.Job.Def['extraverbose'], i, j,
-                                 round(self.fock[i,j].real, 4), round(self.fock2[i,j].real, 4), "|",
-                                 round(self.fock[i,j].imag, 4), round(self.fock2[i,j].imag, 4))
-        """
 
     def slaterkoster(self, l1, l2, dr, v):
         """
