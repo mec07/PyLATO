@@ -59,7 +59,7 @@ def WriteXYZ(JobClass, NAtom, Comment, AtomType, Pos):
     f_xyz.write('{0:d}\n'.format(NAtom))
     f_xyz.write('{0}\n'.format(Comment))
     for i in range(0, NAtom):
-        f_xyz.write('{0} {1:11.6f} {2:11.6f} {3:11.6f}\n'.format(JobClass.Atomic[str(AtomType[i])]['ChemSymb'], Pos[0,i], Pos[1,i], Pos[2,i]))
+        f_xyz.write('{0} {1:11.6f} {2:11.6f} {3:11.6f}\n'.format(JobClass.Atomic[str(AtomType[i])]['ChemSymb'], Pos[i,0], Pos[i,1], Pos[i,2]))
     f_xyz.close()
 
 
@@ -87,14 +87,14 @@ def ReadGeom(FileName):
     NAtom = int(f_geom.readline())
     #
     # Allocate space for the atom data
-    Pos = np.zeros((3,NAtom), dtype='double')
+    Pos = np.zeros((NAtom, 3), dtype='double')
     AtomType = np.zeros(NAtom, dtype='int')    
     #
     # For each atom read in the data
     for i in range(0, NAtom):
         in_line = f_geom.readline()
         in_line = in_line.strip()
-        AtomType[i], Pos[0,i], Pos[1,i], Pos[2,i] = in_line.split(',')
+        AtomType[i], Pos[i, 0], Pos[i, 1], Pos[i, 2] = in_line.split(',')
     #
     # Close the file
     f_geom.close()

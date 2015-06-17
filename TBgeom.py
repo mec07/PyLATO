@@ -9,6 +9,7 @@ This module manages the geometry of the system (atomic coordinates etc)
 # Import modules
 
 import TBIO
+import numpy as np
 
 
 def init(JobClass):
@@ -20,7 +21,10 @@ def init(JobClass):
 	# Write out the geometry
 	TBIO.WriteXYZ(JobClass, NAtom, 'Hello', AtomType, Pos)
 	#
+
 	# Transfer geometry to the JobClass
 	JobClass.NAtom    = NAtom
 	JobClass.Pos      = Pos
 	JobClass.AtomType = AtomType
+
+	print JobClass.Pos

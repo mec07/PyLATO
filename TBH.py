@@ -300,38 +300,36 @@ class Hamiltonian:
         # Clear the memory for the Hamiltonian matrix
         self.H0 = np.zeros([self.H0size, self.H0size], dtype='double')
 
+
         #
         # Step through all pairs of atoms
         for a1 in range(0, self.Job.NAtom):
-            t1 = self.Job.AtomType[a1]  # The type of atom 1
+            type1 = self.Job.AtomType[a1]  # The type of atom 1
             for a2 in range(0, self.Job.NAtom):
-                t2 = self.Job.AtomType[a2]  # The type of atom 2
+                type2 = self.Job.AtomType[a2]  # The type of atom 2
                 #
                 # If the atoms are the same, compute an onsite block, otherwise compute a hopping block
                 if a1 == a2:
-                    self.H0[self.Hindex[a1]:self.Hindex[a1+1], 
-                            self.Hindex[a2]:self.Hindex[a2+1]] = self.Job.Atomic[str(t1)]['e']
+                    self.H0[self.Hindex[a1]:self.Hindex[a1+1],
+                            self.Hindex[a2]:self.Hindex[a2+1]] = self.Job.Atomic[str(type1)]['e']
                 else:
                     #
                     # Compute the atomic displacements
-                    dr = (self.Job.Pos[0,a1]-self.Job.Pos[0,a2], 
-                          self.Job.Pos[1,a1]-self.Job.Pos[1,a2], 
-                          self.Job.Pos[2,a1]-self.Job.Pos[2,a2])
-
-                    d = math.sqrt(dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2])
+                    dr = self.Job.Pos[a1] - self.Job.Pos[a2]
+                    d = np.sqrt(dr.dot(dr))
                     #
                     # Build the set of hopping integrals
-                    v, v_bgn, v_end = BondData[t1][t2]['model'](d, BondData[t1][t2])
+                    v, v_bgn, v_end = BondData[type1][type2]['model'](d, BondData[type1][type2])
                     #
                     # Build the block one pair of shells at a time
                     i1 = 0  # Counter for shell
                     k1 = self.Hindex[a1]  # Counter for orbital
-                    for l1 in self.Job.Atomic[str(t1)]['l']:  # Step through each shell
+                    for l1 in self.Job.Atomic[str(type1)]['l']:  # Step through each shell
                         n1 = 2*l1+1  # Compute number of orbitals in the shell
                         #
                         i2 = 0  # Counter for shell
                         k2 = self.Hindex[a2]  # Counter for orbital
-                        for l2 in self.Job.Atomic[str(t2)]['l']:  # Step through each shell
+                        for l2 in self.Job.Atomic[str(type2)]['l']:  # Step through each shell
                             n2 = 2*l2+1  # Compute number of orbitals in the shell
                             self.H0[k1:k1+n1, k2:k2+n2] = self.slaterkoster(l1, l2, dr, v[v_bgn[i1,i2]:v_end[i1,i2]])
                             i2 += 1  # Advance to the next shell
