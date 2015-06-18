@@ -10,6 +10,7 @@ This module manages the geometry of the system (atomic coordinates etc)
 
 import TBIO
 import numpy as np
+from Verbosity import *
 
 
 def init(JobClass):
@@ -26,5 +27,7 @@ def init(JobClass):
 	JobClass.NAtom    = NAtom
 	JobClass.Pos      = Pos
 	JobClass.AtomType = AtomType
+	JobClass.NOrb     = [JobClass.Atomic[str(JobClass.AtomType[a])]['NOrbitals'] for a in range(JobClass.NAtom)]
 
-	print JobClass.Pos
+	verboseprint(JobClass.Def['verbose'],"Atom positions:")
+	verboseprint(JobClass.Def['verbose'],JobClass.Pos)

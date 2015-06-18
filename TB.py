@@ -57,26 +57,39 @@ def main():
         #
         # Build the density matrix
         Job.Electron.densitymatrix()
-        #
-        # Compute the net charge on each site
-        q = Job.Electron.chargepersite()
-        #
-        # Compute the net spin on each site
-        s = Job.Electron.spinpersite()
-        #
-        # Compute the error in the charges, and update the charges and spin
-        SCFerror = math.sqrt(np.vdot(q-Job.Hamilton.q, q-Job.Hamilton.q) / Job.NAtom)
-        verboseprint(Job.Def['verbose'], 'SCF loop = ', ii+1, '; SCF error = ', SCFerror)
-        # Check if the SCF error is still larger than the tolerance
-        if SCFerror > Job.Def['scf_tol']:
-            #
-            # Update the input charges and spins
-            Job.Hamilton.q = Job.Hamilton.q + Job.Def['scf_mix'] * (q-Job.Hamilton.q)
-            Job.Hamilton.s = Job.Hamilton.s + Job.Def['scf_mix'] * (s-Job.Hamilton.s)
-        # If SCF error is smaller than or equal to the tolerance then leave loop
+        if Job.Def['Hamiltonian'] in ('pcase','dcase','vectorS'):
+            # Compare the difference between the new and the old on-site density matrix elements
+            SCFerror = Job.Electron.SCFerror()
+            verboseprint(Job.Def['verbose'], 'SCF loop = ', ii+1, '; SCF error = ', SCFerror)
+            # Check if the SCF error is still larger than the tolerance
+            if SCFerror > Job.Def['scf_tol']:
+                # Update the density matrix by Pulay mixing
+                Job.Electron.pulay()
+            else:
+                SCFflag = True
+                break
+
         else:
-            SCFflag = True
-            break
+            #
+            # Compute the net charge on each site
+            q = Job.Electron.chargepersite()
+            #
+            # Compute the net spin on each site
+            s = Job.Electron.spinpersite()
+            #
+            # Compute the error in the charges, and update the charges and spin
+            SCFerror = math.sqrt(np.vdot(q-Job.Hamilton.q, q-Job.Hamilton.q) / Job.NAtom)
+            verboseprint(Job.Def['verbose'], 'SCF loop = ', ii+1, '; SCF error = ', SCFerror)
+            # Check if the SCF error is still larger than the tolerance
+            if SCFerror > Job.Def['scf_tol']:
+                #
+                # Update the input charges and spins
+                Job.Hamilton.q = Job.Hamilton.q + Job.Def['scf_mix'] * (q-Job.Hamilton.q)
+                Job.Hamilton.s = Job.Hamilton.s + Job.Def['scf_mix'] * (s-Job.Hamilton.s)
+            # If SCF error is smaller than or equal to the tolerance then leave loop
+            else:
+                SCFflag = True
+                break
 
     # if self-consistency is required then print out number of SCF loops taken
     if Job.Def['scf_on'] == 1:
@@ -89,8 +102,9 @@ def main():
 
     verboseprint(Job.Def['verbose'], "Energy eigenvalues: ")
     verboseprint(Job.Def['verbose'], Job.e)
-    verboseprint(Job.Def['extraverbose'], Job.Hamilton.q)
-    verboseprint(Job.Def['extraverbose'], (Job.Hamilton.s).T)
+    if Job.Def['Hamiltonian'] == "standard":
+        verboseprint(Job.Def['extraverbose'], Job.Hamilton.q)
+        verboseprint(Job.Def['extraverbose'], (Job.Hamilton.s).T)
     #
     # Write out the spins for each orbital
     TBIO.PsiSpin(Job)

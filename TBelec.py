@@ -32,6 +32,9 @@ class Electronic:
         # Allocate memory for the level occupancies and density matrix
         self.occ = np.zeros( self.Job.Hamilton.HSOsize, dtype='double')
         self.rho = np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
+        # fro the pcase, dcase and vector Stoner Hamiltonians we need two density matrices
+        if self.Job.Def['Hamiltonian'] in ('pcase','dcase','vectorS'):
+            self.rhotot = np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
 
 
     def fermi(self, e, mu, kT):
@@ -83,6 +86,32 @@ class Electronic:
     def densitymatrix(self):
         """Build the density matrix."""
         self.rho = np.matrix(self.Job.psi)*np.diag(self.occ)*np.matrix(self.Job.psi).H
+
+    def SCFerror(self):
+        """
+        Calculate the self-consistent field error. We do this by comparing the
+        on-site elements of the new density matrix (self.rho) with the old 
+        density matrix, self.rhotot. It is normalised by dividing by the total
+        number of electrons.
+
+        """
+        return sum(abs(
+                self.rho[TBH.map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb),TBH.map_atomic_to_index(atom2, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)]
+           - self.rhotot[TBH.map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb),TBH.map_atomic_to_index(atom2, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)])
+                for atom1 in range(self.Job.NAtom) for orbital1 in range(self.Job.NOrb[atom1]) for spin1 in range(2)
+                for atom2 in range(atom1,self.Job.NAtom) for orbital2 in range(orbital1,self.Job.NOrb[atom2]) for spin2 in range(spin1,2)
+                )/self.Job.Electron.NElectrons
+
+    def pulay(self):
+        """
+        Mix the new and the old density matrix by Pulay mixing.
+        The form of this mixing is 
+            rho_out = (1-alpha) rho_old + alpha rho_new
+        for which, using our notation, rho_new is self.rho, rho_old is
+        self.rhotot and we overwrite self.rhotot to make rho_out.
+        """
+        alpha = self.Job.Def['alpha']
+        self.rhotot = (1-alpha)*self.rhotot + alpha*self.rho
 
 
     def chargepersite(self):
