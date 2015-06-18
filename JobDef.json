@@ -20,6 +20,8 @@
     "scf_mix": 0.001,
     "scf_tol": 1.0e-10,
     "scf_max_loops": 500,
+    // Pulay mixing alpha
+    "alpha" :0.1,
 
     // number of bins for the density of states
     "dos_nbin": 20,

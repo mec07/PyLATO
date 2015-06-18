@@ -84,9 +84,9 @@ class Hamiltonian:
                     self.fock[h0s+j, h0s+j] += deq + des[1, 1]  # down/down block
 
         elif self.Job.Def['Hamiltonian'] == "vectorS":
-            norb = [self.Job.Atomic[str(self.Job.AtomType[a])]['NOrbitals'] for a in range(self.Job.NAtom)]
+            norb = self.Job.NOrb
             natom = self.Job.NAtom
-            rho = self.Job.Electron.rho
+            rho = self.Job.Electron.rhotot
             J_ph = 0.0
 
             for a in range(0, natom):
@@ -106,9 +106,9 @@ class Hamiltonian:
                     self.fock[h0s+j, h0s+j] += self.add_H_pcase(h0s+j, h0s+j, U, J_S, J_ph, natom, norb, rho)
 
         elif self.Job.Def['Hamiltonian'] == "pcase":
-            norb = [self.Job.Atomic[str(self.Job.AtomType[a])]['NOrbitals'] for a in range(self.Job.NAtom)]
+            norb = self.Job.NOrb
             natom = self.Job.NAtom
-            rho = self.Job.Electron.rho
+            rho = self.Job.Electron.rhotot
 
             for a in range(0, natom):
                 # Get the atom type
