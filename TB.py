@@ -2,7 +2,7 @@
 """
 Created on Sunday April 12, 2015
 
-@author: Andrew Horsfield and Marc Coury
+@author: Andrew Horsfield, Marc Coury and Max Boleininger
 
 This is the main program for computing the eigenvalues and eigenfunctions for a
 tight binding model of a helical molecule that includes spin-orbit coupling

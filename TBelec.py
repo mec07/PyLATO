@@ -1,7 +1,7 @@
 """
 Created on Thursday 16 April 2015
 
-@author: Andrew Horsfield
+@author: Andrew Horsfield, Marc Coury and Max Boleininger
 
 This module contains functions that are needed once the molecular orbitals are
 populated by electrons.
