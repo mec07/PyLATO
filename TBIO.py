@@ -11,7 +11,6 @@ import TBH
 import numpy as np
 from Verbosity import *
 
-
 def DOS(e, nbin):
     """Produce a total density of states (NEEDS TO BE UPDATED TO PLOT THE DOS)"""
     hist, bin_edges = np.histogram(e, nbin)
@@ -63,7 +62,7 @@ def WriteXYZ(JobClass, NAtom, Comment, AtomType, Pos):
     f_xyz.close()
 
 
-def ReadGeom(FileName):
+def ReadGeom(filename):
     """
     This function reads in the atomic geometry.
 
@@ -81,14 +80,14 @@ def ReadGeom(FileName):
     """
 
     # Open the file
-    f_geom = open(FileName, 'r')
+    f_geom = open(filename, 'r')
     #
     # Read in the number of atoms
     NAtom = int(f_geom.readline())
     #
     # Allocate space for the atom data
     Pos = np.zeros((NAtom, 3), dtype='double')
-    AtomType = np.zeros(NAtom, dtype='int')    
+    AtomType = np.zeros(NAtom, dtype='int')
     #
     # For each atom read in the data
     for i in range(0, NAtom):

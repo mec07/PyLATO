@@ -1,0 +1,25 @@
+{   
+    // Carbon-Carbon hamiltonian model parameters
+    "hamiltonian": [
+        [
+            {
+            "kss": 1.0,  "ksp": 1.0, "kps": 1.0, "kpp": 1.0, "r0": 1.0,
+            "vsss": 0.0, "vsps": 0.0, "vpss": 0.0, "vpps": -1.0, "vppp": 0.5
+            },
+            {
+            "kss": 1.0,  "ksp": 1.0, "kps": 1.0, "kpp": 1.0, "r0": 1.0,
+            "vsss": 0.0, "vsps": 0.0, "vpss": 0.0, "vpps": -1.0, "vppp": 0.5
+            }
+        ],
+        [
+            {
+            "kss": 1.0,  "ksp": 1.0, "kps": 1.0, "kpp": 1.0, "r0": 1.0,
+            "vsss": 0.0, "vsps": 0.0, "vpss": 0.0, "vpps": -1.0, "vppp": 0.5
+            },
+            {
+            "kss": 1.0,  "ksp": 1.0, "kps": 1.0, "kpp": 1.0, "r0": 1.0,
+            "vsss": 0.0, "vsps": 0.0, "vpss": 0.0, "vpps": -1.0, "vppp": 0.5
+            }
+        ]
+    ]
+}

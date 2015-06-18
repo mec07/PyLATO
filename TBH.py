@@ -12,68 +12,6 @@ import numpy as np
 import math
 from Verbosity import *
 
-
-# Functions used to evauate tight binding models
-def model01(r, coeffs):
-    """This is a simple exponential model for an sp system."""
-
-    # Compute the hopping integrals for the reference geometry
-    v = np.zeros(5, dtype='double')
-    v[0] = coeffs['vsss']*math.exp(-coeffs['kss']*(r-coeffs['r0']))
-    v[1] = coeffs['vsps']*math.exp(-coeffs['ksp']*(r-coeffs['r0']))
-    v[2] = coeffs['vpss']*math.exp(-coeffs['kps']*(r-coeffs['r0']))
-    v[3] = coeffs['vpps']*math.exp(-coeffs['kpp']*(r-coeffs['r0']))
-    v[4] = coeffs['vppp']*math.exp(-coeffs['kpp']*(r-coeffs['r0']))
-    #
-    # Generate pair of indices for each pair of shells, showing which values
-    #     of v to use
-    v_bgn = np.zeros((2, 2), dtype='double')
-    v_end = np.zeros((2, 2), dtype='double')
-    #
-    # ss
-    v_bgn[0, 0] = 0
-    v_end[0, 0] = 1
-    #
-    # sp
-    v_bgn[0, 1] = 1
-    v_end[0, 1] = 2
-    #
-    # ps
-    v_bgn[1, 0] = 2
-    v_end[1, 0] = 3
-    #
-    # pp
-    v_bgn[1, 1] = 3
-    v_end[1, 1] = 5
-    #
-    # Return integrals and indices
-    return v, v_bgn, v_end
-#
-# Atom data
-# AtomData = [
-    
-# ]
-#
-# Bond data
-BondData = [
-    [
-        {'model': model01,
-            'kss': 1.0,  'ksp': 1.0, 'kps': 1.0, 'kpp': 1.0, 'r0': 1.0,
-            'vsss': 0.0, 'vsps': 0.0, 'vpss': 0.0, 'vpps': -1.0, 'vppp': 0.5},
-        {'model': model01,
-            'kss': 1.0,  'ksp': 1.0, 'kps': 1.0, 'kpp': 1.0, 'r0': 1.0,
-            'vsss': 0.0, 'vsps': 0.0, 'vpss': 0.0, 'vpps': -1.0, 'vppp': 0.5}
-    ],
-    [
-        {'model': model01,
-            'kss': 1.0,  'ksp': 1.0, 'kps': 1.0, 'kpp': 1.0, 'r0': 1.0,
-            'vsss': 0.0, 'vsps': 0.0, 'vpss': 0.0, 'vpps': -1.0, 'vppp': 0.5},
-        {'model': model01,
-            'kss': 1.0,  'ksp': 1.0, 'kps': 1.0, 'kpp': 1.0, 'r0': 1.0,
-            'vsss': 0.0, 'vsps': 0.0, 'vpss': 0.0, 'vpps': -1.0, 'vppp': 0.5}
-    ]
-]
-#
 # Spin orbit data
 SOmatrix = {0: np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0)],
                          [complex( 0.0, 0.0), complex( 0.0, 0.0)]]),
@@ -83,7 +21,6 @@ SOmatrix = {0: np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0)],
                          [complex( 0.0, 0.0), complex( 1.0, 0.0), complex( 0.0, 1.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
                          [complex(-1.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 1.0)],
                          [complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 0.0, 0.0)]])}
-
 
 class Hamiltonian:
     """Initialise and build the hamiltonian."""
@@ -117,10 +54,6 @@ class Hamiltonian:
     def buildfock(self):
         """Build the Fock matrix by adding charge and spin terms to the Hamiltonian."""
         #
-        # global Fock, HSO, H0size, Hindex
-        # global AtomData
-        # global q, s
-        #
         # Copy the Hamiltonian, complete with spin-orbit terms, to the Fock matrix
         self.fock = np.copy(self.HSO)
         h0s = self.H0size
@@ -138,10 +71,10 @@ class Hamiltonian:
                 deq = complex(-self.q[a] * self.Job.Atomic[str(ta)]['U'], 0.0)
                 #
                 # Stoner onsite energy shifts are present for all four spins combinations
-                des[0, 0] = -0.5*self.Job.Atomic[str(ta)]['I'] * complex( self.s[2, a],           0.0)
-                des[0, 1] = -0.5*self.Job.Atomic[str(ta)]['I'] * complex( self.s[0, a], -self.s[1, a])
-                des[1, 0] = -0.5*self.Job.Atomic[str(ta)]['I'] * complex( self.s[0, a],  self.s[1, a])
-                des[1, 1] = -0.5*self.Job.Atomic[str(ta)]['I'] * complex(-self.s[2, a],           0.0)
+                des[0, 0] = -0.5 * self.Job.Atomic[str(ta)]['I'] * complex( self.s[2, a],           0.0)
+                des[0, 1] = -0.5 * self.Job.Atomic[str(ta)]['I'] * complex( self.s[0, a], -self.s[1, a])
+                des[1, 0] = -0.5 * self.Job.Atomic[str(ta)]['I'] * complex( self.s[0, a],  self.s[1, a])
+                des[1, 1] = -0.5 * self.Job.Atomic[str(ta)]['I'] * complex(-self.s[2, a],           0.0)
                 #
                 # Step through each orbital on the atom
                 for j in range(self.Hindex[a], self.Hindex[a+1]):
@@ -294,12 +227,10 @@ class Hamiltonian:
         coefficients associated with the model. The block of the Hamiltonian
         matrix is built using the integrals from the model and Slater-Koster tables.
         """
-        global BondData
-        # global AtomData
         #
         # Clear the memory for the Hamiltonian matrix
-        self.H0 = np.zeros([self.H0size, self.H0size], dtype='double')
-
+        self.H0.fill(0.0)
+        #self.H0 = np.zeros([self.H0size, self.H0size], dtype='double')
 
         #
         # Step through all pairs of atoms
@@ -316,10 +247,10 @@ class Hamiltonian:
                     #
                     # Compute the atomic displacements
                     dr = self.Job.Pos[a1] - self.Job.Pos[a2]
-                    d = np.sqrt(dr.dot(dr))
+                    distance = np.sqrt(dr.dot(dr))
                     #
                     # Build the set of hopping integrals
-                    v, v_bgn, v_end = BondData[type1][type2]['model'](d, BondData[type1][type2])
+                    v, v_bgn, v_end = self.Job.Model.helements(distance, type1, type2)
                     #
                     # Build the block one pair of shells at a time
                     i1 = 0  # Counter for shell
@@ -342,7 +273,6 @@ class Hamiltonian:
     def buildHSO(self):
         """Build the Hamiltonian with spin orbit coupling."""
         global SOmatrix
-        # global AtomData
 
         h0s = self.H0size
         #
