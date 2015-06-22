@@ -25,14 +25,14 @@ class Electronic:
         self.zcore = np.zeros(self.Job.NAtom, dtype='double')
 
         for a in range(0, self.Job.NAtom):
-            self.zcore[a] = self.Job.Atomic[str(self.Job.AtomType[a])]['NElectrons']
+            self.zcore[a] = self.Job.Model.atomic[self.Job.AtomType[a]]['NElectrons']
         self.NElectrons = np.sum(self.zcore)
 
         #
         # Allocate memory for the level occupancies and density matrix
         self.occ = np.zeros( self.Job.Hamilton.HSOsize, dtype='double')
         self.rho = np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
-        # fro the pcase, dcase and vector Stoner Hamiltonians we need two density matrices
+        # for the pcase, dcase and vector Stoner Hamiltonians we need two density matrices
         if self.Job.Def['Hamiltonian'] in ('pcase','dcase','vectorS'):
             self.rhotot = np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
 

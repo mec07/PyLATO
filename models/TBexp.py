@@ -1,10 +1,10 @@
 """
-Created on Thursday, April 16, 2015
+Created on Thursday, June 18, 2015
 
 @author: Andrew Horsfield and Marc Coury
 
-This module builds the tight binding Hamiltonians.
-It merges the old TBH0 and TBHSO modules
+This is a simple exponential model for an sp system.
+
 """
 #
 # Import the modules that will be needed
@@ -26,7 +26,10 @@ class MatrixElements:
 
         # Import the tight binding model parameters
         with open(modelpath, 'r') as modelfile:
-            self.data = commentjson.loads(modelfile.read())['hamiltonian']
+            modeldata = commentjson.loads(modelfile.read())
+
+        self.atomic = modeldata['species']
+        self.data = modeldata['hamiltonian']
 
         # Allocate space for the five hamiltonian matrix elements.
         self.v = np.zeros(5, dtype='double')

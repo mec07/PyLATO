@@ -58,7 +58,7 @@ def WriteXYZ(JobClass, NAtom, Comment, AtomType, Pos):
     f_xyz.write('{0:d}\n'.format(NAtom))
     f_xyz.write('{0}\n'.format(Comment))
     for i in range(0, NAtom):
-        f_xyz.write('{0} {1:11.6f} {2:11.6f} {3:11.6f}\n'.format(JobClass.Atomic[str(AtomType[i])]['ChemSymb'], Pos[i,0], Pos[i,1], Pos[i,2]))
+        f_xyz.write('{0} {1:11.6f} {2:11.6f} {3:11.6f}\n'.format(JobClass.Model.atomic[AtomType[i]]['ChemSymb'], Pos[i,0], Pos[i,1], Pos[i,2]))
     f_xyz.close()
 
 

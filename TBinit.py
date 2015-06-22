@@ -16,16 +16,18 @@ import commentjson
 
 class InitJob:
     """Set up the job, build the initial geometry, hamiltonian, and electronic structure."""
-    def __init__(self, jobfile, atomicfile):
+    def __init__(self, jobfile):
         """Initialise the job."""
 
         # Set up variables that define the job in a dictionary
         with open(jobfile, 'r') as inputfile:
             self.Def = commentjson.loads(inputfile.read())
 
-        with open(atomicfile, 'r') as afile:
-            self.Atomic = commentjson.loads(afile.read())
+        #with open(atomicfile, 'r') as afile:
+        #    self.Atomic = commentjson.loads(afile.read())
 
+        # Model Import
+        #
         # Fetch the model name path from the Job file
         modelname = self.Def['model']
         modelpath = os.path.join("models", modelname + ".py")
@@ -37,6 +39,7 @@ class InitJob:
 
         # Import the module responsible for the tight binding model
         model_module = importlib.import_module("models." + modelname)
+
         # Initialise the model class
         self.Model = model_module.MatrixElements(os.path.join("models", modelname + ".json"))
 

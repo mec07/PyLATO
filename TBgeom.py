@@ -25,7 +25,7 @@ def init(JobClass):
 	JobClass.Pos      = Pos
 
 	JobClass.AtomType = AtomType
-	JobClass.NOrb     = [JobClass.Atomic[str(JobClass.AtomType[a])]['NOrbitals'] for a in range(JobClass.NAtom)]
+	JobClass.NOrb     = [JobClass.Model.atomic[JobClass.AtomType[a]]['NOrbitals'] for a in range(JobClass.NAtom)]
 
 	verboseprint(JobClass.Def['verbose'], "Atom positions:")
 	verboseprint(JobClass.Def['verbose'], JobClass.Pos)

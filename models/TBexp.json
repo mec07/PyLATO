@@ -1,10 +1,43 @@
 {   
-    // Carbon-Carbon hamiltonian model parameters
+
+	"species": [
+	// Helix data
+    {
+        "Name": "Helix", "ChemSymb": "C ",
+        "NElectrons": 4, "NOrbitals": 4, "NShells": 2,
+        "l": [0, 1], 
+        "U": 10.0, 
+        "I": 5.0,
+        "e":[
+            [0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0]
+            ],
+        "so": [0.0, 0.0]
+    },
+    // Carbon data
+    {
+        "Name": "Carbon", "ChemSymb": "C ",
+         "NElectrons": 4, "NOrbitals": 4, "NShells": 2,
+         "l": [0, 1], 
+         "U": 10.0, 
+         "I": 5.0,
+         "e": [[0.0, 0.0, 0.0, 0.0],
+                     [0.0, 1.0, 0.0, 0.0],
+                     [0.0, 0.0, 1.0, 0.0],
+                     [0.0, 0.0, 0.0, 1.0]],
+         "so": [0.0, 0.0]
+    }],
+
+    // Hamiltonian exponential model parameters
     "hamiltonian": [
         [
+        	// Helix-Helix
             {
             "kss": 1.0,  "ksp": 1.0, "kps": 1.0, "kpp": 1.0, "r0": 1.0,
             "vsss": 0.0, "vsps": 0.0, "vpss": 0.0, "vpps": -1.0, "vppp": 0.5
+            // Helix-Carbon
             },
             {
             "kss": 1.0,  "ksp": 1.0, "kps": 1.0, "kpp": 1.0, "r0": 1.0,
@@ -12,10 +45,12 @@
             }
         ],
         [
+        	// Carbon-Helix
             {
             "kss": 1.0,  "ksp": 1.0, "kps": 1.0, "kpp": 1.0, "r0": 1.0,
             "vsss": 0.0, "vsps": 0.0, "vpss": 0.0, "vpps": -1.0, "vppp": 0.5
             },
+            // Helix-Helix
             {
             "kss": 1.0,  "ksp": 1.0, "kps": 1.0, "kpp": 1.0, "r0": 1.0,
             "vsss": 0.0, "vsps": 0.0, "vpss": 0.0, "vpps": -1.0, "vppp": 0.5
