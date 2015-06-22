@@ -12,7 +12,7 @@ Orthogonal tight-binding model for hydrocarbons
 # Import the modules that will be needed
 import os, sys
 import numpy as np
-from scipy.interpolate import interp1d
+from scipy.interpolate import UnivariateSpline
 import math
 import commentjson
 
@@ -184,28 +184,27 @@ class MatrixElements:
 		ch_pap2 = lambda x: embed(ch_pap(x))
 		cc_pap2 = lambda x: embed(cc_pap(x))		
 
-		# Interpolate radial functions with cubic polynomials
 		if self.tabularisation['enable'] == 1:
 			# Range of radii for the interpolating function.
 			rvalues = np.arange(0.5, 2.6, self.tabularisation['resolution'], dtype='double')
 
-			interp_settings = {"kind": "cubic", "copy": False, "bounds_error": False, "fill_value": 0.0}
-			hh_sss = interp1d(rvalues, [hh_sss(r) for r in rvalues], **interp_settings)
+			interp_settings = {"k": 3, "s": 0, "ext": "zeros"}
+			hh_sss = UnivariateSpline(rvalues, [hh_sss(r) for r in rvalues], **interp_settings)
 			
-			hc_sss = interp1d(rvalues, [hc_sss(r) for r in rvalues], **interp_settings)
-			hc_sps = interp1d(rvalues, [hc_sps(r) for r in rvalues], **interp_settings)
-			hc_pss = interp1d(rvalues, [hc_pss(r) for r in rvalues], **interp_settings)
+			hc_sss = UnivariateSpline(rvalues, [hc_sss(r) for r in rvalues], **interp_settings)
+			hc_sps = UnivariateSpline(rvalues, [hc_sps(r) for r in rvalues], **interp_settings)
+			hc_pss = UnivariateSpline(rvalues, [hc_pss(r) for r in rvalues], **interp_settings)
 			
-			ch_sss = interp1d(rvalues, [ch_sss(r) for r in rvalues], **interp_settings)
-			ch_sps = interp1d(rvalues, [ch_sps(r) for r in rvalues], **interp_settings)
-			ch_pss = interp1d(rvalues, [ch_pss(r) for r in rvalues], **interp_settings)
+			ch_sss = UnivariateSpline(rvalues, [ch_sss(r) for r in rvalues], **interp_settings)
+			ch_sps = UnivariateSpline(rvalues, [ch_sps(r) for r in rvalues], **interp_settings)
+			ch_pss = UnivariateSpline(rvalues, [ch_pss(r) for r in rvalues], **interp_settings)
 			
-			cc_sss = interp1d(rvalues, [cc_sss(r) for r in rvalues], **interp_settings)
-			cc_sps = interp1d(rvalues, [cc_sps(r) for r in rvalues], **interp_settings)
-			cc_pss = interp1d(rvalues, [cc_pss(r) for r in rvalues], **interp_settings)
-			cc_pps = interp1d(rvalues, [cc_pps(r) for r in rvalues], **interp_settings)
-			cc_ppp = interp1d(rvalues, [cc_ppp(r) for r in rvalues], **interp_settings)
-			
+			cc_sss = UnivariateSpline(rvalues, [cc_sss(r) for r in rvalues], **interp_settings)
+			cc_sps = UnivariateSpline(rvalues, [cc_sps(r) for r in rvalues], **interp_settings)
+			cc_pss = UnivariateSpline(rvalues, [cc_pss(r) for r in rvalues], **interp_settings)
+			cc_pps = UnivariateSpline(rvalues, [cc_pps(r) for r in rvalues], **interp_settings)
+			cc_ppp = UnivariateSpline(rvalues, [cc_ppp(r) for r in rvalues], **interp_settings)
+
 		# Store the radial functions in the function grid. index 0 is hydrogen, index 1 is carbon
 		# Hence:  0,0 = hh; 0,1 = hc; 1,0 = ch; 1,1 = cc
 		self.function_grid = [[[hh_sss], [hc_sss, hc_sps]], [[ch_sss, ch_sps], [cc_sss, cc_sps, cc_pss, cc_pps, cc_ppp]]]
