@@ -1,7 +1,7 @@
 """
 Created on Monday April 20, 2015
 
-@author: Andrew Horsfield
+@author: Andrew Horsfield, Marc Coury and Max Boleininger
 
 This module manages the geometry of the system (atomic coordinates etc)
 """

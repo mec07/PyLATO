@@ -1,7 +1,7 @@
 """
 Created on Thursday, April 16, 2015
 
-@author: Andrew Horsfield and Marc Coury
+@author: Andrew Horsfield, Marc Coury and Max Boleininger
 
 This module builds the tight binding Hamiltonians.
 It merges the old TBH0 and TBHSO modules

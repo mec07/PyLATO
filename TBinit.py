@@ -1,7 +1,7 @@
 """
 Created on Sunday April 19, 2015
 
-@author: Andrew Horsfield and Marc Coury
+@author: Andrew Horsfield, Marc Coury and Max Boleininger
 
 This module carries out the needed initialisation tasks
 """
