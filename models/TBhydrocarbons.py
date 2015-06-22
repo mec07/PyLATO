@@ -3,13 +3,9 @@
 """
 Created on Thursday, June 18, 2015
 
-@author: Andrew Horsfield and Marc Coury
+@author: Marc Coury and Max Boleininger
 
-Orthogonal model for hydrocarbons, based on:
-
-Computational materials synthesis. I. A tight-binding scheme for hydrocarbons
-A. P. Horsfield, P. D. Godwin, D. G. Pettifor, and A. P. Sutton
-PHYSICAL REVIEW B VOLUME 54, NUMBER 22 1 DECEMBER 1996-II
+Orthogonal tight-binding model for hydrocarbons
 
 """
 #
@@ -21,7 +17,26 @@ import math
 import commentjson
 
 class GoodWin:
+	"""Orthogonal tight-binding model for hydrocarbons
+
+	The model follows the publication from:
+	Computational materials synthesis. I. A tight-binding scheme for hydrocarbons
+	A. P. Horsfield, P. D. Godwin, D. G. Pettifor, and A. P. Sutton
+	PHYSICAL REVIEW B VOLUME 54, NUMBER 22 1 DECEMBER 1996-II
+
+	Attributes:
+		c0, c1, c2, c3: polynomial tail coefficients
+
+	Methods:
+		radial: evaluate the radial function
+	"""
+
 	def __init__(self, v0 = 0, r0 = 0, rc = 0, rcut = 0, r1 = 0, n = 0, nc = 0):
+		"""Initialise the radial function from the supplied parameters.
+
+		Keyword arguments:
+			v0, r0, rc, rcut, r1, n, nc: a description can be found in the paper
+		"""
 
 		self.v0   = v0
 		self.r0   = r0
@@ -39,6 +54,12 @@ class GoodWin:
 		self.c3 = self.c1 / dr/dr + 2*self.c0 / dr/dr/dr
 
 	def radial(self, r):
+		"""Evaluate the radial function as a function of distance r
+
+		Arguments:
+			r: distance
+		"""
+
 		if r <= self.r1:
 			return self.v0 * np.power(self.r0/r, self.n) * np.exp(self.n * 
 				(-np.power(r/self.rc, self.nc) + np.power(self.r0/self.rc, self.nc)))
@@ -49,9 +70,40 @@ class GoodWin:
 			return 0.0
 
 class MatrixElements:
-	"""Tight binding model for model hamiltonian"""
+	"""Constructor for the tightbinding model
+
+	This class constructs the model, and stores model-related data.
+	It also offers methods to build the radial functions and pairpotentials.
+
+	MatrixElements always needs to have the named methods helements,
+	slements (for overlap), and pairpotentials (for forces and energy).
+	The TBH assumes the model to have a MatrixElements class with these
+	methods.
+
+	This model has:
+		tabularisation (optional)
+		pairpotentials
+		NO overlap
+
+	Attributes:
+		atomic: atomic model data, such as species, on-site energy, orbitals, etc
+		data: imported json hamiltonian dictionary
+		pairpotentials: imported json pairpotentials dictionary
+		tabularisation: imported json tabularisation dictionary
+		function_grid: list of all interatomic hamiltonian functions
+		pairpotential_grid: list of all interatomic pairpotential functions 
+
+	Methods:
+		helements: compute hopping integral for supplied atomic species
+		pairpotential: compute pairpotential for supplied atomic species
+
+	"""
 	def __init__(self, modelpath):
-		"""Import model data, initialise orbital pair index matrix."""
+		"""Import model data, initialise orbital pair index matrix.
+
+		Arguments:
+			modelpath: path to the model json file
+		"""
 
 		# Catch invalid model path
 		if os.path.exists(modelpath) == False:
@@ -66,8 +118,11 @@ class MatrixElements:
 		self.data = modeldata['hamiltonian']
 		self.pairpotentials = modeldata['pairpotentials']
 		self.embedded = modeldata['embedding']
+		self.tabularisation = modeldata['tabularisation']
 
-		# Allocate space for the five hamiltonian matrix elements.
+		# Allocate space for five integrals. This model includes up to l=1 orbitals,
+		# hence five integrals (ss_sigma, sp_sigma, ps_sigma, pp_sigma, pp_pi) are 
+		# evaluated simultaneously.
 		self.v = np.zeros(5, dtype='double')
 
 		# Generate pair of indices for each pair of shells, showing which values
@@ -93,8 +148,6 @@ class MatrixElements:
 
 		self.v_bgn = v_bgn
 		self.v_end = v_end
-
-		rvalues = np.arange(0.5, 2.6, 0.005, dtype='double')
 
 		# HH parameters
 		hh_sss = GoodWin(**self.data[0][0]).radial
@@ -122,7 +175,6 @@ class MatrixElements:
 		ch_pap = GoodWin(**self.pairpotentials[2]).radial
 		cc_pap = GoodWin(**self.pairpotentials[3]).radial
 
-
 		# Pair potential embedded function
 		embed = lambda x: x*(self.embedded['a1'] + x*(self.embedded['a2'] + x*(self.embedded['a3'] + x*self.embedded['a4'])))
 
@@ -133,21 +185,26 @@ class MatrixElements:
 		cc_pap2 = lambda x: embed(cc_pap(x))		
 
 		# Interpolate radial functions with cubic polynomials
-		hh_sss = interp1d(rvalues, [hh_sss(r) for r in rvalues], copy=False, bounds_error=False, fill_value=0.0)
-		
-		hc_sss = interp1d(rvalues, [hc_sss(r) for r in rvalues], kind='cubic', copy=False, bounds_error=False, fill_value=0.0)
-		hc_sps = interp1d(rvalues, [hc_sps(r) for r in rvalues], kind='cubic', copy=False, bounds_error=False, fill_value=0.0)
-		hc_pss = interp1d(rvalues, [hc_pss(r) for r in rvalues], kind='cubic', copy=False, bounds_error=False, fill_value=0.0)
-		
-		ch_sss = interp1d(rvalues, [ch_sss(r) for r in rvalues], kind='cubic', copy=False, bounds_error=False, fill_value=0.0)
-		ch_sps = interp1d(rvalues, [ch_sps(r) for r in rvalues], kind='cubic', copy=False, bounds_error=False, fill_value=0.0)
-		ch_pss = interp1d(rvalues, [ch_pss(r) for r in rvalues], kind='cubic', copy=False, bounds_error=False, fill_value=0.0)
-		
-		cc_sss = interp1d(rvalues, [cc_sss(r) for r in rvalues], kind='cubic', copy=False, bounds_error=False, fill_value=0.0)
-		cc_sps = interp1d(rvalues, [cc_sps(r) for r in rvalues], kind='cubic', copy=False, bounds_error=False, fill_value=0.0)
-		cc_pss = interp1d(rvalues, [cc_pss(r) for r in rvalues], kind='cubic', copy=False, bounds_error=False, fill_value=0.0)
-		cc_pps = interp1d(rvalues, [cc_pps(r) for r in rvalues], kind='cubic', copy=False, bounds_error=False, fill_value=0.0)
-		cc_ppp = interp1d(rvalues, [cc_ppp(r) for r in rvalues], kind='cubic', copy=False, bounds_error=False, fill_value=0.0)
+		if self.tabularisation['enable'] == 1:
+			# Range of radii for the interpolating function.
+			rvalues = np.arange(0.5, 2.6, self.tabularisation['resolution'], dtype='double')
+
+			interp_settings = {"kind": "cubic", "copy": False, "bounds_error": False, "fill_value": 0.0}
+			hh_sss = interp1d(rvalues, [hh_sss(r) for r in rvalues], **interp_settings)
+			
+			hc_sss = interp1d(rvalues, [hc_sss(r) for r in rvalues], **interp_settings)
+			hc_sps = interp1d(rvalues, [hc_sps(r) for r in rvalues], **interp_settings)
+			hc_pss = interp1d(rvalues, [hc_pss(r) for r in rvalues], **interp_settings)
+			
+			ch_sss = interp1d(rvalues, [ch_sss(r) for r in rvalues], **interp_settings)
+			ch_sps = interp1d(rvalues, [ch_sps(r) for r in rvalues], **interp_settings)
+			ch_pss = interp1d(rvalues, [ch_pss(r) for r in rvalues], **interp_settings)
+			
+			cc_sss = interp1d(rvalues, [cc_sss(r) for r in rvalues], **interp_settings)
+			cc_sps = interp1d(rvalues, [cc_sps(r) for r in rvalues], **interp_settings)
+			cc_pss = interp1d(rvalues, [cc_pss(r) for r in rvalues], **interp_settings)
+			cc_pps = interp1d(rvalues, [cc_pps(r) for r in rvalues], **interp_settings)
+			cc_ppp = interp1d(rvalues, [cc_ppp(r) for r in rvalues], **interp_settings)
 			
 		# Store the radial functions in the function grid. index 0 is hydrogen, index 1 is carbon
 		# Hence:  0,0 = hh; 0,1 = hc; 1,0 = ch; 1,1 = cc
@@ -179,7 +236,6 @@ if __name__ == "__main__":
 	model = MatrixElements("TBhydrocarbons.json")
 
 	xvals = np.arange(0.5, 3, 0.01)
-	#yvals = np.array([model.helements(x, 1, 1)[0] for x in xvals])
 	yvals = np.array([model.pairpotential_grid[1][1](x) for x in xvals])
 
 	for i,j in enumerate(xvals):

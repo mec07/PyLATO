@@ -15,7 +15,30 @@ import commentjson
 from Verbosity import *
 
 class MatrixElements:
-    """Tight binding model for model hamiltonian"""
+	"""Constructor for the tightbinding model
+
+	This class constructs the model, and stores model-related data.
+	It also offers methods to build the radial functions and pairpotentials.
+
+	MatrixElements always needs to have the named methods helements,
+	slements (for overlap), and pairpotentials (for forces and energy).
+	The TBH assumes the model to have a MatrixElements class with these
+	methods.
+
+	This model has:
+		NO tabularisation
+		NO pairpotentials
+		NO overlap
+
+	Attributes:
+		atomic: atomic model data, such as species, on-site energy, orbitals, etc
+		data: imported json hamiltonian dictionary
+		function_grid: list of all interatomic hamiltonian functions
+
+	Methods:
+		helements: compute hopping integral for supplied atomic species
+
+	"""
     def __init__(self, modelpath):
         """Import model data, initialise orbital pair index matrix."""
 
@@ -31,7 +54,9 @@ class MatrixElements:
         self.atomic = modeldata['species']
         self.data = modeldata['hamiltonian']
 
-        # Allocate space for the five hamiltonian matrix elements.
+		# Allocate space for five integrals. This model includes up to l=1 orbitals,
+		# hence five integrals (ss_sigma, sp_sigma, ps_sigma, pp_sigma, pp_pi) are 
+		# evaluated simultaneously.
         self.v = np.zeros(5, dtype='double')
 
         # Generate pair of indices for each pair of shells, showing which values
@@ -60,7 +85,7 @@ class MatrixElements:
 
     # Functions used to evaluate tight binding models
     def helements(self, r, atomicspecies_1, atomicspecies_2):
-        """This is a simple exponential model for an sp system."""
+        """Simple exponential model for an sp system."""
 
         # Pick out the right coefficients for the bond
         coeffs = self.data[atomicspecies_1][atomicspecies_2]

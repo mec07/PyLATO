@@ -1,4 +1,8 @@
 {   
+	"tabularisation": {
+		"enable": 1,
+		"resolution": 0.005
+	},
 
 	"species": [
 	// Hydrogen data
