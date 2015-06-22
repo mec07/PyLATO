@@ -47,7 +47,6 @@ class GoodWin:
 		self.nc   = nc
 
 		dr = rcut - r1
-
 		self.c0 = self.radial(r1)
 		self.c1 = -n * (1 + nc * np.power(r1/rc, nc)) * self.radial(r1)/r1
 		self.c2 = -2*self.c1 / dr - 3*self.c0 / dr/dr
@@ -80,7 +79,7 @@ class MatrixElements:
 	The TBH assumes the model to have a MatrixElements class with these
 	methods.
 
-	This model has:
+	This model supports:
 		tabularisation (optional)
 		pairpotentials
 		NO overlap
@@ -114,6 +113,7 @@ class MatrixElements:
 		with open(modelpath, 'r') as modelfile:
 			modeldata = commentjson.loads(modelfile.read())
 
+		# Store imported data as attributes
 		self.atomic = modeldata['species']
 		self.data = modeldata['hamiltonian']
 		self.pairpotentials = modeldata['pairpotentials']
@@ -126,89 +126,69 @@ class MatrixElements:
 		self.v = np.zeros(5, dtype='double')
 
 		# Generate pair of indices for each pair of shells, showing which values
-		# of v to use
-		v_bgn = np.zeros((2, 2), dtype='double')
-		v_end = np.zeros((2, 2), dtype='double')
+		# of v to use. This follows from the Slater-Koster table.
+		# 
+		# Example: two interacting shells with max l of 1 (eg C-C).
+		# l=0, l=0: ss_sigma, slice v from 0 to 1: v[0] (ss_sigma)
+		# l=0, l=1: sp_sigma, slice v from 1 to 2: v[1] (sp_sigma)
+		# l=1, l=0: ps_sigma, slice v from 2 to 3: v[2] (ps_sigma)
+		# l=1, l=1: pp_sigma and pp_pi, slice v from 3 to 5: v[3] and v[4]
+		# (pp_sigma and pp_pi)
 		#
-		# ss
-		v_bgn[0, 0] = 0
-		v_end[0, 0] = 1
+		# This needs to be expanded for d and f orbitals, and is model-independent.
+		self.v_bgn = np.array([[0, 1], [2, 3]])
+		self.v_end = np.array([[1, 2], [3, 5]])
+
+		# Interaction grid for a diatomic model. The values are placeholders.
 		#
-		# sp
-		v_bgn[0, 1] = 1
-		v_end[0, 1] = 2
-		#
-		# ps
-		v_bgn[1, 0] = 2
-		v_end[1, 0] = 3
-		#
-		# pp
-		v_bgn[1, 1] = 3
-		v_end[1, 1] = 5
+		# Species 1 (hydrogen) is max l=0, species 2 (carbon) has max l=1.
+		# The grid stores the radial functions required to compute the integrals
+		# between species 1 and species 2.
 
-		self.v_bgn = v_bgn
-		self.v_end = v_end
+		shells = [[1, 3], [3, 5]]
 
-		# HH parameters
-		hh_sss = GoodWin(**self.data[0][0]).radial
+		function_grid = [
+						[[0], [0, 0, 0]], 
+						[[0, 0, 0], [0, 0, 0, 0, 0]]
+						]
 
-		# HC parameters
-		hc_sss = GoodWin(**self.data[1][0]).radial
-		hc_sps = GoodWin(**self.data[1][1]).radial
-		hc_pss = GoodWin(**self.data[1][2]).radial
+		# Loop over interactions, assinging radial functions to the grid
+		for i, species1 in enumerate(shells):
+			for j, species2 in enumerate(species1):
+				for radial in range(species2):
+					function_grid[i][j][radial] = GoodWin(**self.data[i][j][radial]).radial
 
-		# CH parameters
-		ch_sss = GoodWin(**self.data[2][0]).radial
-		ch_sps = GoodWin(**self.data[2][1]).radial
-		ch_pss = GoodWin(**self.data[2][2]).radial
+		# Interaction grid for pairpotential function
+		pairpotential_grid = [[0, 0], [0, 0]]
 
-		# CC parameters
-		cc_sss = GoodWin(**self.data[3][0]).radial
-		cc_sps = GoodWin(**self.data[3][1]).radial
-		cc_pss = GoodWin(**self.data[3][2]).radial
-		cc_pps = GoodWin(**self.data[3][3]).radial
-		cc_ppp = GoodWin(**self.data[3][4]).radial
-
-		# Pair potentials
-		hh_pap = GoodWin(**self.pairpotentials[0]).radial
-		hc_pap = GoodWin(**self.pairpotentials[1]).radial
-		ch_pap = GoodWin(**self.pairpotentials[2]).radial
-		cc_pap = GoodWin(**self.pairpotentials[3]).radial
+		# Loop over interactions, assinging pairpotential functions to the grid
+		for i, species1 in enumerate(shells):
+			for j, species2 in enumerate(species1):
+				pairpotential_grid[i][j] = GoodWin(**self.pairpotentials[i][j]).radial
 
 		# Pair potential embedded function
 		embed = lambda x: x*(self.embedded['a1'] + x*(self.embedded['a2'] + x*(self.embedded['a3'] + x*self.embedded['a4'])))
 
-		# Embed pair potentials
-		hh_pap2 = lambda x: embed(hh_pap(x))
-		hc_pap2 = lambda x: embed(hc_pap(x))
-		ch_pap2 = lambda x: embed(ch_pap(x))
-		cc_pap2 = lambda x: embed(cc_pap(x))		
+		# Embed pairpotential functions
+		for i, species1 in enumerate(shells):
+			for j, species2 in enumerate(species1):
+				pairpotential_grid[i][j] = lambda x: embed(pairpotential_grid[i][j](x))	
 
-		if self.tabularisation['enable'] == 1:
-			# Range of radii for the interpolating function.
-			rvalues = np.arange(0.5, 2.6, self.tabularisation['resolution'], dtype='double')
-
+		# Optionally interpolate radial functions
+		if self.tabularisation["enable"] == 1:
+			# Range of radii for the interpolating function
+			rvalues = np.arange(0.5, 2.6, self.tabularisation["resolution"], dtype="double")
 			interp_settings = {"k": 3, "s": 0, "ext": "zeros"}
-			hh_sss = UnivariateSpline(rvalues, [hh_sss(r) for r in rvalues], **interp_settings)
-			
-			hc_sss = UnivariateSpline(rvalues, [hc_sss(r) for r in rvalues], **interp_settings)
-			hc_sps = UnivariateSpline(rvalues, [hc_sps(r) for r in rvalues], **interp_settings)
-			hc_pss = UnivariateSpline(rvalues, [hc_pss(r) for r in rvalues], **interp_settings)
-			
-			ch_sss = UnivariateSpline(rvalues, [ch_sss(r) for r in rvalues], **interp_settings)
-			ch_sps = UnivariateSpline(rvalues, [ch_sps(r) for r in rvalues], **interp_settings)
-			ch_pss = UnivariateSpline(rvalues, [ch_pss(r) for r in rvalues], **interp_settings)
-			
-			cc_sss = UnivariateSpline(rvalues, [cc_sss(r) for r in rvalues], **interp_settings)
-			cc_sps = UnivariateSpline(rvalues, [cc_sps(r) for r in rvalues], **interp_settings)
-			cc_pss = UnivariateSpline(rvalues, [cc_pss(r) for r in rvalues], **interp_settings)
-			cc_pps = UnivariateSpline(rvalues, [cc_pps(r) for r in rvalues], **interp_settings)
-			cc_ppp = UnivariateSpline(rvalues, [cc_ppp(r) for r in rvalues], **interp_settings)
 
-		# Store the radial functions in the function grid. index 0 is hydrogen, index 1 is carbon
-		# Hence:  0,0 = hh; 0,1 = hc; 1,0 = ch; 1,1 = cc
-		self.function_grid = [[[hh_sss], [hc_sss, hc_sps]], [[ch_sss, ch_sps], [cc_sss, cc_sps, cc_pss, cc_pps, cc_ppp]]]
-		self.pairpotential_grid = [[hh_pap2, hc_pap2], [ch_pap2, cc_pap2]]
+			# Loop over interactions, interpolating radial functions
+			for i, species1 in enumerate(shells):
+				for j, species2 in enumerate(species1):
+					for radial in range(species2):
+						yvalues = [function_grid[i][j][radial](r) for r in rvalues]
+						function_grid[i][j][radial] = UnivariateSpline(rvalues, yvalues, **interp_settings)
+
+		self.function_grid = function_grid
+		self.pairpotential_grid = pairpotential_grid
 
 	def helements(self, r, atomicspecies_1, atomicspecies_2):
 		"""Orthogonal model for hydrocarbons."""
@@ -235,7 +215,7 @@ if __name__ == "__main__":
 	model = MatrixElements("TBhydrocarbons.json")
 
 	xvals = np.arange(0.5, 3, 0.01)
-	yvals = np.array([model.pairpotential_grid[1][1](x) for x in xvals])
+	yvals = np.array([model.pairpotential_grid[0][1](x) for x in xvals])
 
 	for i,j in enumerate(xvals):
 		print xvals[i], yvals[i]
