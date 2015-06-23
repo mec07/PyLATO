@@ -120,9 +120,8 @@ class MatrixElements:
 		self.embedded = modeldata['embedding']
 		self.tabularisation = modeldata['tabularisation']
 
-		# Allocate space for five integrals. This model includes up to l=1 orbitals,
-		# hence five integrals (ss_sigma, sp_sigma, ps_sigma, pp_sigma, pp_pi) are 
-		# evaluated simultaneously.
+		# The model includes up to l=1 orbitals, hence space for five integrals 
+		# (in order: ss_sigma, sp_sigma, ps_sigma, pp_sigma, pp_pi) is made.
 		self.v = np.zeros(5, dtype='double')
 
 		# Generate pair of indices for each pair of shells, showing which values
@@ -139,39 +138,53 @@ class MatrixElements:
 		self.v_bgn = np.array([[0, 1], [2, 3]])
 		self.v_end = np.array([[1, 2], [3, 5]])
 
-		# Interaction grid for a diatomic model. The values are placeholders.
-		#
-		# Species 1 (hydrogen) is max l=0, species 2 (carbon) has max l=1.
-		# The grid stores the radial functions required to compute the integrals
-		# between species 1 and species 2.
+		# Shell grid for the integral tables of s,p and d. This grid contains the
+		# total number of Slater-Koster integrals required to compute the interaction.
+		# The row index refers to l of the first atom, the column to l of the second.
+		#			
+		# Example: Hydrogen is max l=0, carbon has max l=1.
+		# Hence shells[0][1] returns 3, as one needs three integrals to compute
+		# H_ss and H_sp: ss_sigma, sp_sigma, ps_sigma 
+		shells = [[1,  3,  5], 
+		          [3,  5, 11], 
+		          [5, 11, 14]]
 
-		shells = [[1, 3], [3, 5]]
+		# Create a function grid that stores the radial functions required to 
+		# compute all the interatomic matrix elements. The grid has the dimension
+		# [number of atomic species in the model]^2
+		function_grid = [[0 for species1 in self.atomic] for species2 in self.atomic]
 
-		function_grid = [
-						[[0], [0, 0, 0]], 
-						[[0, 0, 0], [0, 0, 0, 0, 0]]
-						]
+		# Attention: this assumes that all species have an s shell. Might have 
+		# to be changed in the future to account for specieso only having p and d.
+		for i, species1 in enumerate(self.atomic):
+			for j, species2 in enumerate(self.atomic):
+				#lmin = shells[species1["l"][ 0]][species2["l"][ 0]]
+				lmax = shells[species1["l"][-1]][species2["l"][-1]]
+				function_grid[i][j] = [0] * lmax
 
 		# Loop over interactions, assinging radial functions to the grid
-		for i, species1 in enumerate(shells):
+		for i, species1 in enumerate(function_grid):
 			for j, species2 in enumerate(species1):
-				for radial in range(species2):
-					function_grid[i][j][radial] = GoodWin(**self.data[i][j][radial]).radial
+				for radial_index, radial_function in enumerate(species2):
+					function_grid[i][j][radial_index] = GoodWin(**self.data[i][j][radial_index]).radial
 
-		# Interaction grid for pairpotential function
-		pairpotential_grid = [[0, 0], [0, 0]]
+		# Create a function grid that stores the pairpotential functions required to 
+		# compute the interatomic pairpotential. The grid has the dimension
+		# [number of atomic species in the model]^2
+		pairpotential_grid = [[0 for species1 in self.atomic] for species2 in self.atomic]
 
 		# Loop over interactions, assinging pairpotential functions to the grid
-		for i, species1 in enumerate(shells):
-			for j, species2 in enumerate(species1):
+		for i, species1 in enumerate(self.atomic):
+			for j, species2 in enumerate(self.atomic):
 				pairpotential_grid[i][j] = GoodWin(**self.pairpotentials[i][j]).radial
 
+		# ==== THIS IS MODEL SPECIFIC ===== #
 		# Pair potential embedded function
 		embed = lambda x: x*(self.embedded['a1'] + x*(self.embedded['a2'] + x*(self.embedded['a3'] + x*self.embedded['a4'])))
 
 		# Embed pairpotential functions
-		for i, species1 in enumerate(shells):
-			for j, species2 in enumerate(species1):
+		for i, species1 in enumerate(self.atomic):
+			for j, species2 in enumerate(self.atomic):
 				pairpotential_grid[i][j] = lambda x: embed(pairpotential_grid[i][j](x))	
 
 		# Optionally interpolate radial functions
@@ -181,12 +194,14 @@ class MatrixElements:
 			interp_settings = {"k": 3, "s": 0, "ext": "zeros"}
 
 			# Loop over interactions, interpolating radial functions
-			for i, species1 in enumerate(shells):
+			for i, species1 in enumerate(function_grid):
 				for j, species2 in enumerate(species1):
-					for radial in range(species2):
-						yvalues = [function_grid[i][j][radial](r) for r in rvalues]
-						function_grid[i][j][radial] = UnivariateSpline(rvalues, yvalues, **interp_settings)
+					for radial_index, radial_function in enumerate(species2):
+						yvalues = [function_grid[i][j][radial_index](r) for r in rvalues]
+						function_grid[i][j][radial_index] = UnivariateSpline(rvalues, yvalues, **interp_settings)
+		# ==== END MODEL SPECIFIC ========= #
 
+		# Store radial functions into the class
 		self.function_grid = function_grid
 		self.pairpotential_grid = pairpotential_grid
 
