@@ -6,7 +6,15 @@ Created on Sunday April 12, 2015
 @author: Andrew Horsfield, Marc Coury and Max Boleininger
 
 This is the main program for computing the eigenvalues and eigenfunctions for a
-tight binding model of a helical molecule that includes spin-orbit coupling
+noncollinear tight binding model chosen in the JobDef.json file. The input file
+can be given a different name, but it must be specified when running this
+programme. To run the programme from the commandline type:
+
+./TB.py specificationfile.json
+
+where "specificationfile.json" can be any name as long as it's a json file.
+
+Currently this programme works with Python 2.7.5.
 
 Units used are:
   Length -- Angstroms

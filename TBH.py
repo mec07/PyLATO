@@ -44,7 +44,7 @@ class Hamiltonian:
 
         for a in range(self.Job.NAtom):
             self.Hindex[a+1] = self.Hindex[a] + self.Job.Model.atomic[self.Job.AtomType[a]]['NOrbitals']
-        
+
         # Compute the sizes of the Hamiltonian matrices
         self.H0size = self.Hindex[self.Job.NAtom]
         self.HSOsize = 2*self.H0size

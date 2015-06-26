@@ -1,0 +1,28 @@
+{   
+
+    "species": [
+    // p-orbital bolonium data
+    {
+        "Name": "p-orbital bolonium", "ChemSymb": "p-Bo ",
+        "NElectrons": 4, "NOrbitals": 3, "NShells": 1,
+        "l": [1], 
+        "U": 10.0, 
+        "I": 5.0,
+        "e":[
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0]
+            ],
+        "so": [0.0, 0.0]
+    }],
+
+    // Hamiltonian exponential model parameters
+    "hamiltonian": [
+        [
+            // p-Bo to p-Bo
+            {
+            "kpp": 1.0, "r0": 1.0, "vpps": 1.0, "vppp": -0.5
+            }
+        ]
+    ]
+}

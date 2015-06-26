@@ -1,0 +1,31 @@
+{   
+
+    "species": [
+    // d-orbital bolonium data
+    {
+        "Name": "d-orbital bolonium", "ChemSymb": "d-Bo ",
+        "NElectrons": 6, "NOrbitals": 5, "NShells": 1,
+        "l": [2], 
+        "U": 10.0, 
+        "I": 5.0,
+        "dJ": 0.5,
+        "e":[
+            [0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0]
+            ],
+        "so": [0.0, 0.0]
+    }],
+
+    // Hamiltonian exponential model parameters
+    "hamiltonian": [
+        [
+            // d-Bo to d-Bo
+            {
+            "kdd": 1.0, "r0": 1.0, "vdds": -1.0, "vddp": 0.666666667, "vddd": -0.166666667
+            }
+        ]
+    ]
+}
