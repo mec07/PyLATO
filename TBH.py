@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*- 
 """
 Created on Thursday, April 16, 2015
 
@@ -9,18 +10,25 @@ It merges the old TBH0 and TBHSO modules
 #
 # Import the modules that will be needed
 import numpy as np
+from scipy.special import erf
 import math
 from Verbosity import *
 
 # Spin orbit data
 SOmatrix = {0: np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0)],
                          [complex( 0.0, 0.0), complex( 0.0, 0.0)]]),
-            1: np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex(-1.0, 0.0), complex( 0.0, 1.0)],
-                         [complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 1.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
-                         [complex( 0.0, 0.0), complex( 0.0, 1.0), complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
-                         [complex( 0.0, 0.0), complex( 1.0, 0.0), complex( 0.0, 1.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
-                         [complex(-1.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 1.0)],
-                         [complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 0.0, 0.0)]])}
+            1: np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), 
+                          complex( 0.0, 0.0), complex(-1.0, 0.0), complex( 0.0, 1.0)],
+                         [complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0,-1.0), 
+                          complex( 1.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
+                         [complex( 0.0, 0.0), complex( 0.0, 1.0), complex( 0.0, 0.0), 
+                          complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
+                         [complex( 0.0, 0.0), complex( 1.0, 0.0), complex( 0.0, 1.0), 
+                          complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
+                         [complex(-1.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), 
+                          complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 1.0)],
+                         [complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0), 
+                          complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 0.0, 0.0)]])}
 
 class Hamiltonian:
     """Initialise and build the hamiltonian."""
@@ -50,6 +58,47 @@ class Hamiltonian:
         self.q = np.zeros(self.Job.NAtom, dtype='double')
         self.s = np.zeros((3, self.Job.NAtom), dtype='double')
 
+    def electrostatics(self):
+        def SCFGamma(self, atom1, atom2):
+
+            atype1 = self.Job.AtomType[atom1]
+            atype2 = self.Job.AtomType[atom2]
+
+            if atom1 == atom2:
+                gij = complex(self.Job.Model.atomic[atype1]['U'], 0.0)
+            else:
+                if self.Job.Def["InterSiteElectrostatics"] == 1:
+                    
+                    dr = self.Job.Pos[atom2] - self.Job.Pos[atom1]
+                    rij = np.sqrt(dr.dot(dr))
+
+                    vacuum = 0.00552639
+                    ai = vacuum*vacuum*np.pi*np.pi*np.pi*8.0 * self.Job.Model.atomic[atype1]['U'] * self.Job.Model.atomic[atype1]['U'] 
+                    aj = vacuum*vacuum*np.pi*np.pi*np.pi*8.0 * self.Job.Model.atomic[atype2]['U'] * self.Job.Model.atomic[atype2]['U']
+                    b =  np.sqrt(ai * aj / (ai + aj))
+                    
+                    gij = 1.0/vacuum/(4.0*np.pi) * complex(erf(b * rij) / rij, 0.0)
+                else:
+                    gij = complex(0.0, 0.0)                  
+
+            return gij
+
+        SCF1g = np.zeros((self.Job.NAtom, self.Job.NAtom), dtype="complex")
+        Wi = np.zeros(self.Job.NAtom, dtype="complex")
+
+        # Compute SCF1g matrix
+        for i in range(self.Job.NAtom):
+            for j in range(i, self.Job.NAtom):
+                gij = SCFGamma(self, i, j)
+                SCF1g[i, j] = gij
+                SCF1g[j, i] = gij
+
+        # Compute electrostatic term
+        for i in range(self.Job.NAtom):
+            for j in range(self.Job.NAtom):
+                Wi[i] += -self.q[j] * SCF1g[i, j]
+
+        self.Wi = Wi
 
     def buildfock(self):
         """Build the Fock matrix by adding charge and spin terms to the Hamiltonian."""
@@ -58,17 +107,23 @@ class Hamiltonian:
         self.fock = np.copy(self.HSO)
         h0s = self.H0size
 
-        if self.Job.Def['Hamiltonian'] == "standard":
+        if self.Job.Def["Hamiltonian"] == "standard":
             # Now add in diagonal corrections for charge and spin
-            des = np.zeros((2, 2), dtype='complex')
+            des = np.zeros((2, 2), dtype="complex")
             
-            for a in range(0, self.Job.NAtom):
+            # Compute on-site and (if enabled) intersite electrostatic terms.
+            self.electrostatics()
+
+            # print "Wi:", self.Wi
+            # print "Oi:", [complex(-self.q[a] * self.Job.Model.atomic[self.Job.AtomType[a]]['U'], 0.0) for a in range(self.Job.NAtom)]
+
+            for a in range(self.Job.NAtom):
                 #
                 # Get the atom type
                 atype = self.Job.AtomType[a]
                 #
                 # Onsite energy shift is U*q
-                deq = complex(-self.q[a] * self.Job.Model.atomic[atype]['U'], 0.0)
+                #deq = complex(-self.q[a] * self.Job.Model.atomic[atype]['U'], 0.0)
                 #
                 # Stoner onsite energy shifts are present for all four spins combinations
                 des[0, 0] = -0.5 * self.Job.Model.atomic[atype]['I'] * complex( self.s[2, a],           0.0)
@@ -78,10 +133,11 @@ class Hamiltonian:
                 #
                 # Step through each orbital on the atom
                 for j in range(self.Hindex[a], self.Hindex[a+1]):
-                    self.fock[    j,     j] += deq + des[0, 0]  # up/up block
-                    self.fock[    j, h0s+j] +=       des[0, 1]  # up/down block
-                    self.fock[h0s+j,     j] +=       des[1, 0]  # down/up block
-                    self.fock[h0s+j, h0s+j] += deq + des[1, 1]  # down/down block
+                    self.fock[    j,     j] += self.Wi[a] + des[0, 0]  # up/up block
+                    self.fock[    j, h0s+j] +=              des[0, 1]  # up/down block
+                    self.fock[h0s+j,     j] +=              des[1, 0]  # down/up block
+                    self.fock[h0s+j, h0s+j] += self.Wi[a] + des[1, 1]  # down/down block
+
 
         elif self.Job.Def['Hamiltonian'] == "vectorS":
             norb = self.Job.NOrb
@@ -132,7 +188,7 @@ class Hamiltonian:
         #             verboseprint(self.Job.Def['extraverbose'], i, j,
         #                          round(self.fock[i,j].real, 4), round(self.fock2[i,j].real, 4), "|",
         #                          round(self.fock[i,j].imag, 4), round(self.fock2[i,j].imag, 4))
-        
+        #print "fock:", self.fock
 
     def slaterkoster(self, l1, l2, dr, v):
         """
@@ -230,13 +286,11 @@ class Hamiltonian:
         #
         # Clear the memory for the Hamiltonian matrix
         self.H0.fill(0.0)
-        #self.H0 = np.zeros([self.H0size, self.H0size], dtype='double')
-
         #
         # Step through all pairs of atoms
-        for a1 in range(0, self.Job.NAtom):
+        for a1 in range(self.Job.NAtom):
             type1 = self.Job.AtomType[a1]  # The type of atom 1
-            for a2 in range(0, self.Job.NAtom):
+            for a2 in range(self.Job.NAtom):
                 type2 = self.Job.AtomType[a2]  # The type of atom 2
                 #
                 # If the atoms are the same, compute an onsite block, otherwise compute a hopping block
@@ -269,19 +323,21 @@ class Hamiltonian:
                         i1 += 1  # Advance to the next shell
                         k1 += n1  # Advance to the start of the next set of orbitals
 
-
     def buildHSO(self):
         """Build the Hamiltonian with spin orbit coupling."""
         global SOmatrix
 
         h0s = self.H0size
         #
-        # Clear memory for the Hamiltonian marix
+        # Clear memory for the Hamiltonian spinorbit marix
         self.HSO = np.zeros((self.HSOsize, self.HSOsize), dtype='complex')
         #
         # Build the basic Hamiltonian. This is independent of spin and appears in the
         # up-up and down-down blocks of the full spin dependent Hamiltonian
         self.buildH0()
+
+        #print self.H0
+
         #
         # Copy H0 into the two diagonal blocks
         self.HSO[0           :h0s,            0:h0s] = np.copy(self.H0)
@@ -296,7 +352,7 @@ class Hamiltonian:
             self.HSO[h0s + i, h0s + i] += complex(-eB[2],    0.0)
         #
         # Add in the spin-orbit corrections
-        for a in range(0, self.Job.NAtom):
+        for a in range(self.Job.NAtom):
             atype = self.Job.AtomType[a]
             i = 0  # Counter for shell
             k = self.Hindex[a]  # Counter for orbital

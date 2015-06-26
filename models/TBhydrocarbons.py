@@ -15,6 +15,7 @@ import numpy as np
 from scipy.interpolate import UnivariateSpline
 import math
 import commentjson
+import copy
 
 class GoodWin:
 	"""Orthogonal tight-binding model for hydrocarbons
@@ -143,24 +144,39 @@ class MatrixElements:
 		# The row index refers to l of the first atom, the column to l of the second.
 		#			
 		# Example: Hydrogen is max l=0, carbon has max l=1.
-		# Hence shells[0][1] returns 3, as one needs three integrals to compute
-		# H_ss and H_sp: ss_sigma, sp_sigma, ps_sigma 
-		shells = [[1,  3,  5], 
-		          [3,  5, 11], 
-		          [5, 11, 14]]
+		# Hence shells[0][1] returns 2, as there are two integrals to compute
+		# for H-C: ss_sigma, sp_sigma.
+		shells = [[1,  2,  3], 
+		          [2,  5,  7],
+		          [3,  7, 14]]
 
 		# Create a function grid that stores the radial functions required to 
 		# compute all the interatomic matrix elements. The grid has the dimension
 		# [number of atomic species in the model]^2
 		function_grid = [[0 for species1 in self.atomic] for species2 in self.atomic]
+		pairpotential_grid = [[0 for species1 in self.atomic] for species2 in self.atomic]
 
+		# This matrix saves radial function indices for the interaction between species i,j.
+		function_map = [[[] for species1 in self.atomic] for species2 in self.atomic]
+				
 		# Attention: this assumes that all species have an s shell. Might have 
 		# to be changed in the future to account for specieso only having p and d.
 		for i, species1 in enumerate(self.atomic):
 			for j, species2 in enumerate(self.atomic):
-				#lmin = shells[species1["l"][ 0]][species2["l"][ 0]]
-				lmax = shells[species1["l"][-1]][species2["l"][-1]]
-				function_grid[i][j] = [0] * lmax
+				shell_list1 = species1['l']
+				shell_list2 = species2['l']
+
+				# Fetch the total number of radial functions for the species i,j
+				num_radialfunctions = shells[shell_list1[-1]][shell_list2[-1]]
+				# Make space for the radial functions in the function_grid
+				function_grid[i][j] = [0] * num_radialfunctions
+
+				# Create mapping function
+				for l1 in shell_list1:
+					for l2 in shell_list2: 
+						[function_map[i][j].append(val) for val in range(self.v_bgn[l1, l2], self.v_end[l1, l2])]
+
+
 
 		# Loop over interactions, assinging radial functions to the grid
 		for i, species1 in enumerate(function_grid):
@@ -171,7 +187,7 @@ class MatrixElements:
 		# Create a function grid that stores the pairpotential functions required to 
 		# compute the interatomic pairpotential. The grid has the dimension
 		# [number of atomic species in the model]^2
-		pairpotential_grid = [[0 for species1 in self.atomic] for species2 in self.atomic]
+
 
 		# Loop over interactions, assinging pairpotential functions to the grid
 		for i, species1 in enumerate(self.atomic):
@@ -179,13 +195,26 @@ class MatrixElements:
 				pairpotential_grid[i][j] = GoodWin(**self.pairpotentials[i][j]).radial
 
 		# ==== THIS IS MODEL SPECIFIC ===== #
+		# Create a function grid that stores the embedded pairpotential functions 
+		embedded_pairpotential = [[0 for species1 in self.atomic] for species2 in self.atomic]
+
 		# Pair potential embedded function
 		embed = lambda x: x*(self.embedded['a1'] + x*(self.embedded['a2'] + x*(self.embedded['a3'] + x*self.embedded['a4'])))
 
-		# Embed pairpotential functions
-		for i, species1 in enumerate(self.atomic):
-			for j, species2 in enumerate(self.atomic):
-				pairpotential_grid[i][j] = lambda x: embed(pairpotential_grid[i][j](x))	
+		# For some reason this does not work:
+		#for i, species1 in enumerate(self.atomic):
+		#	for j, species2 in enumerate(self.atomic):
+		#		embedded_pairpotential[i][j] = lambda x: embed(pairpotential_grid[i][j](x))
+		#
+		# Test via: 
+		# print embed(pairpotential_grid[0][0](0.25)), embedded_pairpotential[0][0](0.25)
+		#
+		# Using the above loops, the results are inconsistent. This does not happen if the 
+		# same is defined explicitly as below.
+		embedded_pairpotential[0][0] = lambda x: embed(pairpotential_grid[0][0](x))
+		embedded_pairpotential[0][1] = lambda x: embed(pairpotential_grid[0][1](x))
+		embedded_pairpotential[1][0] = lambda x: embed(pairpotential_grid[1][0](x))
+		embedded_pairpotential[1][1] = lambda x: embed(pairpotential_grid[1][1](x))
 
 		# Optionally interpolate radial functions
 		if self.tabularisation["enable"] == 1:
@@ -202,18 +231,21 @@ class MatrixElements:
 		# ==== END MODEL SPECIFIC ========= #
 
 		# Store radial functions into the class
+		self.shells = shells
 		self.function_grid = function_grid
-		self.pairpotential_grid = pairpotential_grid
+		self.function_map = function_map
 
-	def helements(self, r, atomicspecies_1, atomicspecies_2):
+		self.pairpotential_grid = embedded_pairpotential
+
+	def helements(self, r, species1, species2):
 		"""Orthogonal model for hydrocarbons."""
+		self.v = np.zeros(5, dtype='double')
 
 		# Pick out the right functions for the bond
-		funcs = self.function_grid[atomicspecies_1][atomicspecies_2]
+		funcs = self.function_grid[species1][species2]
 
-		# Compute the hopping integrals for the reference geometry
 		for i, radial_function in enumerate(funcs):
-			self.v[i] = radial_function(r)
+			self.v[self.function_map[species1][species2][i]] = radial_function(r)
 
 		# Return integrals and indices
 		return self.v, self.v_bgn, self.v_end
@@ -229,11 +261,13 @@ if __name__ == "__main__":
 
 	model = MatrixElements("TBhydrocarbons.json")
 
-	xvals = np.arange(0.5, 3, 0.01)
-	yvals = np.array([model.pairpotential_grid[0][1](x) for x in xvals])
+	print model.pairpotential_grid
+
+	xvals = np.arange(0.5, 2.6, 0.01)
+	yvals = np.array([model.function_grid[0][0][0](x) for x in xvals])
 
 	for i,j in enumerate(xvals):
-		print xvals[i], yvals[i]
+		print xvals[i]/0.5291, yvals[i]/13.6056
 
 
 
