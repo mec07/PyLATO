@@ -3,7 +3,7 @@
 """
 Created on Friday, June 26, 2015
 
-@author: Marc Coury
+@author: Marc Coury and Max Boleininger
 
 This is a simple canonical model for a p system.
 
@@ -84,8 +84,8 @@ class MatrixElements:
         coeffs = self.data[atomicspecies_1][atomicspecies_2]
 
         # Compute the hopping integrals for the reference geometry
-        self.v[0] = coeffs['vpps']
-        self.v[1] = coeffs['vppp']
+        self.v[0] = coeffs['vpps'] * math.exp( -coeffs['kpp'] * (r-coeffs['r0']) )
+        self.v[1] = coeffs['vppp'] * math.exp( -coeffs['kpp'] * (r-coeffs['r0']) )
 
         # Return integrals and indices
         return self.v, self.v_bgn, self.v_end
