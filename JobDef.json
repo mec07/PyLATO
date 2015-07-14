@@ -2,6 +2,9 @@
     // tight binding model
     "model": "TBcanonical_p",
 
+    // Hamiltonian, "standard", "collinearS", "vectorS", "pcase" or "dcase"
+    "Hamiltonian":"pcase",
+
     // atomic geometry
     "gy_file": "geom.csv",
 
@@ -11,7 +14,7 @@
     // electronic temperature in eV
     "el_kT": 0.025,
     // the tolerance in finding the chemical potential
-    "mu_tol": 1e-14,
+    "mu_tol": 1e-13,
     // max number of bisections when finding mu
     "mu_max_loops": 500,
 
@@ -29,9 +32,6 @@
     // Verbosity
     "verbose": 1,
     "extraverbose": 0,
-
-    // Hamiltonian, "standard", "collinearS", "vectorS", "pcase" or "dcase"
-    "Hamiltonian":"pcase",
 
     // InterSiteElectrostatics is set when the 1/r terms are to be included in SCC-TB.
     "InterSiteElectrostatics": 0

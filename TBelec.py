@@ -72,7 +72,7 @@ class Electronic:
         while math.fabs(self.NElectrons-n) > n_tol*self.NElectrons:
             count+=1
             if count>max_loops:
-                print "ERROR: The chemical potential could not be found. Exiting."
+                print("ERROR: The chemical potential could not be found. The error became "+str(math.fabs(self.NElectrons-n)))
                 sys.exit()
             if n > self.NElectrons:
                 mu_u = mu
@@ -125,6 +125,31 @@ class Electronic:
                         (np.sum(norb[jH.Hindex[a]:jH.Hindex[a+1]].real) +
                          np.sum(norb[jH.H0size+jH.Hindex[a]:jH.H0size+jH.Hindex[a+1]].real)))
         return qsite
+
+    def electrons_site_orbital_spin(self,site,orbital,spin):
+        """Compute the number of electrons with specified spin, orbital and site. """
+        index = TBH.map_atomic_to_index(site, orbital, spin, self.Job.NAtom, self.Job.NOrb)
+        return self.rho[index,index].real
+
+
+    def electrons_site_orbital(self,site,orbital):
+        """Compute the number of electrons in a particular orbital on the specified site. """
+        return self.electrons_site_orbital_spin(site,orbital,0)+self.electrons_site_orbital_spin(site,orbital,1).real
+
+
+    def electrons_site(self,site):
+        """Compute the number of electrons on a specified site. """
+        jH = self.Job.Hamilton
+        return sum(self.electrons_site_orbital(site,ii) for ii in range(self.Job.Model.atomic[self.Job.AtomType[site]]['NOrbitals'])).real
+
+
+    def electronspersite(self):
+        """ Return a vector of the number of electrons on each site. """
+        esite = np.zeros(self.Job.NAtom, dtype='double')
+        for a in range(self.Job.NAtom):
+            esite[a] = self.electrons_site(a).real
+
+        return esite
 
 
     def spinpersite(self):
