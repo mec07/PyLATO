@@ -131,6 +131,15 @@ class Electronic:
         index = TBH.map_atomic_to_index(site, orbital, spin, self.Job.NAtom, self.Job.NOrb)
         return self.rho[index,index].real
 
+    def electrons_orbital_occupation_vec(self):
+        """ Return a vector of the occupation of each spin orbital. """
+        occupation = []
+        # Just collect the real part of the diagonal of the density matrix.
+        for ii in range(self.Job.Hamilton.HSOsize):
+            occupation.append(self.rho[ii,ii].real)
+
+        return occupation
+
 
     def electrons_site_orbital(self,site,orbital):
         """Compute the number of electrons in a particular orbital on the specified site. """

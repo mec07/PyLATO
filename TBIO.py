@@ -100,3 +100,19 @@ def ReadGeom(filename):
     #
     # Return the geometry
     return NAtom, Pos, AtomType
+
+
+def WriteOrbitalOccupations(JobClass, filename):
+    """
+    Write out the orbital occupations to a file.
+    """
+    occupation=JobClass.Electron.electrons_orbital_occupation_vec()
+    information = "\t".join(str(occ) for occ in occupation)
+    with open(filename,'w') as f:
+        f.write(information)
+
+
+
+
+
+

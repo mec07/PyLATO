@@ -164,7 +164,7 @@ def main():
     ############################
     # DEBUGGING NEW FUNCTIONS: #
     ############################
-
+    TBIO.WriteOrbitalOccupations(Job,"occupations.txt")
 
 if __name__ == "__main__":
     # Execute the main code if run as a script.
