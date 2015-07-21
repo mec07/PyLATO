@@ -142,18 +142,38 @@ class Hamiltonian:
             for a in range(natom):
                 # Get the atom type
                 atype = self.Job.AtomType[a]
-                for j in range(self.Hindex[a], self.Hindex[a+1]):
+                for jj in range(self.Hindex[a], self.Hindex[a+1]):
                     J_S = self.Job.Model.atomic[atype]['I']
                     U = self.Job.Model.atomic[atype]['U']
+                    for ii in range(self.Hindex[a], self.Hindex[a+1]):
+                        # up/up block
+                        self.fock[    jj,     ii] += self.add_H_pcase(    jj,     ii, U, J_S, J_ph, natom, norb, rho)
+                        # up/down block
+                        self.fock[    jj, h0s+ii] += self.add_H_pcase(    jj, h0s+ii, U, J_S, J_ph, natom, norb, rho)
+                        # down/up block
+                        self.fock[h0s+jj,     ii] += self.add_H_pcase(h0s+jj,     ii, U, J_S, J_ph, natom, norb, rho)
+                        # down/down block
+                        self.fock[h0s+jj, h0s+ii] += self.add_H_pcase(h0s+jj, h0s+ii, U, J_S, J_ph, natom, norb, rho)
 
-                    # up/up block
-                    self.fock[    j,     j] += self.add_H_pcase(    j,     j, U, J_S, J_ph, natom, norb, rho)
-                    # up/down block
-                    self.fock[    j, h0s+j] += self.add_H_pcase(    j, h0s+j, U, J_S, J_ph, natom, norb, rho)
-                    # down/up block
-                    self.fock[h0s+j,     j] += self.add_H_pcase(h0s+j,     j, U, J_S, J_ph, natom, norb, rho)
-                    # down/down block
-                    self.fock[h0s+j, h0s+j] += self.add_H_pcase(h0s+j, h0s+j, U, J_S, J_ph, natom, norb, rho)
+        elif self.Job.Def['Hamiltonian'] == "scase":
+            norb = self.Job.NOrb
+            natom = self.Job.NAtom
+            rho = self.Job.Electron.rhotot
+
+            for a in range(natom):
+                # Get the atom type
+                atype = self.Job.AtomType[a]
+                for jj in range(self.Hindex[a], self.Hindex[a+1]):
+                    U = self.Job.Model.atomic[atype]['U']
+                    for ii in range(self.Hindex[a], self.Hindex[a+1]):
+                        # up/up block
+                        self.fock[    jj,     ii] += self.add_H_scase(    jj,     ii, U, natom, norb, rho)
+                        # up/down block
+                        self.fock[    jj, h0s+ii] += self.add_H_scase(    jj, h0s+ii, U, natom, norb, rho)
+                        # down/up block
+                        self.fock[h0s+jj,     ii] += self.add_H_scase(h0s+jj,     ii, U, natom, norb, rho)
+                        # down/down block
+                        self.fock[h0s+jj, h0s+ii] += self.add_H_scase(h0s+jj, h0s+ii, U, natom, norb, rho)
 
         elif self.Job.Def['Hamiltonian'] == "pcase":
             norb = self.Job.NOrb
@@ -163,18 +183,18 @@ class Hamiltonian:
             for a in range(natom):
                 # Get the atom type
                 atype = self.Job.AtomType[a]
-                for j in range(self.Hindex[a], self.Hindex[a+1]):
+                for jj in range(self.Hindex[a], self.Hindex[a+1]):
                     J = self.Job.Model.atomic[atype]['I']
                     U = self.Job.Model.atomic[atype]['U']
-
-                    # up/up block
-                    self.fock[    j,     j] += self.add_H_pcase(    j,     j, U, J, J, natom, norb, rho)
-                    # up/down block
-                    self.fock[    j, h0s+j] += self.add_H_pcase(    j, h0s+j, U, J, J, natom, norb, rho)
-                    # down/up block
-                    self.fock[h0s+j,     j] += self.add_H_pcase(h0s+j,     j, U, J, J, natom, norb, rho)
-                    # down/down block
-                    self.fock[h0s+j, h0s+j] += self.add_H_pcase(h0s+j, h0s+j, U, J, J, natom, norb, rho)
+                    for ii in range(self.Hindex[a], self.Hindex[a+1]):
+                        # up/up block
+                        self.fock[    jj,     ii] += self.add_H_pcase(    jj,     ii, U, J, J, natom, norb, rho)
+                        # up/down block
+                        self.fock[    jj, h0s+ii] += self.add_H_pcase(    jj, h0s+ii, U, J, J, natom, norb, rho)
+                        # down/up block
+                        self.fock[h0s+jj,     ii] += self.add_H_pcase(h0s+jj,     ii, U, J, J, natom, norb, rho)
+                        # down/down block
+                        self.fock[h0s+jj, h0s+ii] += self.add_H_pcase(h0s+jj, h0s+ii, U, J, J, natom, norb, rho)
 
         # for i in range(h0s):
         #     for j in range(i, h0s):
@@ -352,6 +372,59 @@ class Hamiltonian:
                 self.HSO[h0s+k:h0s+k+n,     k:    k+n] += self.Job.Model.atomic[atype]['so'][i]*SOmatrix[l][n+0:n+n,   0:  n]
                 self.HSO[h0s+k:h0s+k+n, h0s+k:h0s+k+n] += self.Job.Model.atomic[atype]['so'][i]*SOmatrix[l][n+0:n+n, n+0:n+n]
                 k += n  # Advance to the start of the next set of orbitals
+
+    def add_H_scase(self, ii, jj, U, num_atoms, num_orbitals, rho):
+        """
+        Add the noncollinear Hamiltonian to the on-site contributions for
+        the s-case Hubbard-like Hamiltonian.
+
+        The tensorial form for this is:
+
+        F^{s,s'}_{i j} = Kd(i,j) (\sum_{s''}Kd(s,s') U rho^{s'',s''}_{i i} - U rho^{s,s'}_{i i} ),
+
+        where Kd is the Kronecker delta symbol; s, s' and s'' are spin indices; i
+        and j are atom indices; rho is the density matrix; U is the Coulomb
+        integral. 
+
+        INPUT                 DATA TYPE       DESCRIPTION
+
+        ii                    int             Fock matrix index 1.
+
+        jj                    int             Fock matrix index 2.
+
+        U                     float           The Coulomb integral.
+
+        num_atoms             int             The number of atoms.
+
+        num_orbitals          list of int     A list of the number of orbitals for
+                                              each atom.
+
+        rho                   numpy matrix    The density matrix.
+
+
+        OUTPUT                DATA TYPE       DESCRIPTION
+
+        F                     float           The Fock matrix element for s-case
+                                              symmetry on-site contributions for
+                                              provided density matrix.
+
+        """
+        # atom, spatial orbital and spin for index 1
+        i, a, s  = map_index_to_atomic(ii, num_atoms, num_orbitals)
+        # atom, spatial orbital and spin for index 2
+        j, b, sp = map_index_to_atomic(jj, num_atoms, num_orbitals)
+        F = 0.0
+        if i == j:
+            # The negative terms
+            F -= U*rho[ii, jj]
+            # The positive terms
+            if s == sp:
+                # the 0 is the orbital number (there is only 1 spatial orbital for s-orbitals).
+                F += U*sum(rho[map_atomic_to_index(i, 0, sig, num_atoms, num_orbitals), map_atomic_to_index(i, 0, sig, num_atoms, num_orbitals)] for sig in range(2))
+        # return the matrix element
+        return F
+
+
 
     def add_H_pcase(self, ii, jj, U, J_S, J_ph, num_atoms, num_orbitals, rho):
         """

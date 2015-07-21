@@ -1,9 +1,9 @@
 {   
     // tight binding model
-    "model": "TBcanonical_p",
+    "model": "TBcanonical_s",
 
-    // Hamiltonian, "standard", "collinearS", "vectorS", "pcase" or "dcase"
-    "Hamiltonian":"pcase",
+    // Hamiltonian, "standard", "collinearS", "vectorS", "scase", "pcase" or "dcase"
+    "Hamiltonian":"scase",
 
     // atomic geometry
     "gy_file": "geom.csv",

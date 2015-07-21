@@ -58,3 +58,4 @@ target/
 
 # Specific to PyLATO
 *.xyz
+occupations.txt

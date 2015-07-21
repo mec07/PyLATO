@@ -48,7 +48,7 @@ def main():
             sys.exit()
 
     # Check to see if my Hamiltonians are being used and hence if the pulay mixing is required
-    if Job.Def['Hamiltonian'] in ('pcase','dcase','vectorS'):
+    if Job.Def['Hamiltonian'] in ('scase','pcase','dcase','vectorS'):
         # myHami is a flag
         myHami = True
     #
