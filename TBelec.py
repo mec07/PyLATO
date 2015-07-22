@@ -148,7 +148,6 @@ class Electronic:
 
     def electrons_site(self,site):
         """Compute the number of electrons on a specified site. """
-        jH = self.Job.Hamilton
         return sum(self.electrons_site_orbital(site,ii) for ii in range(self.Job.Model.atomic[self.Job.AtomType[site]]['NOrbitals'])).real
 
 
@@ -182,3 +181,67 @@ class Electronic:
             ssite[2, a] = (srho[0, 0] - srho[1, 1]).real
         #
         return ssite
+
+
+    def magnetic_correlation(self, site1, site2):
+        """
+        Compute the direction averaged magnetic correlation between sites 1
+        and site 2. This requires the two particle density matrix. As we are
+        using the mean field approximation the two particle density matrix is
+        expressible in terms of the one particle density matrix. The equation
+        below is the equation for the magnetic correlation using the single
+        particle density matrix.
+
+        C_avg = 1/3 sum_{absz}( 2(rho_{aa}^{zs} rho_{bb}^{sz} - rho_{ab}^{zz}rho_{ba}^{ss})
+                - rho_{aa}^{ss}rho_{bb}^{zz}+rho_{ab}^{sz}rho_{ba}^{zs})
+
+        where a are the spatial orbitals on site 1, b are the spatial orbitals
+        on site 2, s and z are spin indices.
+        """
+        jH = self.Job.Hamilton
+
+        C = np.float64(0.0)
+        norb_1 = self.Job.Model.atomic[self.Job.AtomType[site1]]['NOrbitals']
+        norb_2 = self.Job.Model.atomic[self.Job.AtomType[site2]]['NOrbitals']
+        # rho_1_temp = np.zeros((norb_1,norb_1), dtype = 'complex')
+        # rho_2_temp = np.zeros((norb_2,norb_2), dtype = 'complex')
+        rho_1 = np.zeros((2,2), dtype = 'complex')
+        rho_2 = np.zeros((2,2), dtype = 'complex')
+        # generate useful temporary spin matrices
+        for s in range(2):
+            for z in range(2):
+                start_index_1s = TBH.map_atomic_to_index(site1,0,s,self.Job.NAtom, self.Job.NOrb)
+                start_index_1z = TBH.map_atomic_to_index(site1,0,z,self.Job.NAtom, self.Job.NOrb)
+                start_index_2s = TBH.map_atomic_to_index(site2,0,s,self.Job.NAtom, self.Job.NOrb)
+                start_index_2z = TBH.map_atomic_to_index(site2,0,z,self.Job.NAtom, self.Job.NOrb)
+                rho_1_temp = self.rho[start_index_1s:start_index_1s+norb_1,start_index_1z:start_index_1z+norb_1]
+                rho_2_temp = self.rho[start_index_2s:start_index_2s+norb_2,start_index_2z:start_index_2z+norb_2]
+                rho_1[s,z] = rho_1_temp.trace()[0,0]
+                rho_2[s,z] = rho_2_temp.trace()[0,0]
+
+        # term 1:
+        C += 2.0* np.dot(rho_1,rho_2).trace()
+        # term 3
+        C -= rho_1.trace()*rho_2.trace()
+
+        for s in range(2):
+            for z in range(2):
+                for a in range(norb_1):
+                    for b in range(norb_2):
+                        index_az = TBH.map_atomic_to_index(site1,a,z,self.Job.NAtom, self.Job.NOrb)
+                        index_bz = TBH.map_atomic_to_index(site1,b,z,self.Job.NAtom, self.Job.NOrb)
+                        index_bs = TBH.map_atomic_to_index(site1,b,s,self.Job.NAtom, self.Job.NOrb)
+                        index_as = TBH.map_atomic_to_index(site1,a,s,self.Job.NAtom, self.Job.NOrb)
+                        # term 2
+                        C -= 2.0*self.rho[index_az,index_bz]*self.rho[index_as,index_bs]
+                        # term 4
+                        C += self.rho[index_as,index_bz]*self.rho[index_bz,index_as]
+
+        # remember to divide by 3
+        C = C/3.0
+
+        # test to see if the complicated bit at the top is worth doing (i.e. does it provide any speedup?)
+        return C
+
+
+

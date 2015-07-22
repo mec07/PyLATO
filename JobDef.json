@@ -1,9 +1,9 @@
 {   
     // tight binding model
-    "model": "TBcanonical_s",
+    "model": "TBcanonical_p",
 
     // Hamiltonian, "standard", "collinearS", "vectorS", "scase", "pcase" or "dcase"
-    "Hamiltonian":"scase",
+    "Hamiltonian":"pcase",
 
     // atomic geometry
     "gy_file": "geom.csv",
@@ -19,7 +19,7 @@
     "mu_max_loops": 500,
 
     // self-consistent field parameters
-    "scf_on": 1,
+    "scf_on": 0,
     "scf_mix": 0.001,
     "scf_tol": 1.0e-10,
     "scf_max_loops": 500,
