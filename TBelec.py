@@ -12,6 +12,7 @@ import numpy as np
 import math
 import TBH
 import sys
+import time
 
 class Electronic:
     """Initialise and build the density matrix."""
@@ -198,31 +199,10 @@ class Electronic:
         where a are the spatial orbitals on site 1, b are the spatial orbitals
         on site 2, s and z are spin indices.
         """
-        jH = self.Job.Hamilton
 
-        C = np.float64(0.0)
+        C_avg = np.float64(0.0)
         norb_1 = self.Job.Model.atomic[self.Job.AtomType[site1]]['NOrbitals']
         norb_2 = self.Job.Model.atomic[self.Job.AtomType[site2]]['NOrbitals']
-        # rho_1_temp = np.zeros((norb_1,norb_1), dtype = 'complex')
-        # rho_2_temp = np.zeros((norb_2,norb_2), dtype = 'complex')
-        rho_1 = np.zeros((2,2), dtype = 'complex')
-        rho_2 = np.zeros((2,2), dtype = 'complex')
-        # generate useful temporary spin matrices
-        for s in range(2):
-            for z in range(2):
-                start_index_1s = TBH.map_atomic_to_index(site1,0,s,self.Job.NAtom, self.Job.NOrb)
-                start_index_1z = TBH.map_atomic_to_index(site1,0,z,self.Job.NAtom, self.Job.NOrb)
-                start_index_2s = TBH.map_atomic_to_index(site2,0,s,self.Job.NAtom, self.Job.NOrb)
-                start_index_2z = TBH.map_atomic_to_index(site2,0,z,self.Job.NAtom, self.Job.NOrb)
-                rho_1_temp = self.rho[start_index_1s:start_index_1s+norb_1,start_index_1z:start_index_1z+norb_1]
-                rho_2_temp = self.rho[start_index_2s:start_index_2s+norb_2,start_index_2z:start_index_2z+norb_2]
-                rho_1[s,z] = rho_1_temp.trace()[0,0]
-                rho_2[s,z] = rho_2_temp.trace()[0,0]
-
-        # term 1:
-        C += 2.0* np.dot(rho_1,rho_2).trace()
-        # term 3
-        C -= rho_1.trace()*rho_2.trace()
 
         for s in range(2):
             for z in range(2):
@@ -232,16 +212,20 @@ class Electronic:
                         index_bz = TBH.map_atomic_to_index(site1,b,z,self.Job.NAtom, self.Job.NOrb)
                         index_bs = TBH.map_atomic_to_index(site1,b,s,self.Job.NAtom, self.Job.NOrb)
                         index_as = TBH.map_atomic_to_index(site1,a,s,self.Job.NAtom, self.Job.NOrb)
-                        # term 2
-                        C -= 2.0*self.rho[index_az,index_bz]*self.rho[index_as,index_bs]
-                        # term 4
-                        C += self.rho[index_as,index_bz]*self.rho[index_bz,index_as]
+                        # term 1: 2.0*rho_{aa}^{zs} rho_{bb}^{sz}
+                        C_avg += 2.0*self.rho[index_az,index_as]*self.rho[index_bs,index_bz]
+                        # term 2: -2.0*rho_{ab}^{zz}rho_{ba}^{ss})
+                        C_avg -= 2.0*self.rho[index_az,index_bz]*self.rho[index_as,index_bs]
+                        # term 3: -rho_{aa}^{ss}rho_{bb}^{zz}
+                        C_avg -= self.rho[index_as,index_as]*self.rho[index_bz,index_bz]
+                        # term 4: rho_{ab}^{sz}rho_{ba}^{zs}
+                        C_avg += self.rho[index_as,index_bz]*self.rho[index_bz,index_as]
+
 
         # remember to divide by 3
-        C = C/3.0
+        C_avg = C_avg/3.0
 
-        # test to see if the complicated bit at the top is worth doing (i.e. does it provide any speedup?)
-        return C
+        return C_avg
 
 
 
