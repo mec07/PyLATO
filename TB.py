@@ -164,8 +164,8 @@ def main():
     ############################
     # DEBUGGING NEW FUNCTIONS: #
     ############################
-    TBIO.WriteOrbitalOccupations(Job,"occupations.txt")
-    print "Magnetic Correlation = ", Job.Electron.magnetic_correlation(0,1).real
+    TBIO.WriteOrbitalOccupations(Job)
+    TBIO.WriteMagneticCorrelation(Job,0,1)
 
 if __name__ == "__main__":
     # Execute the main code if run as a script.

@@ -102,7 +102,7 @@ def ReadGeom(filename):
     return NAtom, Pos, AtomType
 
 
-def WriteOrbitalOccupations(JobClass, filename):
+def WriteOrbitalOccupations(JobClass, filename="occupations.txt"):
     """
     Write out the orbital occupations to a file.
     """
@@ -110,6 +110,15 @@ def WriteOrbitalOccupations(JobClass, filename):
     information = "\t".join(str(occ) for occ in occupation)
     with open(filename,'w') as f:
         f.write(information)
+
+def WriteMagneticCorrelation(JobClass, site1, site2, filename="mag_corr.txt"):
+    """
+    Write the magnetic correlation between sites 1 and 2 to a file.
+    """
+    C_avg = JobClass.Electron.magnetic_correlation(site1,site2).real
+    with open(filename,'w') as f:
+        f.write(str(C_avg))
+
 
 
 
