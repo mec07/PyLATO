@@ -42,7 +42,7 @@ def PsiSpin(JobClass):
         verboseprint(JobClass.Def['verbose'],'{0:4d}  {1:5.2f}  {2:5.2f}  {3:5.2f}'.format(n, spin[0], spin[1], spin[2]))
 
 
-def WriteXYZ(JobClass, NAtom, Comment, AtomType, Pos):
+def WriteXYZ(JobClass, NAtom, Comment, AtomType, Pos, filename='geometry.xyz'):
     """
     Writes coordinates out to an XYZ file.
 
@@ -54,7 +54,9 @@ def WriteXYZ(JobClass, NAtom, Comment, AtomType, Pos):
     Pos is a 3xNAtom double precision NumPy array holding the atomic positions
 
     """
-    f_xyz = open('geometry.xyz', 'a')
+    # Save the file in the results directory
+    filename = JobClass.results_dir+filename
+    f_xyz = open(filename, 'a')
     f_xyz.write('{0:d}\n'.format(NAtom))
     f_xyz.write('{0}\n'.format(Comment))
     for i in range(0, NAtom):
@@ -106,6 +108,8 @@ def WriteOrbitalOccupations(JobClass, filename="occupations.txt"):
     """
     Write out the orbital occupations to a file.
     """
+    # Save the file in the results directory
+    filename = JobClass.results_dir+filename
     occupation=JobClass.Electron.electrons_orbital_occupation_vec()
     information = "\t".join(str(occ) for occ in occupation)
     with open(filename,'w') as f:
@@ -115,6 +119,8 @@ def WriteMagneticCorrelation(JobClass, site1, site2, filename="mag_corr.txt"):
     """
     Write the magnetic correlation between sites 1 and 2 to a file.
     """
+    # Save the file in the results directory
+    filename = JobClass.results_dir+filename
     C_avg = JobClass.Electron.magnetic_correlation(site1,site2).real
     with open(filename,'w') as f:
         f.write(str(C_avg))

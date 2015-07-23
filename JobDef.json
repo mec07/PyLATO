@@ -5,6 +5,10 @@
     // Hamiltonian, "standard", "collinearS", "vectorS", "scase", "pcase" or "dcase"
     "Hamiltonian":"pcase",
 
+    // Save results in following directory. This is optional. If this is not
+    // included the results will be saved in the current directory.
+    "results_dir":"../output_PyLATO/",
+
     // atomic geometry
     "gy_file": "geom.csv",
 

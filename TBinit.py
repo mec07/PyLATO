@@ -32,6 +32,16 @@ class InitJob:
             print "ERROR: Unable to open tight binding model at %s. ", modelpath
             sys.exit()
 
+        # Has a directory for results been specified?
+        if "results_dir" in self.Def.keys():
+            self.results_dir = self.Def['results_dir']
+            # Make sure that the directory where results will be put exists
+            if not os.path.exists(self.results_dir):
+                os.makedirs(self.results_dir)
+        # If it hasn't been specified then just set it to the current directory.
+        else:
+            self.results_dir = "./"
+
         # Import the module responsible for the tight binding model
         model_module = importlib.import_module("models." + modelname)
 
@@ -46,6 +56,8 @@ class InitJob:
 
         # Initialise the electron module
         self.Electron = TBelec.Electronic(self)
+
+
 
     def init_geom(self, filepath):
 		"""initialise the geometry."""
