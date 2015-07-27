@@ -22,6 +22,7 @@ import commentjson
 import shutil, os, sys
 import myfunctions
 from Verbosity import verboseprint
+import pdb
 
 # The steps:
 #   * Loop over U and J
@@ -29,14 +30,14 @@ from Verbosity import verboseprint
 #       * Run the code and store the mag corr value.
 #   * Make the plot of the magnetic correlation phase diagram.
 Verbose = 1
-orb_type = "p"
+orb_type = "s"
 numeperatom = 1
-plotname = "Mag_Corr_"+orb_type+"_"+str(numeperatom)
+plotname = "../output_PyLATO/Mag_Corr_"+orb_type+"_"+str(numeperatom)
 op_sq_name="\\frac{1}{3} \langle :\hat{\mathbf{m}}_1.\hat{\mathbf{m}}_2:\\rangle"
 
 U_min = 0
 U_max = 10
-U_num_steps = 10
+U_num_steps = 100
 
 J_min = 0
 J_max = 5
@@ -92,7 +93,8 @@ model_python = "models/TBcanonical_"+orb_type+".py"
 model_python_temp = "models/"+model_temp+".py"
 shutil.copyfile(model_python, model_python_temp)
 
-# change the model to the temp name in jobdef
+# change the model and Hamiltonian in jobdef
+jobdef["Hamiltonian"] = orb_type+"case"
 jobdef["model"] = model_temp
 # write jobdef back to file
 with open(jobdef_file, 'w') as f:
@@ -100,28 +102,28 @@ with open(jobdef_file, 'w') as f:
 
 # initialise the mag_corr dictionary
 mag_corr = {}
-
+#pdb.set_trace()
 
 for U in U_array:
     for J in J_array:
         for dJ in dJ_array:
-            model["U"] = U
-            model["NElectrons"] = numeperatom
+            model['species'][0]["U"] = U
+            model['species'][0]["NElectrons"] = numeperatom
             if orb_type == "p":
-                model["J"] = J
+                model['species'][0]["I"] = J
             elif orb_type == "d":
-                model["J"] = J
-                model["dJ"] = dJ
+                model['species'][0]["I"] = J
+                model['species'][0]["dJ"] = dJ
 
             # write out the new modelfile
             with open(temp_modelfile, 'w') as f:
                 commentjson.dump(model, f, sort_keys=True, indent=4, separators=(',', ': '))
 
             mag_corr[U, J, dJ] = TB.main()
-
 # clean up temp files
 os.remove(temp_modelfile)
 os.remove(model_python_temp)
+os.remove(model_python_temp+"c")
 # restore backup of JobDef.json
 shutil.copyfile(jobdef_backup, jobdef_file)
 os.remove(jobdef_backup)

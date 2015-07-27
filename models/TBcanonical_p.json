@@ -6,8 +6,8 @@
         "Name": "p-orbital bolonium", "ChemSymb": "p-Bo ",
         "NElectrons": 4, "NOrbitals": 3, "NShells": 1,
         "l": [1], 
-        "U": 10.0, 
-        "I": 5.0,
+        "U": 7.0, 
+        "I": 1.0,
         "e":[
             [0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0],

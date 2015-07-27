@@ -49,6 +49,7 @@ def main():
             sys.exit()
 
     # Check to see if my Hamiltonians are being used and hence if the pulay mixing is required
+    myHami = False
     if Job.Def['Hamiltonian'] in ('scase','pcase','dcase','vectorS'):
         # myHami is a flag
         myHami = True
@@ -168,6 +169,8 @@ def main():
     ############################
     TBIO.WriteOrbitalOccupations(Job)
     TBIO.WriteMagneticCorrelation(Job,0,1)
+    print "U = ", Job.Model.atomic[0]["U"]
+    #print "J = ", Job.Model.atomic[0]["I"]
     # This is a little hack to get the quick_n_dirty.py to work properly
     return Job.Electron.magnetic_correlation(0,1).real
 
