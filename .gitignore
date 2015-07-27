@@ -59,4 +59,3 @@ target/
 # Specific to PyLATO
 *.xyz
 occupations.txt
-quick_n_dirty.py

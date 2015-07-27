@@ -37,14 +37,15 @@ def main():
         if os.path.exists(jobpath) == True:
             Job = TBinit.InitJob(jobpath)
         else:
-            print "ERROR: Unable to find job file:", jobpath
+            print("ERROR: Unable to find job file:")
+            print(jobpath)
             sys.exit()
     else:
-        print "No Job file specified. Proceeding with default JobDef.json."
+        print("No Job file specified. Proceeding with default JobDef.json.")
         if os.path.exists("JobDef.json") == True:
             Job = TBinit.InitJob("JobDef.json")
         else:
-            print "ERROR: Unable to find default job file: JobDef.json"
+            print("ERROR: Unable to find default job file: JobDef.json")
             sys.exit()
 
     # Check to see if my Hamiltonians are being used and hence if the pulay mixing is required
@@ -147,7 +148,8 @@ def main():
         verboseprint(Job.Def['verbose'], "Number of SCF loops: ", ii+1)
         # if self-consistency is not ofbtained the throw an error and exit.
         if SCFflag is False:
-            print "ERROR: Self-consistency not obtained within maximum number of cycles: ", max_loops
+            print("ERROR: Self-consistency not obtained within maximum number of cycles: ")
+            print(max_loops)
             sys.exit()
 
 
@@ -166,6 +168,8 @@ def main():
     ############################
     TBIO.WriteOrbitalOccupations(Job)
     TBIO.WriteMagneticCorrelation(Job,0,1)
+    # This is a little hack to get the quick_n_dirty.py to work properly
+    return Job.Electron.magnetic_correlation(0,1).real
 
 if __name__ == "__main__":
     # Execute the main code if run as a script.

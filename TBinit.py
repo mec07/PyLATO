@@ -29,7 +29,8 @@ class InitJob:
 
         # Catch invalid model path
         if os.path.exists(modelpath) == False:
-            print "ERROR: Unable to open tight binding model at %s. ", modelpath
+            print("ERROR: Unable to open tight binding model at %s. ")
+            print(modelpath)
             sys.exit()
 
         # Has a directory for results been specified?
