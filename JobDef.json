@@ -1,23 +1,43 @@
-{
-    "Hamiltonian": "pcase",
-    "InterSiteElectrostatics": 0,
-    "alpha": 0.02,
-    "dos_nbin": 20,
-    "el_kT": 0.025,
-    "extraverbose": 0,
+{   
+    // tight binding model
+    "model": "TBcanonical_p",
+
+    // Hamiltonian, "standard", "collinearS", "vectorS", "scase", "pcase" or "dcase"
+    "Hamiltonian":"pcase",
+
+    // Save results in following directory. This is optional. If this is not
+    // included the results will be saved in the current directory.
+    "results_dir":"../output_PyLATO/",
+
+    // atomic geometry
     "gy_file": "geom.csv",
-    "model": "TBcanonical_p_temp",
-    "mu_max_loops": 500,
+
+    // magnetic field
+    "so_eB": [0.0, 0.01, 0.0],
+
+    // electronic temperature in eV
+    "el_kT": 0.025,
+    // the tolerance in finding the chemical potential
     "mu_tol": 1e-13,
-    "results_dir": "../output_PyLATO/",
-    "scf_max_loops": 2500,
-    "scf_mix": 0.001,
+    // max number of bisections when finding mu
+    "mu_max_loops": 500,
+
+    // self-consistent field parameters
     "scf_on": 1,
-    "scf_tol": 1e-10,
-    "so_eB": [
-        0.0,
-        0.01,
-        0.0
-    ],
-    "verbose": 0
+    "scf_mix": 0.001,
+    "scf_tol": 1.0e-10,
+    "scf_max_loops": 500,
+    // Pulay mixing alpha
+    "alpha": 0.1,
+
+    // number of bins for the density of states
+    "dos_nbin": 20,
+
+    // Verbosity
+    "verbose": 0,
+    "extraverbose": 0,
+
+    // InterSiteElectrostatics is set when the 1/r terms are to be included in SCC-TB.
+    "InterSiteElectrostatics": 0
+    // Note: remember that there is no comma after the last entry!
 }
