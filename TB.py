@@ -93,7 +93,6 @@ def main():
 
     if Job.Def["scf_on"] == 1:
         max_loops = Job.Def['scf_max_loops']
-
         for ii in range(max_loops):
             #
             # Build the fock matrix (adds the density matrix dependent terms)
@@ -151,7 +150,7 @@ def main():
         if SCFflag is False:
             print("ERROR: Self-consistency not obtained within maximum number of cycles: ")
             print(max_loops)
-            sys.exit()
+            return SCFflag, 0
 
 
     verboseprint(Job.Def['verbose'], "Energy eigenvalues: ")
@@ -169,10 +168,9 @@ def main():
     ############################
     TBIO.WriteOrbitalOccupations(Job)
     TBIO.WriteMagneticCorrelation(Job,0,1)
-    print "U = ", Job.Model.atomic[0]["U"]
     #print "J = ", Job.Model.atomic[0]["I"]
     # This is a little hack to get the quick_n_dirty.py to work properly
-    return Job.Electron.magnetic_correlation(0,1).real
+    return SCFflag, Job.Electron.magnetic_correlation(0,1).real
 
 if __name__ == "__main__":
     # Execute the main code if run as a script.

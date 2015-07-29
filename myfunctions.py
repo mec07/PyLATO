@@ -16,9 +16,99 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 from Verbosity import verboseprint
 import numpy as np
+import TB
+import commentjson
 
 
-def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps, Jmin, Jstep, Jnumsteps, dJmin, dJstep, dJnumsteps, op_sq_name):
+def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_modelfile, orb_type, number_decimals):
+    """
+    Function mag_corr_loop is designed to run over the U, J and dJ values to
+    fill up the mag_corr dictionary.
+
+    INPUTS          TYPE        DESCRIPTION
+
+    U_array         nparray     All the U values in a numpy array.
+
+    J_array         nparray     All the J values in a numpy array.
+
+    dJ_array        nparray     All the dJ values in a numpy array.
+
+    jobdef          dict        The dictionary that defines the tight binding
+                                job to be run.
+
+    jobdef_file     str         The name of the jobdef file.
+
+    model           dict        The dictionary that contains the model system
+                                for the tight binding job to be run.
+
+    temp_modelfile  str         The name of the model file.
+
+    orb_type        str         On-site orbital symmetry. either s, p or d.
+
+    number_decimals int         The number of decimal places to report values
+                                of U, J and dJ.
+
+
+    OUTPUTS         TYPE        DESCRIPTION
+
+    SuccessFlag     bool        If all the tight binding simulations are
+                                successful then this is returned as True, if
+                                any are not successful the loop is exited and
+                                this is returned as False.
+
+    mag_corr        dict        A dictionary containing value of the magnetic
+                                correlation at each value of U, J and dJ.
+
+
+    """
+    # initialise the mag_corr dictionary
+    mag_corr = {}
+    SuccessFlag = True
+    for U in U_array:
+        for J in J_array:
+            print "U = ", U, "\t J = ", J
+            for dJ in dJ_array:
+                # if J > U:
+                #     mag_corr[U, J, dJ] = 0.0
+                # else:
+                model['species'][0]["U"] = round(U, number_decimals)
+                if orb_type == "p":
+                    model['species'][0]["I"] = round(J, number_decimals)
+                elif orb_type == "d":
+                    model['species'][0]["I"] = round(J, number_decimals)
+                    model['species'][0]["dJ"] = round(dJ, number_decimals)
+
+                # write out the new modelfile
+                with open(temp_modelfile, 'w') as f:
+                    commentjson.dump(model, f, sort_keys=True, indent=4, separators=(',', ': '))
+
+                SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = TB.main()
+                # If the SCF has converged then we can trust the result
+                if SCFflag == True:
+                    pass
+                # If the SCF flag is False and this was an SCF calculation then rerun
+                elif jobdef["scf_on"] == 1:
+                    # Use a smaller value of alpha (divide by 5)
+                    jobdef["alpha"] = jobdef["alpha"]/5.0
+                    # Incrase number of steps by a factor of 5
+                    jobdef["scf_max_loops"] = int(jobdef["scf_max_loops"]*5)
+                    # write jobdef back to file
+                    with open(jobdef_file, 'w') as f:
+                        commentjson.dump(jobdef, f, sort_keys=True, indent=4, separators=(',', ': '))
+                    # and run again
+                    print("SCF did not converge. Re-running simulation with smaller mixing value. ")
+                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = TB.main()
+                    # If that still hasn't worked, exit gracefully...
+                    if SuccessFlag == False:
+                        print("SCF did not converge. Exiting.")
+                        return SuccessFlag, mag_corr
+
+    return SuccessFlag, mag_corr
+
+
+
+
+def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps, Jmin, Jstep, Jnumsteps, dJmin, dJstep, dJnumsteps, op_sq_name, number_decimals):
     """
     The function Plot_OpSq_U_J plots the values of an operator squared
     against U and J. This is done for the groundstate eigenvector and will look
@@ -46,6 +136,9 @@ def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps
     U/J/dJnumsteps    int         The number of steps for U/J/dJ.
     
     op_sq_name        str         The name of operator squared.
+
+    number_decimals   int         The number of decimal places to read in values
+                                  of U, J and dJ.
 
     
     OUTPUTS           TYPE        DESCRIPTION
@@ -76,7 +169,7 @@ def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps
         #     for i in range(NumOpSq):
         #         verboseprint(Verbose,"Eigenvalue: "+str(i+1))
             Urange = [Umin+j*Ustep for j in range(Unumsteps+1)]
-            Values = [op_sq_dict[U, Jmin, dJmin] for U in Urange]
+            Values = [op_sq_dict[round(U, number_decimals), round(Jmin, number_decimals), round(dJmin, number_decimals)] for U in Urange]
         #         #CurveDict[i+1] = plt.plot(Urange,Values,marker=PlotSymbols[len(PlotSymbols)%(i+1)],linestyle=LineStyle[(i+1)%len(LineStyle)],color=PlotColour[(1+i)%len(PlotColour)])
             CurveDict[1] = plt.plot(Urange, Values, linestyle=LineStyle[(1)%len(LineStyle)], color=PlotColour[(1)%len(PlotColour)])
         #     handles = [CurveDict[i+1][0] for i in range(NumOpSq)]
@@ -99,7 +192,7 @@ def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps
             Umax = (Unumsteps)*Ustep+Umin
             Jmax = (Jnumsteps)*Jstep+Jmin
             Urange,Jrange = np.mgrid[slice(Umin,Umax+Ustep,Ustep),slice(Jmin,Jmax+Jstep,Jstep)]
-            Values = np.array([[op_sq_dict[Umin+Ustep*k,Jmin+Jstep*j,dJmin] for j in range(Jnumsteps+1)] for k in range(Unumsteps+1)])
+            Values = np.array([[op_sq_dict[round(Umin+Ustep*k, number_decimals),round(Jmin+Jstep*j, number_decimals), round(dJmin, number_decimals)] for j in range(Jnumsteps+1)] for k in range(Unumsteps+1)])
             fig = plt.figure()
             #NoColourSteps=100
             #ColourStepSize=(Values.max()-Values.min())/(NoColourSteps-1)
@@ -179,7 +272,7 @@ def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps
             cmin=min(op_sq_dict.values())
             for ii in range(dJnumsteps+1):
                 dJ = round(ii*dJstep+dJmin,num_decimal_point)
-                Values = np.array([[op_sq_dict[Umin+Ustep*k,Jmin+Jstep*j,dJ] for j in range(Jnumsteps+1)] for k in range(Unumsteps+1)])
+                Values = np.array([[op_sq_dict[round(Umin+Ustep*k, number_decimals), round(Jmin+Jstep*j, number_decimals), round(dJ, number_decimals)] for j in range(Jnumsteps+1)] for k in range(Unumsteps+1)])
                 # plt.figure()
                 fig = plt.figure()
                 ax = fig.add_subplot(111)

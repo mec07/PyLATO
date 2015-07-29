@@ -16,7 +16,6 @@ What I want:
 To vary U and J I have to mess with the model.
 
 """
-import TB
 import numpy as np
 import commentjson
 import shutil, os, sys
@@ -30,22 +29,23 @@ import pdb
 #       * Run the code and store the mag corr value.
 #   * Make the plot of the magnetic correlation phase diagram.
 Verbose = 1
-orb_type = "s"
+number_decimals = 6
+orb_type = "p"
 numeperatom = 1
 plotname = "../output_PyLATO/Mag_Corr_"+orb_type+"_"+str(numeperatom)
 op_sq_name="\\frac{1}{3} \langle :\hat{\mathbf{m}}_1.\hat{\mathbf{m}}_2:\\rangle"
 
-U_min = 0
+U_min = 0.005
 U_max = 10
-U_num_steps = 100
+U_num_steps = 15
 
-J_min = 0
+J_min = 0.005
 J_max = 5
-J_num_steps = 10
+J_num_steps = 15
 
 dJ_min = 0
 dJ_max = 1
-dJ_num_steps = 10
+dJ_num_steps = 1
 
 U_array, U_step = np.linspace(U_min, U_max, num=U_num_steps, retstep=True)
 # test
@@ -92,34 +92,23 @@ with open(modelfile, 'r') as f:
 model_python = "models/TBcanonical_"+orb_type+".py"
 model_python_temp = "models/"+model_temp+".py"
 shutil.copyfile(model_python, model_python_temp)
+# make sure that the number of electrons is correct.
+model['species'][0]["NElectrons"] = numeperatom
 
 # change the model and Hamiltonian in jobdef
 jobdef["Hamiltonian"] = orb_type+"case"
 jobdef["model"] = model_temp
+# make sure that the scf is on
+jobdef["scf_on"] = 1
 # write jobdef back to file
 with open(jobdef_file, 'w') as f:
     commentjson.dump(jobdef, f, sort_keys=True, indent=4, separators=(',', ': '))
 
-# initialise the mag_corr dictionary
-mag_corr = {}
 #pdb.set_trace()
 
-for U in U_array:
-    for J in J_array:
-        for dJ in dJ_array:
-            model['species'][0]["U"] = U
-            model['species'][0]["NElectrons"] = numeperatom
-            if orb_type == "p":
-                model['species'][0]["I"] = J
-            elif orb_type == "d":
-                model['species'][0]["I"] = J
-                model['species'][0]["dJ"] = dJ
+magFlag, mag_corr = myfunctions.mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_modelfile, orb_type, number_decimals)
 
-            # write out the new modelfile
-            with open(temp_modelfile, 'w') as f:
-                commentjson.dump(model, f, sort_keys=True, indent=4, separators=(',', ': '))
 
-            mag_corr[U, J, dJ] = TB.main()
 # clean up temp files
 os.remove(temp_modelfile)
 os.remove(model_python_temp)
@@ -128,6 +117,8 @@ os.remove(model_python_temp+"c")
 shutil.copyfile(jobdef_backup, jobdef_file)
 os.remove(jobdef_backup)
 
-# Make the plot:
-myfunctions.Plot_OpSq_U_J(Verbose,mag_corr,orb_type,plotname,U_min,U_step,U_num_steps,J_min,J_step,J_num_steps,dJ_min,dJ_step,dJ_num_steps,op_sq_name)
-
+# Make the plot if the mag_corr_loop was successful
+if magFlag == True:
+    myfunctions.Plot_OpSq_U_J(Verbose,mag_corr,orb_type,plotname,U_min,U_step,U_num_steps,J_min,J_step,J_num_steps,dJ_min,dJ_step,dJ_num_steps,op_sq_name, number_decimals)
+else:
+    print("Simulation failed.")
