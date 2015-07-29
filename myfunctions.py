@@ -99,7 +99,8 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                     print("SCF did not converge. Re-running simulation with smaller mixing value. ")
                     SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = TB.main()
                     # If that still hasn't worked, exit gracefully...
-                    if SuccessFlag == False:
+                    if SCFflag == False:
+                        SuccessFlag = False
                         print("SCF did not converge. Exiting.")
                         return SuccessFlag, mag_corr
 
