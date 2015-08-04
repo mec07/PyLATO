@@ -89,9 +89,9 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                 # If the SCF flag is False and this was an SCF calculation then rerun
                 elif jobdef["scf_on"] == 1:
                     # Use a smaller value of alpha (divide by 5)
-                    jobdef["alpha"] = jobdef["alpha"]/5.0
+                    jobdef["alpha"] = jobdef["alpha"]/10.0
                     # Increase number of steps by a factor of 5
-                    jobdef["scf_max_loops"] = int(jobdef["scf_max_loops"]*5)
+                    jobdef["scf_max_loops"] = int(jobdef["scf_max_loops"]*10)
                     # write jobdef back to file
                     with open(jobdef_file, 'w') as f:
                         commentjson.dump(jobdef, f, sort_keys=True, indent=4, separators=(',', ': '))
@@ -100,8 +100,8 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                     SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = TB.main()
                     
                     # Re-set the jobdef variables:
-                    jobdef["alpha"] = jobdef["alpha"]*5.0
-                    jobdef["scf_max_loops"] = int(jobdef["scf_max_loops"]/5)
+                    jobdef["alpha"] = jobdef["alpha"]*10.0
+                    jobdef["scf_max_loops"] = int(jobdef["scf_max_loops"]/10)
                     with open(jobdef_file, 'w') as f:
                         commentjson.dump(jobdef, f, sort_keys=True, indent=4, separators=(',', ': '))
                     # If that still hasn't worked, exit gracefully...
