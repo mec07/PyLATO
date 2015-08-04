@@ -90,7 +90,7 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                 elif jobdef["scf_on"] == 1:
                     # Use a smaller value of alpha (divide by 5)
                     jobdef["alpha"] = jobdef["alpha"]/5.0
-                    # Incrase number of steps by a factor of 5
+                    # Increase number of steps by a factor of 5
                     jobdef["scf_max_loops"] = int(jobdef["scf_max_loops"]*5)
                     # write jobdef back to file
                     with open(jobdef_file, 'w') as f:
@@ -98,6 +98,12 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                     # and run again
                     print("SCF did not converge. Re-running simulation with smaller mixing value. ")
                     SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = TB.main()
+                    
+                    # Re-set the jobdef variables:
+                    jobdef["alpha"] = jobdef["alpha"]*5.0
+                    jobdef["scf_max_loops"] = int(jobdef["scf_max_loops"]/5)
+                    with open(jobdef_file, 'w') as f:
+                        commentjson.dump(jobdef, f, sort_keys=True, indent=4, separators=(',', ': '))
                     # If that still hasn't worked, exit gracefully...
                     if SCFflag == False:
                         SuccessFlag = False
