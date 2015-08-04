@@ -97,11 +97,11 @@ class Electronic:
 
         """
         return sum(abs(
-                self.rho[TBH.map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb),TBH.map_atomic_to_index(atom2, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)]
-           - self.rhotot[TBH.map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb),TBH.map_atomic_to_index(atom2, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)])
+                self.rho[TBH.map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb),TBH.map_atomic_to_index(atom1, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)]
+           - self.rhotot[TBH.map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb),TBH.map_atomic_to_index(atom1, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)])
                 for atom1 in range(self.Job.NAtom) for orbital1 in range(self.Job.NOrb[atom1]) for spin1 in range(2)
-                for atom2 in range(atom1,self.Job.NAtom) for orbital2 in range(orbital1,self.Job.NOrb[atom2]) for spin2 in range(spin1,2)
-                )/self.Job.Electron.NElectrons
+                for orbital2 in range(orbital1,self.Job.NOrb[atom2]) for spin2 in range(spin1,2)
+                )/(self.Job.Electron.NElectrons**2)
 
     def pulay(self):
         """
