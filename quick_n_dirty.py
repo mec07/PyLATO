@@ -37,11 +37,11 @@ op_sq_name="\\frac{1}{3} \langle :\hat{\mathbf{m}}_1.\hat{\mathbf{m}}_2:\\rangle
 
 U_min = 0.005
 U_max = 10
-U_num_steps = 15
+U_num_steps = 100
 
 J_min = 0.005
 J_max = 5
-J_num_steps = 15
+J_num_steps = 100
 
 dJ_min = 0
 dJ_max = 1

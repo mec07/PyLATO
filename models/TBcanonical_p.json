@@ -4,10 +4,10 @@
     // p-orbital bolonium data
     {
         "Name": "p-orbital bolonium", "ChemSymb": "p-Bo ",
-        "NElectrons": 4, "NOrbitals": 3, "NShells": 1,
+        "NElectrons": 1, "NOrbitals": 3, "NShells": 1,
         "l": [1], 
-        "U": 7.0, 
-        "I": 1.0,
+        "U": 0.307879,
+        "I": 0.005,
         "e":[
             [0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0],

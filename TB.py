@@ -48,7 +48,7 @@ def main():
             print("ERROR: Unable to find default job file: JobDef.json")
             sys.exit()
 
-    # Check to see if my Hamiltonians are being used and hence if the pulay mixing is required
+    # Check to see if my Hamiltonians are being used and hence if the linear mixing is required
     myHami = False
     if Job.Def['Hamiltonian'] in ('scase','pcase','dcase','vectorS'):
         # myHami is a flag
@@ -113,8 +113,8 @@ def main():
                 verboseprint(Job.Def['verbose'], 'SCF loop = ', ii+1, '; SCF error = ', SCFerror)
                 # Check if the SCF error is still larger than the tolerance
                 if SCFerror > Job.Def['scf_tol']:
-                    # Update the density matrix by Pulay mixing
-                    Job.Electron.pulay()
+                    # Update the density matrix by linear mixing
+                    Job.Electron.linear_mixing()
                 else:
                     SCFflag = True
                     break

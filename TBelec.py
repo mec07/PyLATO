@@ -100,12 +100,12 @@ class Electronic:
                 self.rho[TBH.map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb),TBH.map_atomic_to_index(atom1, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)]
            - self.rhotot[TBH.map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb),TBH.map_atomic_to_index(atom1, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)])
                 for atom1 in range(self.Job.NAtom) for orbital1 in range(self.Job.NOrb[atom1]) for spin1 in range(2)
-                for orbital2 in range(orbital1,self.Job.NOrb[atom2]) for spin2 in range(spin1,2)
+                for orbital2 in range(orbital1,self.Job.NOrb[atom1]) for spin2 in range(spin1,2)
                 )/(self.Job.Electron.NElectrons**2)
 
-    def pulay(self):
+    def linear_mixing(self):
         """
-        Mix the new and the old density matrix by Pulay mixing.
+        Mix the new and the old density matrix by linear mixing.
         The form of this mixing is 
             rho_out = (1-alpha) rho_old + alpha rho_new
         for which, using our notation, rho_new is self.rho, rho_old is

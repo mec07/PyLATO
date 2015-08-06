@@ -107,7 +107,8 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                     # If that still hasn't worked, exit gracefully...
                     if SCFflag == False:
                         SuccessFlag = False
-                        print("SCF did not converge. Exiting.")
+                        print "SCF did not converge for U = ", round(U, number_decimals), "; J = ", round(J, number_decimals), "; dJ = ", round(dJ, number_decimals)
+                        print "Exiting."
                         return SuccessFlag, mag_corr
 
     return SuccessFlag, mag_corr
