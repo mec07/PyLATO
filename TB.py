@@ -118,6 +118,7 @@ def main():
                 else:
                     SCFflag = True
                     break
+                Job.Electron.idempotency_error()
 
             else:
                 #

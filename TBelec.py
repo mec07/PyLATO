@@ -32,10 +32,10 @@ class Electronic:
         #
         # Allocate memory for the level occupancies and density matrix
         self.occ = np.zeros( self.Job.Hamilton.HSOsize, dtype='double')
-        self.rho = np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
+        self.rho = np.matrix(np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex'))
         # for the pcase, dcase and vector Stoner Hamiltonians we need two density matrices
         if self.Job.Def['Hamiltonian'] in ('pcase','dcase','vectorS'):
-            self.rhotot = np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
+            self.rhotot = np.matrix(np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex'))
 
 
     def fermi(self, e, mu, kT):
@@ -102,6 +102,19 @@ class Electronic:
                 for atom1 in range(self.Job.NAtom) for orbital1 in range(self.Job.NOrb[atom1]) for spin1 in range(2)
                 for orbital2 in range(orbital1,self.Job.NOrb[atom1]) for spin2 in range(spin1,2)
                 )/(self.Job.Electron.NElectrons**2)
+
+    def idempotency_error(self):
+        """
+        Determine how far from idempotency the density matrix is. If the
+        density matrix is idempotent then
+
+        rho*rho - rho = 0.
+        
+        """
+        rho_err = np.linalg.norm((np.dot(self.rho, self.rho) - self.rho))
+        print "output rho idempotency error is: ", rho_err
+        rhotot_err = np.linalg.norm((np.dot(self.rhotot, self.rhotot) - self.rhotot))
+        print "input rho idempotency error is: ", rhotot_err
 
     def linear_mixing(self):
         """
