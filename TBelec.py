@@ -33,9 +33,12 @@ class Electronic:
         # Allocate memory for the level occupancies and density matrix
         self.occ = np.zeros( self.Job.Hamilton.HSOsize, dtype='double')
         self.rho = np.matrix(np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex'))
-        # for the pcase, dcase and vector Stoner Hamiltonians we need two density matrices
-        if self.Job.Def['Hamiltonian'] in ('pcase','dcase','vectorS'):
-            self.rhotot = np.matrix(np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex'))
+        self.rhotot = np.matrix(np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex'))
+        # setup for the Pulay mixing
+        self.rho_opt = np.matrix(np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex'))
+        self.inputrho = np.zeros((self.Job.Def['num_rho'], self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
+        self.outputrho = np.zeros((self.Job.Def['num_rho'], self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
+        self.residue = np.zeros((self.Job.Def['num_rho'], self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
 
 
     def fermi(self, e, mu, kT):
@@ -124,8 +127,27 @@ class Electronic:
         for which, using our notation, rho_new is self.rho, rho_old is
         self.rhotot and we overwrite self.rhotot to make rho_out.
         """
-        alpha = self.Job.Def['alpha']
-        self.rhotot = (1-alpha)*self.rhotot + alpha*self.rho
+        A = self.Job.Def['A']
+        self.rhotot = (1-A)*self.rhotot + A*self.rho
+
+    def GR_pulay(self, scf_iteration):
+        """
+        This is the guaranteed reduction Pulay mixing scheme proposed by
+        Bowler and Gillan in 2008. If the number of density matrices to be
+        used, num_rho, is 1, it reduces to just linear mixing. 
+
+        The scf_iteration is a required input because when scf_iteration is
+        less than num_rho then scf_iteration is the number of density matrices
+        that should be used.
+
+        The output is an updated self.rhotot to be used in the construction of
+        the Fock matrix. Also, self.inputrho, self.outputrho and self.residue
+        are updated for the next iteration.
+
+        """
+        num_rho = self.Job.Def['num_rho']
+
+
 
 
     def chargepersite(self):
