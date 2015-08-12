@@ -329,6 +329,12 @@ class Hamiltonian:
         integrals for the reference geometry for a tight binding model using the
         coefficients associated with the model. The block of the Hamiltonian
         matrix is built using the integrals from the model and Slater-Koster tables.
+
+        We are currently assuming in the periodic boundary conditions that the
+        interactions do not extend any further than the adjacent 26 cells. If
+        they do extend further, the number of cells to loop over would have to
+        be calculated e.g. extend the jx, jy, and jz loops to go from -2 to 2
+        or -3 to 3...
         """
         
         # Clear the memory for the Hamiltonian matrix
