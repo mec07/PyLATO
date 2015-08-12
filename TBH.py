@@ -336,13 +336,35 @@ class Hamiltonian:
         
         # Step through all pairs of atoms
         for a1 in range(self.Job.NAtom):
-            for a2 in range(self.Job.NAtom):
+            for a2 in range(a1, self.Job.NAtom):
                 self.H0[self.Hindex[a1]:self.Hindex[a1+1],
-                    self.Hindex[a2]:self.Hindex[a2+1]] = self.hopping_block(a1,a2)
+                    self.Hindex[a2]:self.Hindex[a2+1]] = self.hopping_block(a1, a2)
+                # Now add the corresponding section with a1 and a2 swapped.
+                self.H0[self.Hindex[a2]:self.Hindex[a2+1],
+                    self.Hindex[a1]:self.Hindex[a1+1]] = \
+                        np.transpose(self.H0[self.Hindex[a1]:self.Hindex[a1+1],
+                            self.Hindex[a2]:self.Hindex[a2+1]])
                     
 
         # periodic boundary conditions
-        #if self.Job.Def["PBC"] == 1:
+        if self.Job.Def["PBC"] == 1:
+            for a1 in range(self.Job.NAtom):
+                for a2 in range(a1, self.Job.NAtom):
+                    # loop over the 26 adjacent cubes.
+                    for jx in range(-1,2):
+                        for jy in range(-1,2):
+                            for jz in range(-1,2):
+                                # Do not consider the centre cube again
+                                if (jx, jy, jz) == (0, 0, 0):
+                                    pass
+                                else:
+                                    self.H0[self.Hindex[a1]:self.Hindex[a1+1],
+                                        self.Hindex[a2]:self.Hindex[a2+1]] += \
+                                            self.hopping_block(a1, a2, jx, jy, jz)
+                                    self.H0[self.Hindex[a2]:self.Hindex[a2+1],
+                                        self.Hindex[a1]:self.Hindex[a1+1]] = \
+                                            np.transpose(self.H0[self.Hindex[a1]:self.Hindex[a1+1],
+                                                self.Hindex[a2]:self.Hindex[a2+1]])
 
     def hopping_block(self, atom1, atom2, jx=0.0, jy=0.0, jz=0.0):
         """
