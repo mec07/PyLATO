@@ -372,7 +372,8 @@ class Hamiltonian:
         the provided two atoms, atom1 and atom2. This also works for periodic
         boundary conditions by supplying a displacement vector, jx, jy and jz,
         which by default is turned off. For the periodic boundary conditions
-        we assume that the cell is cubic.
+        a file containing the three unit cell vectors must be included in the
+        simulation directory.
         """
         # If the atoms are the same, compute an onsite block, otherwise compute a hopping block
         type1 = self.Job.AtomType[atom1]

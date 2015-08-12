@@ -5,7 +5,7 @@
     // Hamiltonian, "standard", "collinearS", "vectorS", "scase", "pcase" or "dcase"
     "Hamiltonian":"pcase",
 
-    // Periodic boundary conditions (assuming cubic symmetry)
+    // Periodic boundary conditions
     "PBC":1,
 
     // Save results in following directory. This is optional. If this is not
