@@ -231,8 +231,8 @@ class Hamiltonian:
         K(2,0) = (3z^2 - r^2)/2
         K(2,1) = sqrt(3) zx
         K(2,2) = sqrt(3) zy
-        K(2,3) = sqrt(3) (x^2-y^2)/2
-        K(2,4) = sqrt(3) xy
+        K(2,3) = sqrt(3) xy
+        K(2,4) = sqrt(3) (x^2-y^2)/2
 
         etc.
         """
@@ -288,32 +288,33 @@ class Hamiltonian:
             block[0,0] = (n*n-0.5*(l*l+m*m))*(n*n-0.5*(l*l+m*m))*v[0] + 3*n*n*(l*l+m*m)*v[1] + 0.75*(l*l+m*m)*(l*l+m*m)*v[2]
             block[0,1] = math.sqrt(3.0)*n*l*(n*n*(v[0]-v[1]) - 0.5*(l*l+m*m)*(v[0] - 2.0*v[1] + v[2]))
             block[0,2] = math.sqrt(3.0)*n*m*(n*n*(v[0]-v[1]) - 0.5*(l*l+m*m)*(v[0] - 2.0*v[1] + v[2]))
-            block[0,3] = 0.5*math.sqrt(3.0)*(l*l-m*m)*((n*n-0.5*(l*l+m*m))*v[0] - 2.0*n*n*v[1] + 0.5*(1.0+n*n)*v[2])
-            block[0,4] = math.sqrt(3.0)*l*m*          ((n*n-0.5*(l*l+m*m))*v[0] - 2.0*n*n*v[1] + 0.5*(1.0+n*n)*v[2])
+            block[0,3] = math.sqrt(3.0)*l*m*          ((n*n-0.5*(l*l+m*m))*v[0] - 2.0*n*n*v[1] + 0.5*(1.0+n*n)*v[2])
+            block[0,4] = 0.5*math.sqrt(3.0)*(l*l-m*m)*((n*n-0.5*(l*l+m*m))*v[0] - 2.0*n*n*v[1] + 0.5*(1.0+n*n)*v[2])
 
             block[1,0] = block[0,1]
             block[1,1] = 3.0*n*n*l*l*v[0] + (n*n+l*l-4.0*n*n*l*l)*v[1] + (m*m+n*n*l*l)*v[2]
-            block[1,2] = l*m*(3*n*n*v[0] + (1.0-4.0*n*n)*v[1] + (n*n-1.0)*v[2])
-            block[1,3] = n*l*(1.5*(l*l-m*m)*v[0] + (1.0-2.0*(l*l-m*m))*v[1] - (1.0-0.5*(l*l-m*m))*v[2])
-            block[1,4] = n*m*(3*l*l*v[0] + (1.0-4.0*l*l)*v[1] + (l*l-1.0)*v[2])
+            block[1,2] = l*m*(3.0*n*n*v[0] + (1.0-4.0*n*n)*v[1] + (n*n-1.0)*v[2])
+            block[1,3] = n*m*(3*l*l*v[0] + (1.0-4.0*l*l)*v[1] + (l*l-1.0)*v[2])
+            block[1,4] = n*l*(1.5*(l*l-m*m)*v[0] + (1.0-2.0*(l*l-m*m))*v[1] - (1.0-0.5*(l*l-m*m))*v[2])
 
             block[2,0] = block[0,2]
             block[2,1] = block[1,2]
             block[2,2] = 3.0*n*n*m*m*v[0] + (n*n+m*m-4.0*n*n*m*m)*v[1] + (l*l+n*n*m*m)*v[2]
-            block[2,3] = n*m*(1.5*(l*l-m*m)*v[0] - (1.0+2.0*(l*l-m*m))*v[1] + (1.0+0.5*(l*l-m*m))*v[2])
-            block[2,4] = n*l*(3*m*m*v[0] + (1.0-4.0*m*m)*v[1] + (m*m-1.0)*v[2])
+            block[2,3] = n*l*(3.0*m*m*v[0] + (1.0-4.0*m*m)*v[1] + (m*m-1.0)*v[2])
+            block[2,4] = n*m*(1.5*(l*l-m*m)*v[0] - (1.0+2.0*(l*l-m*m))*v[1] + (1.0+0.5*(l*l-m*m))*v[2])
 
             block[3,0] = block[0,3]
             block[3,1] = block[1,3]
             block[3,2] = block[2,3]
-            block[3,3] = 0.75*(l*l-m*m)*(l*l-m*m)*v[0] + (l*l+m*m-(l*l-m*m)*(l*l-m*m))*v[1] + (n*n+0.25*(l*l-m*m)*(l*l-m*m))*v[2]
+            block[3,3] = 3.0*l*l*m*m*v[0] + (l*l+m*m-4.0*l*l*m*m)*v[1] + (n*n+l*l*m*m)*v[2]
             block[3,4] = m*l*(1.5*(l*l-m*m)*v[0] - 2.0*(l*l-m*m)*v[1] + 0.5*(l*l-m*m)*v[2])
-
+            
             block[4,0] = block[0,4]
             block[4,1] = block[1,4]
             block[4,2] = block[2,4]
             block[4,3] = block[3,4]
-            block[4,4] = 3.0*l*l*m*m*v[0] + (l*l+m*m-4.0*l*l*m*m)*v[1] + (n*n+l*l*m*m)*v[2]
+            block[4,4] = 0.75*(l*l-m*m)*(l*l-m*m)*v[0] + (l*l+m*m-(l*l-m*m)*(l*l-m*m))*v[1] + (n*n+0.25*(l*l-m*m)*(l*l-m*m))*v[2]
+
                     
         # Return the Hamiltonian block
         return block
