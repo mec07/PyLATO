@@ -366,7 +366,7 @@ class Hamiltonian:
                                             np.transpose(self.H0[self.Hindex[a1]:self.Hindex[a1+1],
                                                 self.Hindex[a2]:self.Hindex[a2+1]])
 
-    def hopping_block(self, atom1, atom2, jx=0.0, jy=0.0, jz=0.0):
+    def hopping_block(self, atom1, atom2, jx=0, jy=0, jz=0):
         """
         Calculate and return the matrix block of the hopping integrals between
         the provided two atoms, atom1 and atom2. This also works for periodic
@@ -376,7 +376,7 @@ class Hamiltonian:
         """
         # If the atoms are the same, compute an onsite block, otherwise compute a hopping block
         type1 = self.Job.AtomType[atom1]
-        if atom1 == atom2:
+        if atom1 == atom2 and (jx, jy, jz) == (0, 0, 0):
             return self.Job.Model.atomic[type1]['e']
         else:
             type2 = self.Job.AtomType[atom2]
