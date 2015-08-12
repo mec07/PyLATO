@@ -50,7 +50,7 @@ class InitJob:
         self.Model = model_module.MatrixElements(os.path.join("models", modelname + ".json"))
 
         # Initialise the geometry
-        self.init_geom(self.Def['gy_file'])
+        self.init_geom(self.Def['gy_file'], self.Def['uc_file'])
 
         # Initialise the Hamiltonian class
         self.Hamilton = TBH.Hamiltonian(self)
@@ -60,11 +60,16 @@ class InitJob:
 
 
 
-    def init_geom(self, filepath):
+    def init_geom(self, position_file, unitcell_file):
 		"""initialise the geometry."""
 
 		# Read in the geometry from file
-		NAtom, Pos, AtomType = TBIO.ReadGeom(filepath)
+		NAtom, Pos, AtomType = TBIO.ReadGeom(position_file)
+        # If PBCs are turned on then read in the unit cell
+        if self.Def["PBC"]==1:
+            a1, a2, a3 = TBIO.ReadUnitCell(unitcell_file)
+        else:
+            a1, a2, a3 = None, None, None
 
 		# Write out the geometry
 		TBIO.WriteXYZ(self, NAtom, '', AtomType, Pos)
@@ -72,6 +77,7 @@ class InitJob:
 		# Transfer geometry to the JobClass
 		self.NAtom    = NAtom
 		self.Pos      = Pos
+        self.UnitCell = [a1, a2, a3]
 
 		self.AtomType = AtomType
 		self.NOrb     = [self.Model.atomic[self.AtomType[a]]['NOrbitals'] for a in range(self.NAtom)]

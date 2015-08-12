@@ -14,6 +14,8 @@
 
     // atomic geometry
     "gy_file": "geom.csv",
+    // unit cell file
+    "uc_file":"UnitCell.csv",
 
     // magnetic field
     "so_eB": [0.0, 0.01, 0.0],

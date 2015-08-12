@@ -103,6 +103,42 @@ def ReadGeom(filename):
     # Return the geometry
     return NAtom, Pos, AtomType
 
+def ReadUnitCell(filename):
+    """
+    This function reads in the unit cell file.
+
+    The unit cell file has the structure:
+
+    a1x, a1y, a1z
+    a2x, a2y, a2z
+    a3x, a3y, a3z
+
+    where they are the three lattice vectors. Return the three
+    lattice vectors as arrays.
+    """
+    # a1 = np.zeros((3), dtype='double')
+    # a2 = np.zeros((3), dtype='double')
+    # a3 = np.zeros((3), dtype='double')
+    with open(filename, 'r') as f:
+        line = ""
+        # ignore any blank lines
+        while line=="":
+            line = f.readline()
+        line = line.strip().split(',')
+        a1 = np.array([float(line[0]), float(line[1]), float(line[2])])
+        line = ""
+        # ignore any blank lines
+        while line=="":
+            line = f.readline()
+        line = line.strip().split(',')
+        a2 = np.array([float(line[0]), float(line[1]), float(line[2])])
+        line = ""
+        # ignore any blank lines
+        while line=="":
+            line = f.readline()
+        line = line.strip().split(',')
+        a3 = np.array([float(line[0]), float(line[1]), float(line[2])])
+    return a1, a2, a3
 
 def WriteOrbitalOccupations(JobClass, filename="occupations.txt"):
     """
