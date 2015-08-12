@@ -5,6 +5,9 @@
     // Hamiltonian, "standard", "collinearS", "vectorS", "scase", "pcase" or "dcase"
     "Hamiltonian":"pcase",
 
+    // Periodic boundary conditions (assuming cubic symmetry) -- not yet implemented.
+    "PBC":1,
+
     // Save results in following directory. This is optional. If this is not
     // included the results will be saved in the current directory.
     "results_dir":"../output_PyLATO/",

@@ -367,6 +367,10 @@ class Hamiltonian:
 
                         k1 += n1  # Advance to the start of the next set of orbitals
 
+        # periodic boundary conditions
+        if self.Job.Def["PBC"] == 1:
+
+
     def buildHSO(self):
         """Build the Hamiltonian with spin orbit coupling."""
         global SOmatrix
