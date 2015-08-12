@@ -5,7 +5,7 @@
     // Hamiltonian, "standard", "collinearS", "vectorS", "scase", "pcase" or "dcase"
     "Hamiltonian":"pcase",
 
-    // Periodic boundary conditions (assuming cubic symmetry) -- not yet implemented.
+    // Periodic boundary conditions (assuming cubic symmetry)
     "PBC":1,
 
     // Save results in following directory. This is optional. If this is not
@@ -28,7 +28,7 @@
     "mu_max_loops": 500,
 
     // self-consistent field parameters
-    "scf_on": 1,
+    "scf_on": 0,
     "scf_mix": 0.001,
     "scf_tol": 1.0e-8,
     "scf_max_loops": 1000,

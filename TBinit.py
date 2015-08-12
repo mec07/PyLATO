@@ -61,26 +61,26 @@ class InitJob:
 
 
     def init_geom(self, position_file, unitcell_file):
-		"""initialise the geometry."""
+        """initialise the geometry."""
 
-		# Read in the geometry from file
-		NAtom, Pos, AtomType = TBIO.ReadGeom(position_file)
+        # Read in the geometry from file
+        NAtom, Pos, AtomType = TBIO.ReadGeom(position_file)
         # If PBCs are turned on then read in the unit cell
-        if self.Def["PBC"]==1:
+        if self.Def["PBC"] == 1:
             a1, a2, a3 = TBIO.ReadUnitCell(unitcell_file)
         else:
             a1, a2, a3 = None, None, None
 
-		# Write out the geometry
-		TBIO.WriteXYZ(self, NAtom, '', AtomType, Pos)
+        # Write out the geometry
+        TBIO.WriteXYZ(self, NAtom, '', AtomType, Pos)
 
-		# Transfer geometry to the JobClass
-		self.NAtom    = NAtom
-		self.Pos      = Pos
+        # Transfer geometry to the JobClass
+        self.NAtom    = NAtom
+        self.Pos      = Pos
         self.UnitCell = [a1, a2, a3]
 
-		self.AtomType = AtomType
-		self.NOrb     = [self.Model.atomic[self.AtomType[a]]['NOrbitals'] for a in range(self.NAtom)]
+        self.AtomType = AtomType
+        self.NOrb     = [self.Model.atomic[self.AtomType[a]]['NOrbitals'] for a in range(self.NAtom)]
 
-		verboseprint(self.Def['verbose'], "Atom positions:")
-		verboseprint(self.Def['verbose'], self.Pos)
+        verboseprint(self.Def['verbose'], "Atom positions:")
+        verboseprint(self.Def['verbose'], self.Pos)

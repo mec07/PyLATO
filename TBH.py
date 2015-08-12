@@ -342,7 +342,7 @@ class Hamiltonian:
                     
 
         # periodic boundary conditions
-        if self.Job.Def["PBC"] == 1:
+        #if self.Job.Def["PBC"] == 1:
 
     def hopping_block(self, atom1, atom2, jx=0.0, jy=0.0, jz=0.0):
         """
@@ -353,11 +353,11 @@ class Hamiltonian:
         we assume that the cell is cubic.
         """
         # If the atoms are the same, compute an onsite block, otherwise compute a hopping block
-        type1 = self.Job.AtomType[a1]
+        type1 = self.Job.AtomType[atom1]
         if atom1 == atom2:
             return self.Job.Model.atomic[type1]['e']
         else:
-            type2 = self.Job.AtomType[a2]
+            type2 = self.Job.AtomType[atom2]
             norb1 = self.Job.Model.atomic[type1]['NOrbitals']
             norb2 = self.Job.Model.atomic[type2]['NOrbitals']
             temp_mat = np.zeros((norb1, norb2), dtype='double')

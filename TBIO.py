@@ -121,20 +121,20 @@ def ReadUnitCell(filename):
     # a3 = np.zeros((3), dtype='double')
     with open(filename, 'r') as f:
         line = ""
-        # ignore any blank lines
-        while line=="":
+        # ignore any blank lines or comment lines
+        while line=="" or line[0]=="#":
             line = f.readline()
         line = line.strip().split(',')
         a1 = np.array([float(line[0]), float(line[1]), float(line[2])])
         line = ""
-        # ignore any blank lines
-        while line=="":
+        # ignore any blank lines or comment lines
+        while line=="" or line[0]=="#":
             line = f.readline()
         line = line.strip().split(',')
         a2 = np.array([float(line[0]), float(line[1]), float(line[2])])
         line = ""
-        # ignore any blank lines
-        while line=="":
+        # ignore any blank lines or comment lines
+        while line=="" or line[0]=="#":
             line = f.readline()
         line = line.strip().split(',')
         a3 = np.array([float(line[0]), float(line[1]), float(line[2])])
