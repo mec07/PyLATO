@@ -58,6 +58,14 @@ class Hamiltonian:
         self.q = np.zeros(self.Job.NAtom, dtype='double')
         self.s = np.zeros((3, self.Job.NAtom), dtype='double')
 
+        if self.Job.Def["Hamiltonian"]=="dcase":
+            self.quad_xi_mat = np.zeros((5,5,5,5), dtype = 'double')
+            for alpha in range(5):
+                for beta in range(5):
+                    for gamma in range(5):
+                        for chi in range(5):
+                            self.quad_xi_mat[alpha,beta,gamma,chi] = xicontfour(alpha, beta, gamma, chi)
+
     def electrostatics(self):
         def SCFGamma(self, atom1, atom2):
 
@@ -195,6 +203,28 @@ class Hamiltonian:
                         self.fock[h0s+jj,     ii] += self.add_H_pcase(h0s+jj,     ii, U, J, J, natom, norb, rho)
                         # down/down block
                         self.fock[h0s+jj, h0s+ii] += self.add_H_pcase(h0s+jj, h0s+ii, U, J, J, natom, norb, rho)
+
+        elif self.Job.Def['Hamiltonian'] == "dcase":
+            norb = self.Job.NOrb
+            natom = self.Job.NAtom
+            rho = self.Job.Electron.rhotot
+
+            for a in range(natom):
+                # Get the atom type
+                atype = self.Job.AtomType[a]
+                for jj in range(self.Hindex[a], self.Hindex[a+1]):
+                    J  = self.Job.Model.atomic[atype]['I']
+                    U  = self.Job.Model.atomic[atype]['U']
+                    dJ = self.Job.Model.atomic[atype]['dJ']
+                    for ii in range(self.Hindex[a], self.Hindex[a+1]):
+                        # up/up block
+                        self.fock[    jj,     ii] += self.add_H_dcase(    jj,     ii, U, J, J, dJ, natom, norb, rho)
+                        # up/down block
+                        self.fock[    jj, h0s+ii] += self.add_H_dcase(    jj, h0s+ii, U, J, J, dJ, natom, norb, rho)
+                        # down/up block
+                        self.fock[h0s+jj,     ii] += self.add_H_dcase(h0s+jj,     ii, U, J, J, dJ, natom, norb, rho)
+                        # down/down block
+                        self.fock[h0s+jj, h0s+ii] += self.add_H_dcase(h0s+jj, h0s+ii, U, J, J, dJ, natom, norb, rho)
 
         # for i in range(h0s):
         #     for j in range(i, h0s):
@@ -580,7 +610,7 @@ class Hamiltonian:
         return F
 
 
-    def add_H_dcase(self):
+    def add_H_dcase(self, ii, jj, U, J_S, J_ph, dJ, num_atoms, num_orbitals, rho):
         """
         Add the noncollinear Hamiltonian to the on-site contributions for the
         d-case Hubbard-like Hamiltonian.
@@ -596,9 +626,9 @@ class Hamiltonian:
         where Kd is the Kronecker delta symbol; s, s' and s'' are spin indices; i
         and j are atom indices; a, a' and b are orbital indices; rho is the
         density matrix; U is the Hartree Coulomb integral and J_S and J_{ph} are
-        the exchange Coulomb integrals. Physically, J_S is equivalent to J_{ph};
-        however for the Stoner Hamiltonian J_S is the same as the Stoner I and
-        J_{ph} is equal to zero.
+        the exchange Coulomb integrals, J'_S = J_S + 5/2*dJ and the same for J'_{ph}.
+        Physically, J_S is equivalent to J_{ph}; however for the Stoner Hamiltonian J_S
+        is the same as the Stoner I and J_{ph} is equal to zero.
 
         INPUT                 DATA TYPE       DESCRIPTION
 
@@ -633,6 +663,29 @@ class Hamiltonian:
                                               provided density matrix.
 
         """
+        # atom, spatial orbital and spin for index 1
+        i, a, s  = map_index_to_atomic(ii, num_atoms, num_orbitals)
+        # atom, spatial orbital and spin for index 2
+        j, b, sp = map_index_to_atomic(jj, num_atoms, num_orbitals)
+        F = 0.0
+        Jp_ph = J_ph+2.5*dJ
+        Jp_S = J_S+2.5*dJ
+        if i == j:
+            # The negative terms
+            F -= U*rho[ii, jj]
+            F -= Jp_ph*rho[map_atomic_to_index(i, b, s, num_atoms, num_orbitals), map_atomic_to_index(i, a, sp, num_atoms, num_orbitals)]
+            F += 48*dJ*sum(quad_xi_mat[orb1, a, b, orb2]*rho[map_atomic_to_index(i, orb2, s, num_atoms, num_orbitals), map_atomic_to_index(i, orb1, sp, num_atoms, num_orbitals)] for orb1 in range(num_orbitals[i]) for orb2 in range(num_orbitals[i]))
+            if a == b:
+                F -= Jp_S*sum(rho[map_atomic_to_index(i, orb, s, num_atoms, num_orbitals), map_atomic_to_index(i, orb, sp, num_atoms, num_orbitals)] for orb in range(num_orbitals[i]))
+            # The positive terms
+            if s == sp:
+                F += Jp_S*sum(rho[map_atomic_to_index(i, a, sig, num_atoms, num_orbitals), map_atomic_to_index(i, b, sig, num_atoms, num_orbitals)] for sig in range(2))
+                F += Jp_ph*sum(rho[map_atomic_to_index(i, b, sig, num_atoms, num_orbitals), map_atomic_to_index(i, a, sig, num_atoms, num_orbitals)] for sig in range(2))
+                F -= 48*dJ*sum(quad_xi_mat[orb1, a, orb2, b]*rho[map_atomic_to_index(i, orb2, sig, num_atoms, num_orbitals), map_atomic_to_index(i, orb1, sig, num_atoms, num_orbitals)] for sig in range(2) for orb1 in range(num_orbitals[i]) for orb2 in range(num_orbitals[i]))
+                if a == b:
+                    F += U*sum(rho[map_atomic_to_index(i, orb, sig, num_atoms, num_orbitals), map_atomic_to_index(i, orb, sig, num_atoms, num_orbitals)] for sig in range(2) for orb in range(num_orbitals[i]))
+
+        return F
 
 
 def Kd(a, b):
@@ -758,3 +811,25 @@ def map_atomic_to_index(atom, orbital, spin, num_atoms, num_orbitals):
     index += orbital
 
     return index
+
+def xicontfour(alph,bet,gam,chi):
+    """
+    The fourth contraction of the xi matrix.
+    """
+    xi=[[[-1.0/(2.0*math.sqrt(3)),0.0,0.0],
+        [0.0,-1.0/(2.0*math.sqrt(3)),0.0],
+        [0.0,0.0,1/math.sqrt(3)]],
+        [[0.0,0.0,0.5],
+        [0.0,0.0,0.0],
+        [0.5,0.0,0.0]],
+        [[0.0,0.0,0.0],
+        [0.0,0.0,0.5],
+        [0.0,0.5,0.0]],
+        [[0.0,0.5,0.0],
+        [0.5,0.0,0.0],
+        [0.0,0.0,0.0]],
+        [[0.5,0.0,0.0],
+        [0.0,-0.5,0.0],
+        [0.0,0.0,0.0]]]
+    return sum(sum(sum(sum(xi[alph][s][t]*xi[bet][t][u]*xi[gam][u][v]*xi[chi][v][s] for s in range(3)) for t in range(3)) for u in range(3)) for v in range(3))
+

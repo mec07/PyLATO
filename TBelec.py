@@ -14,6 +14,9 @@ import TBH
 import sys
 import time
 
+# PyDQED module
+from pydqed import DQED
+
 class Electronic:
     """Initialise and build the density matrix."""
     def __init__(self, JobClass):
@@ -123,7 +126,7 @@ class Electronic:
         """
         Mix the new and the old density matrix by linear mixing.
         The form of this mixing is 
-            rho_out = (1-alpha) rho_old + alpha rho_new
+            rho_out = (1-A)*rho_old + A*rho_new
         for which, using our notation, rho_new is self.rho, rho_old is
         self.rhotot and we overwrite self.rhotot to make rho_out.
         """
@@ -146,6 +149,36 @@ class Electronic:
 
         """
         num_rho = self.Job.Def['num_rho']
+        # If the number of scf iterations is less than num_rho replace it by
+        # the number of scf iterations (as there will only be that number of
+        # density matrices).
+        if scf_iteration < num_rho:
+            num_rho = scf_iteration
+        
+        # Shift along the density and residue matrices
+        for ii in range(num_rho-1):
+            self.inputrho[num_rho - 1 - ii] = np.copy(self.inputrho[num_rho - 2 - ii])
+            self.outputrho[num_rho - 1 - ii] = np.copy(self.outputrho[num_rho - 2 - ii])
+            self.residue[num_rho - 1 - ii] = np.copy(self.residue[num_rho - 2 - ii])
+
+        # Add in the new density and residue matrices 
+        self.inputrho[0] = self.rhotot
+        self.outputrho[0] = self.rho
+        self.residue[0] = self.rho - self.rhotot
+
+        # starting guess for alpha is just 1.0 divided by the number of density matrices
+        alpha = np.zeros((num_rho), dtype='double')
+        alpha.fill(1.0/num_rho)
+        print "starting guess for alpha: ", alpha
+
+        # Calculate the values of alpha to minimise the residue
+        alpha, igo = optimisation_routine(alpha)
+        print "optimised alpha: ", alpha
+        if igo in [2,4,6,7]:
+            print 'Unexpected return status %i from DQED' % igo
+
+        # Create rho_opt and do linear mixing to make next input matrix
+
 
 
 
@@ -261,6 +294,38 @@ class Electronic:
         C_avg = C_avg/3.0
 
         return C_avg
+
+    def optimisation_routine(self, x0):
+        opt = Optimization1()
+        opt.residue = self.residue
+        opt.initialize(Nvars=len(x0), Ncons=0, Neq=2, bounds=None, tolf=1e-16, told=1e-8, tolx=1e-8, maxIter=100)
+        x, igo = opt.solve(x0)
+        return x, igo
+
+
+class optimisation_rho(DQED):
+    """
+    A DQED class containing the functions to optimise.
+
+    It requires the self.residue matrices to work.
+    """
+    def evaluate(self, x):
+        Neq = self.Neq; Nvars = self.Nvars; Ncons = self.Ncons
+        f = np.zeros((Neq), np.float64)
+        J = np.zeros((Neq, Nvars), np.float64)
+        fcons = np.zeros((Ncons), np.float64)
+        Jcons = np.zeros((Ncons, Nvars), np.float64)
+        (num_vars, height, width) = self.residue.shape
+
+        f[0] = np.linalg.norm(sum(x[i]*self.residue[i] for i in range(num_vars)))
+        f[1] = sum(x[i] for i in range(num_vars))-1.0
+
+        for j in range(len(x)):
+            J[0, j] = sum(np.sign(sum(x[i]*self.residue[i, k, l] for i in range(num_vars)))*self.residue[j, k, l] for k in range(height) for l in range(width))
+            J[1, j] = 1.0
+
+        return f, J, fcons, Jcons
+
 
 
 

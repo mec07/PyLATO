@@ -114,7 +114,8 @@ def main():
                 # Check if the SCF error is still larger than the tolerance
                 if SCFerror > Job.Def['scf_tol']:
                     # Update the density matrix by linear mixing
-                    Job.Electron.linear_mixing()
+                    #Job.Electron.linear_mixing()
+                    Job.Electron.GR_Pulay(ii+1)
                 else:
                     SCFflag = True
                     break
@@ -164,7 +165,8 @@ def main():
     TBIO.PsiSpin(Job)
 
 
-
+    with open("pbcH0.txt",'w') as f:
+        f.write(str(Job.Hamilton.H0))
 
     ############################
     # DEBUGGING NEW FUNCTIONS: #

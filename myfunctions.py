@@ -20,6 +20,7 @@ import TB
 import commentjson
 
 
+
 def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_modelfile, orb_type, number_decimals):
     """
     Function mag_corr_loop is designed to run over the U, J and dJ values to
@@ -351,3 +352,8 @@ def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps
             # os.chdir(currentdir)
         else:
             print("WARNING: Orbital type is not correct for function Plot_OpSq_U_J.")
+
+
+
+
+

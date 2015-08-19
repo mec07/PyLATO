@@ -3,19 +3,19 @@
     "model": "TBcanonical_p",
 
     // Hamiltonian, "standard", "collinearS", "vectorS", "scase", "pcase" or "dcase"
-    "Hamiltonian":"pcase",
+    "Hamiltonian": "pcase",
 
     // Periodic boundary conditions
-    "PBC":1,
+    "PBC": 0,
 
     // Save results in following directory. This is optional. If this is not
     // included the results will be saved in the current directory.
-    "results_dir":"../output_PyLATO/",
+    "results_dir": "../output_PyLATO/",
 
     // atomic geometry
     "gy_file": "geom.csv",
     // unit cell file
-    "uc_file":"UnitCell.csv",
+    "uc_file": "UnitCell.csv",
 
     // magnetic field
     "so_eB": [0.0, 0.01, 0.0],
@@ -28,10 +28,10 @@
     "mu_max_loops": 500,
 
     // self-consistent field parameters
-    "scf_on": 0,
+    "scf_on": 1,
     "scf_mix": 0.001,
     "scf_tol": 1.0e-8,
-    "scf_max_loops": 1000,
+    "scf_max_loops": 1,
     // Pulay mixing A
     "A": 0.1,
     "num_rho":1,
