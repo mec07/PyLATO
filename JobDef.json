@@ -5,7 +5,7 @@
     // Hamiltonian, "standard", "collinearS", "vectorS", "scase", "pcase" or "dcase"
     "Hamiltonian": "pcase",
 
-    // Periodic boundary conditions
+    // Periodic boundary conditions: 1 (on) or 0 (off)
     "PBC": 0,
 
     // Save results in following directory. This is optional. If this is not
@@ -31,10 +31,10 @@
     "scf_on": 1,
     "scf_mix": 0.001,
     "scf_tol": 1.0e-8,
-    "scf_max_loops": 1,
+    "scf_max_loops": 5,
     // Pulay mixing A
     "A": 0.1,
-    "num_rho":1,
+    "num_rho":5,
 
     // number of bins for the density of states
     "dos_nbin": 20,

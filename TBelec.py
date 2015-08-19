@@ -133,7 +133,7 @@ class Electronic:
         A = self.Job.Def['A']
         self.rhotot = (1-A)*self.rhotot + A*self.rho
 
-    def GR_pulay(self, scf_iteration):
+    def GR_Pulay(self, scf_iteration):
         """
         This is the guaranteed reduction Pulay mixing scheme proposed by
         Bowler and Gillan in 2008. If the number of density matrices to be
@@ -167,21 +167,18 @@ class Electronic:
         self.residue[0] = self.rho - self.rhotot
 
         # starting guess for alpha is just 1.0 divided by the number of density matrices
+        print "num_rho = ", num_rho
         alpha = np.zeros((num_rho), dtype='double')
         alpha.fill(1.0/num_rho)
         print "starting guess for alpha: ", alpha
 
         # Calculate the values of alpha to minimise the residue
-        alpha, igo = optimisation_routine(alpha)
+        alpha, igo = self.optimisation_routine(alpha)
         print "optimised alpha: ", alpha
         if igo in [2,4,6,7]:
             print 'Unexpected return status %i from DQED' % igo
 
         # Create rho_opt and do linear mixing to make next input matrix
-
-
-
-
 
     def chargepersite(self):
         """Compute the net charge on each site."""
@@ -296,9 +293,10 @@ class Electronic:
         return C_avg
 
     def optimisation_routine(self, x0):
-        opt = Optimization1()
+        opt = optimisation_rho()
         opt.residue = self.residue
-        opt.initialize(Nvars=len(x0), Ncons=0, Neq=2, bounds=None, tolf=1e-16, told=1e-8, tolx=1e-8, maxIter=100)
+        mybounds = [(0,1) for kk in range(len(x0))]
+        opt.initialize(Nvars=len(x0), Ncons=0, Neq=2, bounds=mybounds, tolf=1e-16, told=1e-8, tolx=1e-8, maxIter=100)
         x, igo = opt.solve(x0)
         return x, igo
 
@@ -317,11 +315,11 @@ class optimisation_rho(DQED):
         Jcons = np.zeros((Ncons, Nvars), np.float64)
         (num_vars, height, width) = self.residue.shape
 
-        f[0] = np.linalg.norm(sum(x[i]*self.residue[i] for i in range(num_vars)))
-        f[1] = sum(x[i] for i in range(num_vars))-1.0
+        f[0] = np.linalg.norm(sum(x[i]*self.residue[i] for i in range(Nvars)))
+        f[1] = sum(x[i] for i in range(Nvars))-1.0
 
-        for j in range(len(x)):
-            J[0, j] = sum(np.sign(sum(x[i]*self.residue[i, k, l] for i in range(num_vars)))*self.residue[j, k, l] for k in range(height) for l in range(width))
+        for j in range(Nvars):
+            J[0, j] = sum(np.sign(sum(x[i]*self.residue[i, k, l] for i in range(Nvars)))*self.residue[j, k, l] for k in range(height) for l in range(width))
             J[1, j] = 1.0
 
         return f, J, fcons, Jcons

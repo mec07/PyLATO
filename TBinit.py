@@ -12,6 +12,7 @@ import TBH
 import TBelec
 import TBIO
 import commentjson
+import numpy as np
 from Verbosity import *
 
 class InitJob:
@@ -69,7 +70,7 @@ class InitJob:
         if self.Def["PBC"] == 1:
             a1, a2, a3 = TBIO.ReadUnitCell(unitcell_file)
         else:
-            a1, a2, a3 = None, None, None
+            a1, a2, a3 = np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0))
 
         # Write out the geometry
         TBIO.WriteXYZ(self, NAtom, '', AtomType, Pos)
