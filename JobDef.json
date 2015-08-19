@@ -31,7 +31,7 @@
     "scf_on": 1,
     "scf_mix": 0.001,
     "scf_tol": 1.0e-8,
-    "scf_max_loops": 5,
+    "scf_max_loops": 10,
     // Pulay mixing A
     "A": 0.1,
     "num_rho":5,

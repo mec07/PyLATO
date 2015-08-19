@@ -38,7 +38,6 @@ class Electronic:
         self.rho = np.matrix(np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex'))
         self.rhotot = np.matrix(np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex'))
         # setup for the Pulay mixing
-        self.rho_opt = np.matrix(np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex'))
         self.inputrho = np.zeros((self.Job.Def['num_rho'], self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
         self.outputrho = np.zeros((self.Job.Def['num_rho'], self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
         self.residue = np.zeros((self.Job.Def['num_rho'], self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
@@ -175,10 +174,15 @@ class Electronic:
         # Calculate the values of alpha to minimise the residue
         alpha, igo = self.optimisation_routine(alpha)
         print "optimised alpha: ", alpha
-        if igo in [2,4,6,7]:
+        if igo in range(2,19):
             print 'Unexpected return status %i from DQED' % igo
+            print dqed_err_dict[igo]
 
-        # Create rho_opt and do linear mixing to make next input matrix
+        # Create an optimised rhotot and an optimised rho and do linear mixing to make next input matrix
+        self.rhotot = sum(alpha[i]*self.inputrho[i] for i in range(len(alpha)))
+        self.rho = sum(alpha[i]*self.outputrho[i] for i in range(len(alpha)))
+        self.linear_mixing()
+
 
     def chargepersite(self):
         """Compute the net charge on each site."""
@@ -296,7 +300,7 @@ class Electronic:
         opt = optimisation_rho()
         opt.residue = self.residue
         mybounds = [(0,1) for kk in range(len(x0))]
-        opt.initialize(Nvars=len(x0), Ncons=0, Neq=2, bounds=mybounds, tolf=1e-16, told=1e-8, tolx=1e-8, maxIter=100)
+        opt.initialize(Nvars=len(x0), Ncons=0, Neq=2, bounds=mybounds, tolf=1e-16, told=1e-8, tolx=1e-8, maxIter=100, verbose=False)
         x, igo = opt.solve(x0)
         return x, igo
 
@@ -323,6 +327,18 @@ class optimisation_rho(DQED):
             J[1, j] = 1.0
 
         return f, J, fcons, Jcons
+
+
+dqed_err_dict={}
+dqed_err_dict[2] = "The norm of the residual is zero; the solution vector is a root of the system."
+dqed_err_dict[3] = "The bounds on the trust region are being encountered on each step; the solution vector may or may not be a local minimum."
+dqed_err_dict[4] = "The solution vector is a local minimum."
+dqed_err_dict[5] = "A significant amount of noise or uncertainty has been observed in the residual; the solution may or may not be a local minimum."
+dqed_err_dict[6] = "The solution vector is only changing by small absolute amounts; the solution may or may not be a local minimum."
+dqed_err_dict[7] = "The solution vector is only changing by small relative amounts; the solution may or may not be a local minimum."
+dqed_err_dict[8] = "The maximum number of iterations has been reached; the solution is the best found, but may or may not be a local minimum."
+for ii in range(9,19):
+    dqed_err_dict[ii] = "An error occurred during the solve operation; the solution is not a local minimum."  
 
 
 
