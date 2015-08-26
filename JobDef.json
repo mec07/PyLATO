@@ -31,9 +31,10 @@
     "scf_on": 1,
     "scf_mix": 0.001,
     "scf_tol": 1.0e-8,
-    "scf_max_loops": 10,
+    "scf_max_loops": 5000,
     // Pulay mixing A
     "A": 0.1,
+    // Number of density matrices to mix. Reduces to linear mixing when num_rho = 1.
     "num_rho":5,
 
     // number of bins for the density of states

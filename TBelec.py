@@ -13,6 +13,7 @@ import math
 import TBH
 import sys
 import time
+from Verbosity import *
 
 # PyDQED module
 from pydqed import DQED
@@ -117,9 +118,8 @@ class Electronic:
         
         """
         rho_err = np.linalg.norm((np.dot(self.rho, self.rho) - self.rho))
-        print "output rho idempotency error is: ", rho_err
         rhotot_err = np.linalg.norm((np.dot(self.rhotot, self.rhotot) - self.rhotot))
-        print "input rho idempotency error is: ", rhotot_err
+        return rho_err, rhotot_err
 
     def linear_mixing(self):
         """
@@ -166,17 +166,21 @@ class Electronic:
         self.residue[0] = self.rho - self.rhotot
 
         # starting guess for alpha is just 1.0 divided by the number of density matrices
-        print "num_rho = ", num_rho
         alpha = np.zeros((num_rho), dtype='double')
         alpha.fill(1.0/num_rho)
-        print "starting guess for alpha: ", alpha
+        verboseprint(self.Job.Def['extraverbose'], "starting guess for alpha: ", alpha)
+        igo = 1
 
         # Calculate the values of alpha to minimise the residue
-        alpha, igo = self.optimisation_routine(alpha)
-        print "optimised alpha: ", alpha
-        if igo in range(2,19):
-            print 'Unexpected return status %i from DQED' % igo
-            print dqed_err_dict[igo]
+
+        # alpha, igo = self.optimisation_routine(alpha)
+        # alpha, igo = self.optimisation_routine2(num_rho)
+        alpha, igo = self.optimisation_routine3(num_rho)
+        verboseprint(self.Job.Def['verbose'], "optimised alpha: ", alpha)
+        if igo in range(2, 19):
+            verboseprint(self.Job.Def['extraverbose'], 'Unexpected return status %i from DQED' % igo)
+            verboseprint(self.Job.Def['extraverbose'], dqed_err_dict[igo])
+
 
         # Create an optimised rhotot and an optimised rho and do linear mixing to make next input matrix
         self.rhotot = sum(alpha[i]*self.inputrho[i] for i in range(len(alpha)))
@@ -297,12 +301,118 @@ class Electronic:
         return C_avg
 
     def optimisation_routine(self, x0):
+        if len(x0)==1:
+            x0[0] = 1.0
+            return x0, 1
+        xvals = np.zeros(len(x0)-1, dtype='double')
+        xvals = x0[0:-1]
         opt = optimisation_rho()
         opt.residue = self.residue
-        mybounds = [(0,1) for kk in range(len(x0))]
-        opt.initialize(Nvars=len(x0), Ncons=0, Neq=2, bounds=mybounds, tolf=1e-16, told=1e-8, tolx=1e-8, maxIter=100, verbose=False)
-        x, igo = opt.solve(x0)
-        return x, igo
+        # bounds for the x values
+        #mybounds = [(0,1) for kk in range(len(x0))]
+        # bounds for the constraint that they sum to 1
+        #mybounds += [(-1.e-8,1.e-8)]
+        opt.initialize(Nvars=len(x0)-1, Ncons=0, Neq=1, bounds=None, tolf=1e-16, told=1e-8, tolx=1e-8, maxIter=100, verbose=False)
+        xvals, igo = opt.solve(xvals)
+        x0[0:-1] = xvals
+        x0[-1] = 1-sum(xvals[i] for i in range(len(xvals)))
+        return x0, igo
+
+    def optimisation_routine2(self, num_rho):
+        """
+        Optimisation routine where we try to minimise the norm squared of the
+        optimal residual matrix.
+
+        We convert it into a matrix problem,
+
+        min alpha_i M_ij alpha_j,
+
+        where M_ij = Tr(R_i^dag R_j) and diagonalise M. The solution for alpha
+        is the eigenvector with the smallest eigenvalue. We know that M_ij is
+        Hermitian because the residue matrices are Hermitian. We know the
+        residue matrices are Hermitian because the density matrices are
+        Hermitian.
+        """
+        # If there is only one density matrix the solution is simple.
+        if num_rho == 1:
+            return np.array([1.0], dtype='double'), 1
+
+        Mmat = np.matrix(np.zeros((num_rho, num_rho), dtype='complex'))
+        for i in range(num_rho):
+            Mmat[i, i] = np.trace(np.matrix(self.residue[i])*np.matrix(self.residue[i]).H)
+            for j in range(i+1, num_rho):
+                Mmat[i, j] = np.trace(np.matrix(self.residue[i])*np.matrix(self.residue[j]).H)
+                # if np.sum(np.matrix(self.residue[j]).H*np.matrix(self.residue[i])) != Mmat[i, j].conj():
+                #     print "Mmat[%i,%i] = %f. Mmat[%i,%i].conj() = %f." % (j, i, np.sum(np.matrix(self.residue[j]).H*np.matrix(self.residue[i])), i, j, Mmat[i, j].conj())
+                Mmat[j, i] = Mmat[i, j].conj()
+
+        eigvals, eigvecs = np.linalg.eigh(Mmat)
+        print "solving optimisation_routine2"
+        # Choose the smallest eigenvalue
+        index = 0
+        temp = eigvals[0]
+        while abs(eigvals[index+1]) < abs(temp):
+            index += 1
+            temp = eigvals[index]
+            if index == num_rho: break
+        # check to see if the vector sums to 0
+        myscale = np.sum(eigvecs[index].real)
+        # if it sums to 0 throw an error
+        if myscale == 0:
+            print "ERROR: eigenvector with eigenvalue %f summed to 0. Cannot be scaled to 1." % eigvals[index]
+            print np.array(eigvecs[index]).reshape(-1)
+            return np.array(eigvecs[index]).reshape(-1), 9
+        # scale the eigenvector such that it sums to 1
+        newvec = np.array(eigvecs[index]).reshape(-1)/myscale
+        print "index = %i" % index
+        print eigvals
+        print newvec
+
+        return newvec, 1
+
+
+    def optimisation_routine3(self, num_rho):
+        """
+        Optimisation routine where we try to solve for the norm squared of the
+        optimal density matrix with the constraint that the sum of the
+        coefficients is equal to one. To include the constraint we set up the
+        problem:
+
+        minimise: alpha_i M_ij alpha_j - lambda (sum_i alpha_i - 1)
+
+        where M_ij = Tr(R_i^dag R_j). We then differentiate with respect to
+        alpha_k and set to zero to minimise:
+
+        2 M alpha = lambda
+
+        We solve this equation for lambda = 1. We then can simply scale alpha,
+        such that sum_i alpha_i = 1, which is equivalent to having solved for
+        a different lambda.
+        """
+        # If there is only one density matrix the solution is simple.
+        if num_rho == 1:
+            return np.array([1.0], dtype='double'), 1
+
+        Mmat = np.matrix(np.zeros((num_rho, num_rho), dtype='complex'))
+        lamb = 0.5*np.ones(num_rho, dtype='double')
+        for i in range(num_rho):
+            Mmat[i, i] = np.trace(np.matrix(self.residue[i])*np.matrix(self.residue[i]).H)
+            for j in range(i+1, num_rho):
+                Mmat[i, j] = np.trace(np.matrix(self.residue[i])*np.matrix(self.residue[j]).H)
+                # if np.sum(np.matrix(self.residue[j]).H*np.matrix(self.residue[i])) != Mmat[i, j].conj():
+                #     print "Mmat[%i,%i] = %f. Mmat[%i,%i].conj() = %f." % (j, i, np.sum(np.matrix(self.residue[j]).H*np.matrix(self.residue[i])), i, j, Mmat[i, j].conj())
+                Mmat[j, i] = Mmat[i, j].conj()
+        
+        print "solving optimisation_routine3"
+        alpha = np.linalg.solve(Mmat, lamb)
+        myscale = np.sum(alpha)
+        if myscale == 0:
+            print "ERROR: alpha summed to 0 in optimisation_routine3. Cannot be scaled to 1."
+            print alpha
+            return alpha, 9
+        else:
+            alpha = alpha/myscale
+        return alpha, 1
 
 
 class optimisation_rho(DQED):
@@ -319,12 +429,11 @@ class optimisation_rho(DQED):
         Jcons = np.zeros((Ncons, Nvars), np.float64)
         (num_vars, height, width) = self.residue.shape
 
-        f[0] = np.linalg.norm(sum(x[i]*self.residue[i] for i in range(Nvars)))
-        f[1] = sum(x[i] for i in range(Nvars))-1.0
+        temp = 1-sum(x[i] for i in range(Nvars))
+        f[0] = np.linalg.norm(sum(x[i]*self.residue[i] for i in range(Nvars))+temp*self.residue[Nvars])
 
         for j in range(Nvars):
-            J[0, j] = sum(np.sign(sum(x[i]*self.residue[i, k, l] for i in range(Nvars)))*self.residue[j, k, l] for k in range(height) for l in range(width))
-            J[1, j] = 1.0
+            J[0, j] = sum(np.sign(sum(x[i]*self.residue[i, k, l] for i in range(Nvars))+temp*self.residue[Nvars, k, l])*(self.residue[j, k, l]-self.residue[Nvars, k, l]) for k in range(height) for l in range(width))
 
         return f, J, fcons, Jcons
 

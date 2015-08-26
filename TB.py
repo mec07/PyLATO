@@ -119,7 +119,11 @@ def main():
                 else:
                     SCFflag = True
                     break
-                Job.Electron.idempotency_error()
+                
+                if Job.Def['extraverbose']==1:
+                    rho_err, rhotot_err = Job.Electron.idempotency_error()
+                    print "output rho idempotency error is: ", rho_err
+                    print "input rho idempotency error is: ", rhotot_err
 
             else:
                 #
@@ -164,9 +168,6 @@ def main():
     # Write out the spins for each orbital
     TBIO.PsiSpin(Job)
 
-
-    with open("pbcH0.txt",'w') as f:
-        f.write(str(Job.Hamilton.H0))
 
     ############################
     # DEBUGGING NEW FUNCTIONS: #
