@@ -25,7 +25,7 @@
     // the tolerance in finding the chemical potential
     "mu_tol": 1e-13,
     // max number of bisections when finding mu
-    "mu_max_loops": 500,
+    "mu_max_loops": 5000,
 
     // self-consistent field parameters
     "scf_on": 1,

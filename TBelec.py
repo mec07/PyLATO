@@ -41,37 +41,28 @@ class Electronic:
         self.residue = np.zeros((self.Job.Def['num_rho'], self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
 
 
-    def fermi(self, e, mu, kT):
-        """Evaluate the Fermi function."""
-        x = (e-mu)/kT
-        f = np.zeros(x.size, dtype='double')
-        for i in range(0, x.size):
-            if x[i] > 35.0:
-                f[i] = 0.0
-            elif x[i] < -35.0:
-                f[i] = 1.0
-            else:
-                f[i] = 1.0/(1.0 + np.exp(x[i]))
-        return f
-
 
     def occupy(self, s, kT, n_tol, max_loops):
         """Populate the eigenstates using the Fermi function.
         This function uses binary section."""
+        if self.Job.Def['el_kT']==0.0:
+            from myfunctions import fermi_0 as fermi
+        else:
+            from myfunctions import fermi_non0 as fermi
         #
         # Find the lower bound to the chemical potential
         mu_l = self.Job.e[0]
-        while np.sum(self.fermi(self.Job.e, mu_l, kT)) > self.NElectrons:
+        while np.sum(fermi(self.Job.e, mu_l, kT)) > self.NElectrons:
             mu_l -= 10.0*kT
         #
         # Find the upper bound to the chemical potential
         mu_u = self.Job.e[-1]
-        while np.sum(self.fermi(self.Job.e, mu_u, kT)) < self.NElectrons:
+        while np.sum(fermi(self.Job.e, mu_u, kT)) < self.NElectrons:
             mu_u += 10.0*kT
         #
         # Find the correct chemical potential using binary section
         mu = 0.5*(mu_l + mu_u)
-        n = np.sum(self.fermi(self.Job.e, mu, kT))
+        n = np.sum(fermi(self.Job.e, mu, kT))
         count = 0
         while math.fabs(self.NElectrons-n) > n_tol*self.NElectrons:
             count+=1
@@ -83,8 +74,8 @@ class Electronic:
             elif n < self.NElectrons:
                 mu_l = mu
             mu = 0.5*(mu_l + mu_u)
-            n = np.sum(self.fermi(self.Job.e, mu, kT))
-        self.occ = self.fermi(self.Job.e, mu, kT)
+            n = np.sum(fermi(self.Job.e, mu, kT))
+        self.occ = fermi(self.Job.e, mu, kT)
 
 
     def densitymatrix(self):
