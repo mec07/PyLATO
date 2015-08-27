@@ -10,7 +10,7 @@
 
     // Save results in following directory. This is optional. If this is not
     // included the results will be saved in the current directory.
-    "results_dir": "../output_PyLATO/",
+    "results_dir": "/workspace/mec07/Development/output_PyLATO/",
 
     // atomic geometry
     "gy_file": "geom.csv",
@@ -21,7 +21,7 @@
     "so_eB": [0.0, 0.01, 0.0],
 
     // electronic temperature in eV
-    "el_kT": 0.025,
+    "el_kT": 0.0001,
     // the tolerance in finding the chemical potential
     "mu_tol": 1e-13,
     // max number of bisections when finding mu
