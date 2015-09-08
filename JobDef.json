@@ -21,7 +21,7 @@
     "so_eB": [0.0, 0.01, 0.0],
 
     // electronic temperature in eV
-    "el_kT": 0.025,
+    "el_kT": 0.0001,
     // the tolerance in finding the chemical potential
     "mu_tol": 1e-13,
     // max number of bisections when finding mu

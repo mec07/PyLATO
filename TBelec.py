@@ -13,6 +13,7 @@ import math
 import TBH
 import sys
 import time
+from myfunctions import fermi_0, fermi_non0
 from Verbosity import *
 
 class Electronic:
@@ -40,15 +41,15 @@ class Electronic:
         self.outputrho = np.zeros((self.Job.Def['num_rho'], self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
         self.residue = np.zeros((self.Job.Def['num_rho'], self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
 
+        if self.Job.Def['el_kT'] == 0.0:
+            self.fermi = fermi_0
+        else:
+            self.fermi = fermi_non0
 
 
     def occupy(self, s, kT, n_tol, max_loops):
         """Populate the eigenstates using the Fermi function.
         This function uses binary section."""
-        if self.Job.Def['el_kT']==0.0:
-            from myfunctions import fermi_0 as fermi
-        else:
-            from myfunctions import fermi_non0 as fermi
         #
         # Find the lower bound to the chemical potential
         mu_l = self.Job.e[0]
