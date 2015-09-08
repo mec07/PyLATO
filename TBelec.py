@@ -156,13 +156,12 @@ class Electronic:
 
         # Calculate the values of alpha to minimise the residue
         alpha, igo = self.optimisation_routine(num_rho)
-        verboseprint(self.Job.Def['verbose'], "optimised alpha: ", alpha)
         if igo == 1:
             print "WARNING: Unable to optimise alpha for combining density matrices. Proceeding using guess."
             # Guess for alpha is just 1.0 divided by the number of density matrices
             alpha = np.zeros((num_rho), dtype='double')
             alpha.fill(1.0/num_rho)
-
+        verboseprint(self.Job.Def['verbose'], "alpha: ", alpha)
         # Create an optimised rhotot and an optimised rho and do linear mixing to make next input matrix
         self.rhotot = sum(alpha[i]*self.inputrho[i] for i in range(len(alpha)))
         self.rho = sum(alpha[i]*self.outputrho[i] for i in range(len(alpha)))
@@ -299,10 +298,12 @@ class Electronic:
         such that sum_i alpha_i = 1, which is equivalent to having solved for
         a different lambda.
         """
+        small = 1e-14
         # If there is only one density matrix the solution is simple.
         if num_rho == 1:
             return np.array([1.0], dtype='double'), 0
 
+        alpha = np.zeros(num_rho, dtype='double')
         Mmat = np.matrix(np.zeros((num_rho, num_rho), dtype='complex'))
         lamb = 0.5*np.ones(num_rho, dtype='double')
         for i in range(num_rho):
@@ -312,8 +313,9 @@ class Electronic:
                 # if np.sum(np.matrix(self.residue[j]).H*np.matrix(self.residue[i])) != Mmat[i, j].conj():
                 #     print "Mmat[%i,%i] = %f. Mmat[%i,%i].conj() = %f." % (j, i, np.sum(np.matrix(self.residue[j]).H*np.matrix(self.residue[i])), i, j, Mmat[i, j].conj())
                 Mmat[j, i] = Mmat[i, j].conj()
-        
-        print "solving optimisation_routine3"
+        if np.linalg.det(Mmat) < small:
+            return alpha, 1
+
         alpha = np.linalg.solve(Mmat, lamb)
         myscale = np.sum(alpha)
         if myscale == 0:
