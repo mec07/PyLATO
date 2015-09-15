@@ -2050,6 +2050,11 @@ class Crystal(object):
 
 
     def supercell(self, nx, ny, nz):
+        """
+        This method takes the atoms in self.XYZCoord and replicates them using
+        the supercell technique. If nx = ny = nz = 1 then the basis is returned
+        unchanged. for values greater than 1 the supercell is created.
+        """
         if nx == 1 and ny == 1 and nz == 1:
             return self.XYZCoord
         
