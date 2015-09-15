@@ -13,6 +13,7 @@ import TBelec
 import TBIO
 import commentjson
 import numpy as np
+import crystal
 from Verbosity import *
 
 class InitJob:
@@ -63,11 +64,18 @@ class InitJob:
 
     def init_geom(self, position_file, unitcell_file):
         """initialise the geometry."""
-
+        if self.Def["PBC"]==1:
+            PBCs = True
+        else:
+            PBCs = False
+        # If build geometry is turned on then build the geometry
+        if self.Def['build_geom'] == 1:
+            mycry = crystal.Crystal(a=self.Def['atom_sep'], lattice="cubic")
+            mycry.populateUnitCell(self.Def['crystal'], geom_filename=position_file, uc_filename=unitcell_file, nx=self.Def['nx'], ny=self.Def['ny'], nz=self.Def['nz'], PBCs=PBCs)
         # Read in the geometry from file
         NAtom, Pos, AtomType = TBIO.ReadGeom(position_file)
         # If PBCs are turned on then read in the unit cell
-        if self.Def["PBC"] == 1:
+        if PBCs:
             a1, a2, a3 = TBIO.ReadUnitCell(unitcell_file)
         else:
             a1, a2, a3 = np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0))

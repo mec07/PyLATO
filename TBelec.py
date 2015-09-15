@@ -53,17 +53,17 @@ class Electronic:
         #
         # Find the lower bound to the chemical potential
         mu_l = self.Job.e[0]
-        while np.sum(fermi(self.Job.e, mu_l, kT)) > self.NElectrons:
+        while np.sum(self.fermi(self.Job.e, mu_l, kT)) > self.NElectrons:
             mu_l -= 10.0*kT
         #
         # Find the upper bound to the chemical potential
         mu_u = self.Job.e[-1]
-        while np.sum(fermi(self.Job.e, mu_u, kT)) < self.NElectrons:
+        while np.sum(self.fermi(self.Job.e, mu_u, kT)) < self.NElectrons:
             mu_u += 10.0*kT
         #
         # Find the correct chemical potential using binary section
         mu = 0.5*(mu_l + mu_u)
-        n = np.sum(fermi(self.Job.e, mu, kT))
+        n = np.sum(self.fermi(self.Job.e, mu, kT))
         count = 0
         while math.fabs(self.NElectrons-n) > n_tol*self.NElectrons:
             count+=1
@@ -75,8 +75,8 @@ class Electronic:
             elif n < self.NElectrons:
                 mu_l = mu
             mu = 0.5*(mu_l + mu_u)
-            n = np.sum(fermi(self.Job.e, mu, kT))
-        self.occ = fermi(self.Job.e, mu, kT)
+            n = np.sum(self.fermi(self.Job.e, mu, kT))
+        self.occ = self.fermi(self.Job.e, mu, kT)
 
 
     def densitymatrix(self):

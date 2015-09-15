@@ -10,7 +10,9 @@ SOURCE CODE: http://gvallver.perso.univ-pau.fr/vasptools/_modules/crystal.html
 
 METHODS ADDED TO ORIGINAL CODE:
     * toCSV
+    * toUnitCell
     * populateUnitCell
+    * supercell
     * growCrystal
 
 
@@ -51,6 +53,7 @@ In the following we use a Cu2O crystal as an example.
 import doctest
 import copy
 import array
+import sys
 
 import numpy as np
 from numpy import sqrt, arccos, fabs, pi, cos, sin
@@ -1950,15 +1953,15 @@ class Crystal(object):
         """ Print lattice paramters. """
         print(str(self))
 
-    def toCSV(self,filename="geom.csv",decimalplaces=10):
-        if self.XYZCoord == []:
-            self.computeXYZCoord()
+    def toCSV(self, filename, decimalplaces=10):
+        # if self.XYZCoord == []:
+        #     self.computeXYZCoord()
 
         atomNameKnown = True
         if self.atomNames == [] or len(self.atomNames) != len(self.XYZCoord):
             print(self.atomNames)
             print(len(self.atomNames), len(self.XYZCoord))
-            _warningMessage("Atom names unknown, I will use '0' instead")
+            _warningMessage("Atom names unknown: will use '0' instead")
             atomNameKnown = False
 
         config = str(len(self.XYZCoord))+"\n"
@@ -1970,39 +1973,101 @@ class Crystal(object):
                 config += "0, "
             config += ", ".join([formatting % elem for elem in xyz])+"\n"
 
-        open(filename, "w").write(config)
+        with open(filename, "w") as f:
+            f.write(config)
+
+    def toUnitCell(self, filename, nx=1, ny=1, nz=1, decimalplaces=10):
+        """
+        Write out the unit cell to file. It is by default the unit cell of the
+        object, so n=1, but if periodic boundary conditions or supercells are
+        required the n should be altered. Normally, for PBCs, n=2. 
+        """
+        information  =  ",".join([str(round(nx*self.veca[0], decimalplaces)), str(round(ny*self.veca[1], decimalplaces)), str(round(nz*self.veca[2], decimalplaces))])+"\n"
+        information += ",".join([str(round(nx*self.vecb[0], decimalplaces)), str(round(ny*self.vecb[1], decimalplaces)), str(round(nz*self.vecb[2], decimalplaces))])+"\n"
+        information += ",".join([str(round(nx*self.vecc[0], decimalplaces)), str(round(ny*self.vecc[1], decimalplaces)), str(round(nz*self.vecc[2], decimalplaces))])
+        with open(filename, "w") as f:
+            f.write(information)
+
 
     # -------------------------------------------------------------------------
     #  Populate object with atoms
     # -------------------------------------------------------------------------
-    def populateUnitCell(self,supercell=[1,1,1]):
+    def populateUnitCell(self, basis, geom_filename="geom.csv", uc_filename="UnitCell.csv", nx=1, ny=1, nz=1, PBCs=False):
         """
         Add atoms to the XYZCoord list. They get added as follows:
-            * at origin 
-            * at _veca, _vecb and _vecc
-            * at the simple combinations of _veca, _vecb and _vecc
+            * the basis gets added in, i.e. for "cubic" an atom gets placed at
+                the origin, for "fcc" an atom gets placed at the origin and at
+                1/2*veca+1/2*vecb whereas for "bcc" an atom gets placed at the
+                origin and then at 1/2*veca+1/2*vecb+1/2*vecc
+            * if nx=ny=nz=1 then no atoms are added
+            * if nx, ny or nz take other values then atoms are in the supercell
+                method.
 
-        This is currenlty only tested for cubic symmetry....
+        This is currently only tested for cubic, fcc and bcc symmetry....
         """
-        coord = [0.0, 0.0, 0.0]
-        lattice_vecs = [np.array(coord), np.array(self._veca), np.array(self._vecb), np.array(self._vecc)]
+        if basis not in ["cubic", "fcc", "bcc"]:
+            print("ERROR: the inserted basis into crystal.populateUnitCell must be one of cubic, fcc or bcc. Exiting.")
+            sys.exit()
+        origin = [0.0, 0.0, 0.0]
         # add an atom at the origin
-        self.XYZCoord.append(coord)
-        for ii in range(len(lattice_vecs)-1):
-            for jj in range(ii+1,len(lattice_vecs)):
-                print(lattice_vecs[ii]+lattice_vecs[jj])
-                self.XYZCoord.append(lattice_vecs[ii]+lattice_vecs[jj])
+        self.XYZCoord.append(origin)
+        if basis == "fcc":
+            coord1 = 0.5*np.array(self._veca)+0.5*np.array(self._vecb)
+            coord2 = 0.5*np.array(self._veca)+0.5*np.array(self._vecc)
+            coord3 = 0.5*np.array(self._vecb)+0.5*np.array(self._vecc)
+            self.XYZCoord.append(coord1)
+            self.XYZCoord.append(coord2)
+            self.XYZCoord.append(coord3)
+        elif basis == "bcc":
+            coord = 0.5*np.array(self._veca)+0.5*np.array(self._vecb)+0.5*np.array(self._vecc)
+            self.XYZCoord.append(coord)
 
-        # add final coord, veca+vecb+vecc
-        print(lattice_vecs[1]+lattice_vecs[2]+lattice_vecs[3])
-        self.XYZCoord.append(lattice_vecs[1]+lattice_vecs[2]+lattice_vecs[3])
-        # supercell functionality not working right now
-        if supercell==[1,1,1]:
-            pass
-        else:
-            print "Supercell functionality not yet working. Supercell not constructed."
+        self.XYZCoord = self.supercell(nx, ny, nz)
+        # for ii in range(len(lattice_vecs)-1):
+        #     for jj in range(ii+1,len(lattice_vecs)):
+        #         print(lattice_vecs[ii]+lattice_vecs[jj])
+        #         self.XYZCoord.append(lattice_vecs[ii]+lattice_vecs[jj])
+
+        # # add final coord, veca+vecb+vecc
+        # print(lattice_vecs[1]+lattice_vecs[2]+lattice_vecs[3])
+        # self.XYZCoord.append(lattice_vecs[1]+lattice_vecs[2]+lattice_vecs[3])
+        # # supercell functionality not working right now
+        # if supercell==[1,1,1]:
+        #     pass
+        # else:
+        #     print "Supercell functionality not yet working. Supercell not constructed."
         # self.makeSupercell(*supercell)
-        self.toCSV()
+        
+        # Print out the coordinates of the atoms
+        self.toCSV(geom_filename)
+
+        if PBCs:
+            # If PBCs are on then print out the new unit cell to be used
+            self.toUnitCell(uc_filename, nx=2,ny=2,nz=2)
+        else:
+            # otherwise just print out the unit cell normally.
+            self.toUnitCell(uc_filename)
+
+
+    def supercell(self, nx, ny, nz):
+        if nx == 1 and ny == 1 and nz == 1:
+            return self.XYZCoord
+        
+        newvec = []
+        lattice_vecs = [np.array(self._veca), np.array(self._vecb), np.array(self._vecc)]
+        for atom in self.XYZCoord:
+            for ii in range(nx):
+                for jj in range(ny):
+                    for kk in range(nz):
+                        newvec.append(atom+ii*lattice_vecs[0]+jj*lattice_vecs[1]+kk*lattice_vecs[2])
+
+        return newvec
+
+                    
+
+
+
+
 
 
 

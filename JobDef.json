@@ -10,11 +10,23 @@
 
     // Save results in following directory. This is optional. If this is not
     // included the results will be saved in the current directory.
-    "results_dir": "/workspace/mec07/Development/output_PyLATO/",
+    //"results_dir": "/workspace/mec07/Development/output_PyLATO/",
+    "results_dir": "../output_PyLATO",
 
     // atomic geometry
+    // Build cubic geometry: 1 (on) or 0 (off)
+    "build_geom":1,
+    // Crystal symmetry. Currently only have cubic, fcc and bcc implemented.
+    "crystal":"fcc",
+    // supercell. nx = 1, ny = 1 and nz = 1 corresponds to just the crystal basis
+    "nx":2,
+    "ny":2,
+    "nz":2,
+    // atomic separation in the cubic lattice
+    "atom_sep":3.0,
+    // geometry file name
     "gy_file": "geom.csv",
-    // unit cell file
+    // unit cell file name
     "uc_file": "UnitCell.csv",
 
     // magnetic field
@@ -34,7 +46,7 @@
     "scf_max_loops": 5000,
     // Pulay mixing A
     "A": 0.1,
-    // Number of density matrices to mix. Reduces to linear mixing when num_rho = 1.
+    // Number of density matrices to mix. Reduces to linear mixing when num_rho = 1. Note that 5 seems to be the optimal value.
     "num_rho":5,
 
     // number of bins for the density of states
