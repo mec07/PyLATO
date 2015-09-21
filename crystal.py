@@ -2068,14 +2068,6 @@ class Crystal(object):
 
         return newvec
 
-                    
-
-
-
-
-
-
-
     def growCrystal(self):
         print("To do")
 

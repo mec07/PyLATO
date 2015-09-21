@@ -161,6 +161,86 @@ def WriteMagneticCorrelation(JobClass, site1, site2, filename="mag_corr.txt"):
     with open(filename,'w') as f:
         f.write(str(C_avg))
 
+def WriteRho(JobClass, filename="rho.txt"):
+    """
+    Write out the density matrix in the following format:
+
+    i    j    val
+
+    where j >= i (don't need j<i as the density matrix is Hermitian).
+    """
+    if JobClass.Def['print_rho'] == 1:
+        with open(JobClass.results_dir+filename, 'w') as f:
+            for ii in range(JobClass.Hamilton.HSOsize):
+                for jj in range(ii, JobClass.Hamilton.HSOsize):
+                    f.write("%i\t%i\t%f%+fj\n" % (ii, jj, JobClass.Electron.rho[ii, jj].real, JobClass.Electron.rho[ii, jj].imag))
+
+def WriteRhoAsMatrix(JobClass, filename="rhoMatrix.txt"):
+    """
+    Write out the density matrix as a matrix. Not recommended for large
+    density matrices...
+    """
+    if JobClass.Def['print_rho_mat'] == 1:
+        with open(JobClass.results_dir+filename, 'w') as f:
+            for ii in range(JobClass.Hamilton.HSOsize):
+                temp = np.array(JobClass.Electron.rho[ii,:]).flatten()
+                line_info = "\t".join(map(str, temp))+"\n"
+                f.write(line_info)
+
+def WriteRhoOnSite(JobClass, filename="rhoOnSite.txt"):
+    """
+    Write out the on-site density matrices for each of the sites.
+    """
+    if JobClass.Def['print_rho_on_site'] == 1:
+        with open(JobClass.results_dir+filename, 'w') as f:
+            # spin up
+            for ii in range(JobClass.NAtom):
+                f.write("# Spin up atom block %i:\n" % ii)
+                startindex = JobClass.Hamilton.Hindex[ii]
+                endindex = JobClass.Hamilton.Hindex[ii+1]
+                for jj in range(startindex, endindex):
+                    temp = np.array(JobClass.Electron.rho[jj, startindex:endindex]).flatten()
+                    line_info = "\t".join(map(str, temp))+"\n"
+                    f.write(line_info)
+                f.write("\n")
+            # spin down
+            for ii in range(JobClass.NAtom):
+                f.write("# Spin down atom block %i:\n" % ii)
+                startindex = JobClass.Hamilton.H0size+JobClass.Hamilton.Hindex[ii]
+                endindex = JobClass.Hamilton.H0size+JobClass.Hamilton.Hindex[ii+1]
+                for jj in range(startindex, endindex):
+                    temp = np.array(JobClass.Electron.rho[jj, startindex:endindex]).flatten()
+                    line_info = "\t".join(map(str, temp))+"\n"
+                    f.write(line_info)
+                f.write("\n")      
+
+def WriteFock(JobClass, filename="fock.txt"):
+    """
+    Write out the Fock matrix in the following format:
+
+    i    j    val
+
+    where j >= i (don't need j<i as the Fock matrix is Hermitian).
+    """
+    if JobClass.Def['print_fock'] == 1:
+        with open(JobClass.results_dir+filename, 'w') as f:
+            for ii in range(JobClass.Hamilton.HSOsize):
+                for jj in range(ii, JobClass.Hamilton.HSOsize):
+                    f.write("%i\t%i\t%f%+fj\n" % (ii, jj, JobClass.Hamilton.fock[ii, jj].real, JobClass.Hamilton.fock[ii, jj].imag))
+
+def WriteFockAsMatrix(JobClass, filename="fockMatrix.txt"):
+    """
+    Write out the Fock matrix as a matrix. Not recommended for large
+    Fock matrices...
+    """
+    if JobClass.Def['print_fock_mat'] == 1:
+        with open(JobClass.results_dir+filename, 'w') as f:
+            for ii in range(JobClass.Hamilton.HSOsize):
+                temp = JobClass.Hamilton.fock[ii,:].flatten()
+                line_info = "\t".join(map(str, temp))+"\n"
+                f.write(line_info)
+
+
 
 
 

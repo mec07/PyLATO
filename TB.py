@@ -107,6 +107,8 @@ def main():
             # Build the density matrix
             Job.Electron.densitymatrix()
 
+            print "number of electrons = "+str(Job.Electron.electronspersite().sum())
+
             if myHami:
                 # Compare the difference between the new and the old on-site density matrix elements
                 SCFerror = Job.Electron.SCFerror()
@@ -167,6 +169,14 @@ def main():
     #
     # Write out the spins for each orbital
     TBIO.PsiSpin(Job)
+
+    # Print out final density matrix if turned on
+    TBIO.WriteRho(Job)
+    TBIO.WriteRhoAsMatrix(Job)
+    TBIO.WriteFock(Job)
+    TBIO.WriteFockAsMatrix(Job)
+    TBIO.WriteRhoOnSite(Job)
+
 
 
     ############################

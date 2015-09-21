@@ -26,7 +26,10 @@ class InitJob:
             self.Def = commentjson.loads(inputfile.read())
 
         # Fetch the model name path from the Job file
-        modelname = self.Def['model']
+        if self.Def['model'] == "TBcanonical":
+            modelname = self.Def['model']+"_"+self.Def['Hamiltonian'][0]
+        else:
+            modelname = self.Def['model']
         modelpath = os.path.join("models", modelname + ".py")
 
         # Catch invalid model path
@@ -37,7 +40,11 @@ class InitJob:
 
         # Has a directory for results been specified?
         if "results_dir" in self.Def.keys():
-            self.results_dir = self.Def['results_dir']
+            # check to make sure that it has the final "/"
+            if self.Def['results_dir'][-1]=="/":
+                self.results_dir = self.Def['results_dir']
+            else:
+                self.results_dir = self.Def['results_dir']+"/"
             # Make sure that the directory where results will be put exists
             if not os.path.exists(self.results_dir):
                 os.makedirs(self.results_dir)
@@ -70,8 +77,11 @@ class InitJob:
             PBCs = False
         # If build geometry is turned on then build the geometry
         if self.Def['build_geom'] == 1:
-            mycry = crystal.Crystal(a=self.Def['atom_sep'], lattice="cubic")
-            mycry.populateUnitCell(self.Def['crystal'], geom_filename=position_file, uc_filename=unitcell_file, nx=self.Def['nx'], ny=self.Def['ny'], nz=self.Def['nz'], PBCs=PBCs)
+            a, crys_err = self.calculate_crystal_sep()
+            # if the calculation of the crystal separation a is successful:
+            if crys_err == 0:
+                mycry = crystal.Crystal(a=a, lattice="cubic")
+                mycry.populateUnitCell(self.Def['crystal'], geom_filename=position_file, uc_filename=unitcell_file, nx=self.Def['nx'], ny=self.Def['ny'], nz=self.Def['nz'], PBCs=PBCs)
         # Read in the geometry from file
         NAtom, Pos, AtomType = TBIO.ReadGeom(position_file)
         # If PBCs are turned on then read in the unit cell
@@ -93,3 +103,23 @@ class InitJob:
 
         verboseprint(self.Def['verbose'], "Atom positions:")
         verboseprint(self.Def['verbose'], self.Pos)
+
+    def calculate_crystal_sep(self):
+        """
+        Calculate the crystal separation from the nearest neigbour separation.
+        For cubic they are the same, for fcc and bcc there are simple
+        relations that link them.
+        """
+        if self.Def['crystal'] == "cubic":
+            a = self.Def['nearest_neighbour_sep']
+            return (a,0)
+        elif self.Def['crystal'] == "fcc":
+            a = self.Def['nearest_neighbour_sep']*np.sqrt(2)
+            return (a,0)
+        elif self.Def['crystal'] == "bcc":
+            a = 2*self.Def['nearest_neighbour_sep']/np.sqrt(3)
+            return (a,0)
+        else:
+            print "WARNING: To build a crystal, the crystal type inserted must be one of cubic, fcc or bcc."
+            print "Continuing using the geometry file "+position_file+"."
+            return (0,1)

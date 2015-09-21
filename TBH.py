@@ -14,21 +14,7 @@ from scipy.special import erf
 import math
 from Verbosity import *
 
-# Spin orbit data
-SOmatrix = {0: np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0)],
-                         [complex( 0.0, 0.0), complex( 0.0, 0.0)]]),
-            1: np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), 
-                          complex( 0.0, 0.0), complex(-1.0, 0.0), complex( 0.0, 1.0)],
-                         [complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0,-1.0), 
-                          complex( 1.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
-                         [complex( 0.0, 0.0), complex( 0.0, 1.0), complex( 0.0, 0.0), 
-                          complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
-                         [complex( 0.0, 0.0), complex( 1.0, 0.0), complex( 0.0, 1.0), 
-                          complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
-                         [complex(-1.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), 
-                          complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 1.0)],
-                         [complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0), 
-                          complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 0.0, 0.0)]])}
+
 
 class Hamiltonian:
     """Initialise and build the hamiltonian."""
@@ -57,6 +43,23 @@ class Hamiltonian:
         # Allocate memeory for the charge and spin
         self.q = np.zeros(self.Job.NAtom, dtype='double')
         self.s = np.zeros((3, self.Job.NAtom), dtype='double')
+
+        if self.Job.Def["spin_orbit"] == 1:
+            # Spin orbit data
+            self.SOmatrix = {0: np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0)],
+                                          [complex( 0.0, 0.0), complex( 0.0, 0.0)]]),
+                        1: np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), 
+                                      complex( 0.0, 0.0), complex(-1.0, 0.0), complex( 0.0, 1.0)],
+                                     [complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0,-1.0), 
+                                      complex( 1.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
+                                     [complex( 0.0, 0.0), complex( 0.0, 1.0), complex( 0.0, 0.0), 
+                                      complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
+                                     [complex( 0.0, 0.0), complex( 1.0, 0.0), complex( 0.0, 1.0), 
+                                      complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0)],
+                                     [complex(-1.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 0.0), 
+                                      complex( 0.0, 0.0), complex( 0.0, 0.0), complex( 0.0, 1.0)],
+                                     [complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0), 
+                                      complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 0.0, 0.0)]])}
 
         if self.Job.Def["Hamiltonian"]=="dcase":
             self.quad_xi_mat = np.zeros((5,5,5,5), dtype = 'double')
@@ -451,7 +454,6 @@ class Hamiltonian:
 
     def buildHSO(self):
         """Build the Hamiltonian with spin orbit coupling."""
-        global SOmatrix
 
         h0s = self.H0size
 
@@ -475,17 +477,19 @@ class Hamiltonian:
             self.HSO[h0s + i, h0s + i] += complex(-eB[2],    0.0)
         
         # Add in the spin-orbit corrections
-        for atom in range(self.Job.NAtom):
-            atype = self.Job.AtomType[atom]
+        if self.Job.Def["spin_orbit"] == 1:
+            for atom in range(self.Job.NAtom):
+                atype = self.Job.AtomType[atom]
 
-            k = self.Hindex[atom]  # Counter for orbital
-            for i, l in enumerate(self.Job.Model.atomic[atype]['l']):  # Step through each shell
-                n = 2*l+1  # Compute number of orbitals in the shell
-                self.HSO[    k:    k+n,     k:    k+n] += self.Job.Model.atomic[atype]['so'][i]*SOmatrix[l][  0:  n,   0:  n]
-                self.HSO[    k:    k+n, h0s+k:h0s+k+n] += self.Job.Model.atomic[atype]['so'][i]*SOmatrix[l][  0:  n, n+0:n+n]
-                self.HSO[h0s+k:h0s+k+n,     k:    k+n] += self.Job.Model.atomic[atype]['so'][i]*SOmatrix[l][n+0:n+n,   0:  n]
-                self.HSO[h0s+k:h0s+k+n, h0s+k:h0s+k+n] += self.Job.Model.atomic[atype]['so'][i]*SOmatrix[l][n+0:n+n, n+0:n+n]
-                k += n  # Advance to the start of the next set of orbitals
+                k = self.Hindex[atom]  # Counter for orbital
+                for i, l in enumerate(self.Job.Model.atomic[atype]['l']):  # Step through each shell
+                    print i, l
+                    n = 2*l+1  # Compute number of orbitals in the shell
+                    self.HSO[    k:    k+n,     k:    k+n] += self.Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][  0:  n,   0:  n]
+                    self.HSO[    k:    k+n, h0s+k:h0s+k+n] += self.Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][  0:  n, n+0:n+n]
+                    self.HSO[h0s+k:h0s+k+n,     k:    k+n] += self.Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][n+0:n+n,   0:  n]
+                    self.HSO[h0s+k:h0s+k+n, h0s+k:h0s+k+n] += self.Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][n+0:n+n, n+0:n+n]
+                    k += n  # Advance to the start of the next set of orbitals
 
     def add_H_scase(self, ii, jj, U, num_atoms, num_orbitals, rho):
         """
@@ -674,14 +678,14 @@ class Hamiltonian:
             # The negative terms
             F -= U*rho[ii, jj]
             F -= Jp_ph*rho[map_atomic_to_index(i, b, s, num_atoms, num_orbitals), map_atomic_to_index(i, a, sp, num_atoms, num_orbitals)]
-            F += 48*dJ*sum(quad_xi_mat[orb1, a, b, orb2]*rho[map_atomic_to_index(i, orb2, s, num_atoms, num_orbitals), map_atomic_to_index(i, orb1, sp, num_atoms, num_orbitals)] for orb1 in range(num_orbitals[i]) for orb2 in range(num_orbitals[i]))
+            F += 48*dJ*sum(self.quad_xi_mat[orb1, a, b, orb2]*rho[map_atomic_to_index(i, orb2, s, num_atoms, num_orbitals), map_atomic_to_index(i, orb1, sp, num_atoms, num_orbitals)] for orb1 in range(num_orbitals[i]) for orb2 in range(num_orbitals[i]))
             if a == b:
                 F -= Jp_S*sum(rho[map_atomic_to_index(i, orb, s, num_atoms, num_orbitals), map_atomic_to_index(i, orb, sp, num_atoms, num_orbitals)] for orb in range(num_orbitals[i]))
             # The positive terms
             if s == sp:
                 F += Jp_S*sum(rho[map_atomic_to_index(i, a, sig, num_atoms, num_orbitals), map_atomic_to_index(i, b, sig, num_atoms, num_orbitals)] for sig in range(2))
                 F += Jp_ph*sum(rho[map_atomic_to_index(i, b, sig, num_atoms, num_orbitals), map_atomic_to_index(i, a, sig, num_atoms, num_orbitals)] for sig in range(2))
-                F -= 48*dJ*sum(quad_xi_mat[orb1, a, orb2, b]*rho[map_atomic_to_index(i, orb2, sig, num_atoms, num_orbitals), map_atomic_to_index(i, orb1, sig, num_atoms, num_orbitals)] for sig in range(2) for orb1 in range(num_orbitals[i]) for orb2 in range(num_orbitals[i]))
+                F -= 48*dJ*sum(self.quad_xi_mat[orb1, a, orb2, b]*rho[map_atomic_to_index(i, orb2, sig, num_atoms, num_orbitals), map_atomic_to_index(i, orb1, sig, num_atoms, num_orbitals)] for sig in range(2) for orb1 in range(num_orbitals[i]) for orb2 in range(num_orbitals[i]))
                 if a == b:
                     F += U*sum(rho[map_atomic_to_index(i, orb, sig, num_atoms, num_orbitals), map_atomic_to_index(i, orb, sig, num_atoms, num_orbitals)] for sig in range(2) for orb in range(num_orbitals[i]))
 
