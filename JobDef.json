@@ -17,7 +17,7 @@
     // Build cubic geometry: 1 (on) or 0 (off)
     "build_geom":1,
     // Crystal symmetry. Currently only have cubic, fcc and bcc implemented.
-    "crystal":"cubic",
+    "crystal":"fcc",
     // supercell. nx = 1, ny = 1 and nz = 1 corresponds to just the crystal basis
     "nx":2,
     "ny":2,
@@ -35,7 +35,7 @@
     "spin_orbit":0,
 
     // electronic temperature in eV
-    "el_kT": 0.001,
+    "el_kT": 0.0001,
     // the tolerance in finding the chemical potential
     "mu_tol": 1e-13,
     // max number of bisections when finding mu
@@ -45,21 +45,25 @@
     "scf_on": 1,
     "scf_mix": 0.001,
     "scf_tol": 1.0e-8,
-    "scf_max_loops": 10000,
+    "scf_max_loops": 50000,
     // Pulay mixing A
-    "A": 0.1,
+    "A": 0.02,
     // Number of density matrices to mix. Reduces to linear mixing when num_rho = 1. Note that 5 seems to be the optimal value.
     "num_rho":5,
+    // McWeeny transformation: enforce idempotency in the density matrix, 1 (on), 0 (off).
+    "McWeeny":0,
+    "McWeeny_tol":1.0e-8,
+    "McWeeny_max_loops":100,
     // Print density matrix in "i    j    val" format, with j >= i to file, 1 is
     // on, 0 is off. Will be called "rho.txt".
-    "print_rho":1,
+    "print_rho":0,
     // Print density matrix as a matrix (not recommended for large systems).
     "print_rho_mat":0,
     // Print the on-site density matrices
     "print_rho_on_site":1,
     // Print fock matrix in "i    j    val" format, with j >= i to file, 1 is
     // on, 0 is off. Will be called "fock.txt".
-    "print_fock":1,
+    "print_fock":0,
     // Print fock matrix as a matrix (not recommended for large systems).
     "print_fock_mat":0,
 
@@ -68,7 +72,7 @@
 
     // Verbosity
     "verbose": 1,
-    "extraverbose": 0,
+    "extraverbose": 1,
 
     // InterSiteElectrostatics is set when the 1/r terms are to be included in SCC-TB.
     "InterSiteElectrostatics": 0

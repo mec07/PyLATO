@@ -107,7 +107,6 @@ def main():
             # Build the density matrix
             Job.Electron.densitymatrix()
 
-            print "number of electrons = "+str(Job.Electron.electronspersite().sum())
 
             if myHami:
                 # Compare the difference between the new and the old on-site density matrix elements
@@ -121,11 +120,16 @@ def main():
                 else:
                     SCFflag = True
                     break
+
+                if Job.Def['McWeeny'] == 1:
+                    Job.Electron.McWeeny()
                 
                 if Job.Def['extraverbose']==1:
-                    rho_err, rhotot_err = Job.Electron.idempotency_error()
-                    print "output rho idempotency error is: ", rho_err
-                    print "input rho idempotency error is: ", rhotot_err
+                    print "number of electrons = "+str(Job.Electron.electronspersite().sum())
+                    print "output rho idempotency error is: ", Job.Electron.idempotency_error(Job.Electron.rho)
+                    print "input rho idempotency error is: ", Job.Electron.idempotency_error(Job.Electron.rhotot)
+                    print "SCF charges = ", Job.Hamilton.q
+                    print "Magnetic moments = ", Job.Electron.spinpersite().T
 
             else:
                 #
@@ -151,6 +155,10 @@ def main():
                 else:
                     SCFflag = True
                     break
+
+                # if the McWeeny flag is on then purify the density matrix 
+                if Job.Def['McWeeny'] == 1:
+                    Job.Electron.McWeeny()
 
         # Print out number of SCF loops taken
         verboseprint(Job.Def['verbose'], "Number of SCF loops: ", ii+1)

@@ -9,6 +9,7 @@ This module contains functions that perform input and output operations
 # Import modules
 import TBH
 import numpy as np
+import os
 from Verbosity import *
 
 def DOS(e, nbin):
@@ -55,7 +56,7 @@ def WriteXYZ(JobClass, NAtom, Comment, AtomType, Pos, filename='geometry.xyz'):
 
     """
     # Save the file in the results directory
-    filename = JobClass.results_dir+filename
+    filename = os.path.join(JobClass.results_dir, filename)
     f_xyz = open(filename, 'a')
     f_xyz.write('{0:d}\n'.format(NAtom))
     f_xyz.write('{0}\n'.format(Comment))
@@ -145,7 +146,7 @@ def WriteOrbitalOccupations(JobClass, filename="occupations.txt"):
     Write out the orbital occupations to a file.
     """
     # Save the file in the results directory
-    filename = JobClass.results_dir+filename
+    filename = os.path.join(JobClass.results_dir, filename)
     occupation=JobClass.Electron.electrons_orbital_occupation_vec()
     information = "\t".join(str(occ) for occ in occupation)
     with open(filename,'w') as f:
@@ -156,7 +157,7 @@ def WriteMagneticCorrelation(JobClass, site1, site2, filename="mag_corr.txt"):
     Write the magnetic correlation between sites 1 and 2 to a file.
     """
     # Save the file in the results directory
-    filename = JobClass.results_dir+filename
+    filename = os.path.join(JobClass.results_dir, filename)
     C_avg = JobClass.Electron.magnetic_correlation(site1,site2).real
     with open(filename,'w') as f:
         f.write(str(C_avg))
@@ -170,7 +171,7 @@ def WriteRho(JobClass, filename="rho.txt"):
     where j >= i (don't need j<i as the density matrix is Hermitian).
     """
     if JobClass.Def['print_rho'] == 1:
-        with open(JobClass.results_dir+filename, 'w') as f:
+        with open(os.path.join(JobClass.results_dir, filename), 'w') as f:
             for ii in range(JobClass.Hamilton.HSOsize):
                 for jj in range(ii, JobClass.Hamilton.HSOsize):
                     f.write("%i\t%i\t%f%+fj\n" % (ii, jj, JobClass.Electron.rho[ii, jj].real, JobClass.Electron.rho[ii, jj].imag))
@@ -181,7 +182,7 @@ def WriteRhoAsMatrix(JobClass, filename="rhoMatrix.txt"):
     density matrices...
     """
     if JobClass.Def['print_rho_mat'] == 1:
-        with open(JobClass.results_dir+filename, 'w') as f:
+        with open(os.path.join(JobClass.results_dir+filename), 'w') as f:
             for ii in range(JobClass.Hamilton.HSOsize):
                 temp = np.array(JobClass.Electron.rho[ii,:]).flatten()
                 line_info = "\t".join(map(str, temp))+"\n"
@@ -192,7 +193,7 @@ def WriteRhoOnSite(JobClass, filename="rhoOnSite.txt"):
     Write out the on-site density matrices for each of the sites.
     """
     if JobClass.Def['print_rho_on_site'] == 1:
-        with open(JobClass.results_dir+filename, 'w') as f:
+        with open(os.path.join(JobClass.results_dir+filename), 'w') as f:
             # spin up
             for ii in range(JobClass.NAtom):
                 f.write("# Spin up atom block %i:\n" % ii)
@@ -223,7 +224,7 @@ def WriteFock(JobClass, filename="fock.txt"):
     where j >= i (don't need j<i as the Fock matrix is Hermitian).
     """
     if JobClass.Def['print_fock'] == 1:
-        with open(JobClass.results_dir+filename, 'w') as f:
+        with open(os.path.join(JobClass.results_dir+filename), 'w') as f:
             for ii in range(JobClass.Hamilton.HSOsize):
                 for jj in range(ii, JobClass.Hamilton.HSOsize):
                     f.write("%i\t%i\t%f%+fj\n" % (ii, jj, JobClass.Hamilton.fock[ii, jj].real, JobClass.Hamilton.fock[ii, jj].imag))
@@ -234,7 +235,7 @@ def WriteFockAsMatrix(JobClass, filename="fockMatrix.txt"):
     Fock matrices...
     """
     if JobClass.Def['print_fock_mat'] == 1:
-        with open(JobClass.results_dir+filename, 'w') as f:
+        with open(os.path.join(JobClass.results_dir+filename), 'w') as f:
             for ii in range(JobClass.Hamilton.HSOsize):
                 temp = JobClass.Hamilton.fock[ii,:].flatten()
                 line_info = "\t".join(map(str, temp))+"\n"

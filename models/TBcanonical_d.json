@@ -4,11 +4,11 @@
     // d-orbital bolonium data
     {
         "Name": "d-orbital bolonium", "ChemSymb": "d-Bo ",
-        "NElectrons": 6, "NOrbitals": 5, "NShells": 1,
+        "NElectrons": 1, "NOrbitals": 5, "NShells": 1,
         "l": [2], 
-        "U": 10.0, 
-        "I": 5.0,
-        "dJ": 0.5,
+        "U": 3.0, 
+        "I": 0.7,
+        "dJ": 0.01,
         "e":[
             [0.0, 0.0, 0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0, 0.0],
