@@ -381,5 +381,99 @@ def fermi_0(e, mu, kT):
 
 
 
+def make_magmomcorr_graphs(numeperatom):
+    Verbose = 1
+    number_decimals = 6
+    orb_type = "p"
+    plotname = "../output_PyLATO/Mag_Corr_"+orb_type+"_"+str(numeperatom)
+    op_sq_name="\\frac{1}{3} \langle :\hat{\mathbf{m}}_1.\hat{\mathbf{m}}_2:\\rangle"
+
+    U_min = 0.005
+    U_max = 10
+    U_num_steps = 100
+
+    J_min = 0.005
+    J_max = 5
+    J_num_steps = 100
+
+    dJ_min = 0
+    dJ_max = 1
+    dJ_num_steps = 1
+
+    U_array, U_step = np.linspace(U_min, U_max, num=U_num_steps, retstep=True)
+    # test
+    U_array = np.append(U_array,U_max+U_step)
+
+    if orb_type == "s":
+        J_array = [0.0]
+        J_step = 0.0
+        dJ_array = [0.0]
+        dJ_step = 0.0
+    elif orb_type == "p":
+        J_array, J_step = np.linspace(J_min, J_max, num=J_num_steps, retstep=True)
+        # test
+        J_array = np.append(J_array,J_max+J_step)
+        dJ_array = [0.0]
+        dJ_step = 0.0
+    elif orb_type == "d":
+        J_array, J_step = np.linspace(J_min, J_max, num=J_num_steps, retstep=True)
+        dJ_array, dJ_step = np.linspace(dJ_min, dJ_max, num=dJ_num_steps, retstep=True)
+        # test
+        J_array = np.append(J_array,J_max+J_step)
+        dJ_array = np.append(dJ_array,dJ_max+dJ_step)
+    else:
+        print("ERROR: orb_type must be 's', 'p' or 'd'. Exiting. ")
+        sys.exit()
+
+
+    jobdef_file = "JobDef.json"
+    jobdef_backup = "JobDef_backup.json"
+    # Make a backup of the JobDef file
+    shutil.copyfile(jobdef_file, jobdef_backup)
+    # Read in the JobDef file
+    with open(jobdef_file, 'r') as f:
+        jobdef = commentjson.loads(f.read())
+
+
+    # Read in the model file
+    modelfile = "models/TBcanonical_"+orb_type+".json"
+    model_temp = "TBcanonical_"+orb_type+"_temp"
+    temp_modelfile = "models/"+model_temp+".json"
+    with open(modelfile, 'r') as f:
+        model = commentjson.loads(f.read())
+    # Copy and paste the regular python model to one with the same temp name
+    model_python = "models/TBcanonical_"+orb_type+".py"
+    model_python_temp = "models/"+model_temp+".py"
+    shutil.copyfile(model_python, model_python_temp)
+    # make sure that the number of electrons is correct.
+    model['species'][0]["NElectrons"] = numeperatom
+
+    # change the model and Hamiltonian in jobdef
+    jobdef["Hamiltonian"] = orb_type+"case"
+    jobdef["model"] = model_temp
+    # make sure that the scf is on
+    jobdef["scf_on"] = 1
+    # write jobdef back to file
+    with open(jobdef_file, 'w') as f:
+        commentjson.dump(jobdef, f, sort_keys=True, indent=4, separators=(',', ': '))
+
+    #pdb.set_trace()
+
+    magFlag, mag_corr = mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_modelfile, orb_type, number_decimals)
+
+
+    # clean up temp files
+    os.remove(temp_modelfile)
+    os.remove(model_python_temp)
+    os.remove(model_python_temp+"c")
+    # restore backup of JobDef.json
+    shutil.copyfile(jobdef_backup, jobdef_file)
+    os.remove(jobdef_backup)
+
+    # Make the plot if the mag_corr_loop was successful
+    if magFlag == True:
+        Plot_OpSq_U_J(Verbose,mag_corr,orb_type,plotname,U_min,U_step,U_num_steps,J_min,J_step,J_num_steps,dJ_min,dJ_step,dJ_num_steps,op_sq_name, number_decimals)
+    else:
+        print("Simulation failed.")
 
 

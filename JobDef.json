@@ -6,7 +6,7 @@
     "Hamiltonian": "dcase",
 
     // Periodic boundary conditions: 1 (on) or 0 (off)
-    "PBC": 1,
+    "PBC": 0,
 
     // Save results in following directory. This is optional. If this is not
     // included the results will be saved in the current directory.
@@ -30,7 +30,7 @@
     "uc_file": "UnitCell.csv",
 
     // magnetic field
-    "so_eB": [0.0, 0.01, 0.0],
+    "so_eB": [0.0, 0.0, 0.1],
     // spin orbit. 1 (on) or 0 (off).
     "spin_orbit":0,
 
