@@ -15,6 +15,10 @@ import sys
 import time
 from myfunctions import fermi_0, fermi_non0
 from Verbosity import *
+import random
+
+# PyDQED module
+from pydqed import DQED
 
 class Electronic:
     """Initialise and build the density matrix."""
@@ -45,6 +49,13 @@ class Electronic:
             self.fermi = fermi_0
         else:
             self.fermi = fermi_non0
+
+        if self.Job.Def['optimisation_routine'] == 1:
+            self.optimisation_routine = self.optimisation_routine1
+        elif self.Job.Def['optimisation_routine'] == 2:
+            self.optimisation_routine = self.optimisation_routine2
+        else:
+            self.optimisation_routine = self.optimisation_routine3
 
 
     def occupy(self, s, kT, n_tol, max_loops):
@@ -220,13 +231,13 @@ class Electronic:
         self.residue[0] = self.rho - self.rhotot
 
         # Calculate the values of alpha to minimise the residue
-        alpha, igo = self.optimisation_routine2(num_rho)
+        alpha, igo = self.optimisation_routine(num_rho)
         if igo == 1:
             print "WARNING: Unable to optimise alpha for combining density matrices. Proceeding using guess."
             # Guess for alpha is just 1.0 divided by the number of density matrices
             alpha = np.zeros((num_rho), dtype='double')
             alpha.fill(1.0/num_rho)
-        verboseprint(self.Job.Def['verbose'], "alpha: ", alpha)
+        verboseprint(self.Job.Def['extraverbose'], "alpha: ", alpha)
         # Create an optimised rhotot and an optimised rho and do linear mixing to make next input matrix
         self.rhotot = sum(alpha[i]*self.inputrho[i] for i in range(num_rho))
         self.rho = sum(alpha[i]*self.outputrho[i] for i in range(num_rho))
@@ -345,7 +356,7 @@ class Electronic:
 
         return C_avg
 
-    def optimisation_routine(self, num_rho):
+    def optimisation_routine1(self, num_rho):
         """
         Optimisation routine where we try to solve for the norm squared of the
         optimal density matrix with the constraint that the sum of the
@@ -363,6 +374,7 @@ class Electronic:
         such that sum_i alpha_i = 1, which is equivalent to having solved for
         a different lambda.
         """
+        verboseprint(self.Job.Def['extraverbose'], "optimisation_routine")
         small = 1e-14
         # If there is only one density matrix the solution is simple.
         if num_rho == 1:
@@ -418,7 +430,7 @@ class Electronic:
 
         """
         small = 1e-10
-        print "optimisation_routine2"
+        verboseprint(self.Job.Def['extraverbose'], "optimisation_routine2")
         # If there is only one density matrix the solution is simple.
         if num_rho == 1:
             return np.array([1.0], dtype='double'), 0
@@ -451,6 +463,357 @@ class Electronic:
         # if successful then return result and no error code.
         return alpha, 0
 
+
+    def optimisation_routine_sub(self, num_rho):
+        """
+        Solve the matrix vector equation approximately such that the alpha
+        lie between 0 and 1:
+
+        {M_11   M_12    ...    M_1N   1  {alpha_1     {0
+         M_21   M_22    ...    M_2N   1   alpha_2      0
+         .              .             .       .        .
+         .                .           .       .    =   .
+         .                  .         .       .        .
+         M_N1   M_N2           M_NN   1   alpha_N      0
+         1      1       ...    1      0}  lambda}      1}
+
+        The most important equation to be satisfied is that the sum of alpha
+        equals 1. So we replace alpha_N by 1 - \sum_{i=1}^{N-1} alpha_i.
+
+        We also use Python numbering (i.e. from 0 to N-1). We end up with N
+        equations. Equation p is:
+
+        f_p = \sum_{i=0}^{N-2} (M_{pi}-M_{pN})c_i + M_{pN} + lambda = 0
+
+        The differential of equation p w.r.t. c_k is:
+
+        df_p/dc_k = M_{pk} - M_{pN}
+
+        the differential of equation p w.r.t. lambda is:
+
+        df_p/dlambda = 1
+
+        Once we find the best possible solution with alpha_i bound between 0
+        and 1 we then find alpha_N. The programme will print a warning if
+        alpha_N is less than 0.
+        """
+        verboseprint(self.Job.Def['extraverbose'], "optimisation_routine_sub")
+        # If there is only one density matrix the solution is simple.
+        if num_rho == 1:
+            return np.array([1.0], dtype='double'), 0
+
+        alpha = np.zeros(num_rho, dtype='double')
+        # initial guess for alpha:
+        alpha.fill(1.0/float(num_rho))
+        Mmat = np.matrix(np.zeros((num_rho, num_rho), dtype='complex'))
+        # calculate Mmat.
+        for i in range(num_rho):
+            Mmat[i, i] = np.trace(np.matrix(self.residue[i])*np.matrix(self.residue[i]).H)
+            for j in range(i+1, num_rho):
+                Mmat[i, j] = np.trace(np.matrix(self.residue[i])*np.matrix(self.residue[j]).H)
+                # if np.sum(np.matrix(self.residue[j]).H*np.matrix(self.residue[i])) != Mmat[i, j].conj():
+                #     print "Mmat[%i,%i] = %f. Mmat[%i,%i].conj() = %f." % (j, i, np.sum(np.matrix(self.residue[j]).H*np.matrix(self.residue[i])), i, j, Mmat[i, j].conj())
+                Mmat[j, i] = Mmat[i, j].conj()
+
+        # Initialise the PyDQED class       
+        opt = optimisation_rho()
+        opt.Mmat = Mmat
+        # bounds for the x values
+        mybounds = [(0,1) for kk in range(num_rho-1)]
+        # No bounds for lambda
+        mybounds += [(None, None)]
+        opt.initialize(Nvars=num_rho, Ncons=0, Neq=num_rho, bounds=mybounds, tolf=1e-16, told=1e-8, tolx=1e-8, maxIter=100, verbose=False)
+        alpha, igo = opt.solve(alpha)
+        if igo > 1:
+            print dqed_err_dict[igo]
+        # replace last element of alpha (lambda) by what it should be (alpha_N)
+        alpha[-1] = 1-sum(alpha[i] for i in range(num_rho-1))
+        if alpha[-1] < 0:
+            print "WARNING: alpha_N = %f. It should be less than 0." % alpha[-1]
+        return alpha, igo
+
+    def optimisation_routine_total(self, num_rho):
+        """
+        Solve the matrix vector equation approximately such that the alpha
+        lie between 0 and 1:
+
+        {M_11   M_12    ...    M_1N   1  {alpha_1     {0
+         M_21   M_22    ...    M_2N   1   alpha_2      0
+         .              .             .       .        .
+         .                .           .       .    =   .
+         .                  .         .       .        .
+         M_N1   M_N2           M_NN   1   alpha_N      0
+         1      1       ...    1      0}  lambda}      1}
+
+        We also use Python numbering (i.e. from 0 to N-1). We end up with N+1
+        equations. Equation p is:
+
+        f_p = \sum_{i=0}^{N-1} M_{pi}c_i + lambda = 0
+
+        except for the last equation, 
+
+        f_{N-1} = \sum_{i=0}^{N-1} M_{pi}c_i - 1.0 = 0.
+
+        The differential of equation p w.r.t. c_k is:
+
+        df_p/dc_k = M_{pk}
+
+        the differential of equation p w.r.t. lambda is:
+
+        df_p/dlambda = 1
+
+        except for the last equation where it is equal to 0.
+
+        We find the best possible solution with alpha_i bound between 0 and 1.
+        We check to make sure that the sum of alpha is equal to 1.0.
+        """
+        verboseprint(self.Job.Def['extraverbose'], "optimisation_routine_total")
+        # If there is only one density matrix the solution is simple.
+        if num_rho == 1:
+            return np.array([1.0], dtype='double'), 0
+
+        alpha = np.zeros(num_rho+1, dtype='double')
+        # initial guess for alpha:
+        alpha.fill(1.0/float(num_rho))
+        Mmat = np.matrix(np.zeros((num_rho+1, num_rho+1), dtype='complex'))
+        # make all the elements 1
+        Mmat.fill(1.0)
+        # replace the bottom right hand corner by 0
+        Mmat[-1,-1] = 0.0
+        # calculate the rest of the Mmat.
+        for i in range(num_rho):
+            Mmat[i, i] = np.trace(np.matrix(self.residue[i])*np.matrix(self.residue[i]).H)
+            for j in range(i+1, num_rho):
+                Mmat[i, j] = np.trace(np.matrix(self.residue[i])*np.matrix(self.residue[j]).H)
+                # if np.sum(np.matrix(self.residue[j]).H*np.matrix(self.residue[i])) != Mmat[i, j].conj():
+                #     print "Mmat[%i,%i] = %f. Mmat[%i,%i].conj() = %f." % (j, i, np.sum(np.matrix(self.residue[j]).H*np.matrix(self.residue[i])), i, j, Mmat[i, j].conj())
+                Mmat[j, i] = Mmat[i, j].conj()
+
+        # Initialise the PyDQED class       
+        opt = optimisation_rho_total()
+        opt.Mmat = Mmat
+        # bounds for the x values
+        mybounds = [(0,1) for kk in range(num_rho)]
+        # No bounds for lambda
+        mybounds += [(None, None)]
+        opt.initialize(Nvars=num_rho+1, Ncons=0, Neq=num_rho+1, bounds=mybounds, tolf=1e-16, told=1e-8, tolx=1e-8, maxIter=100, verbose=False)
+        alpha, igo = opt.solve(alpha)
+        if igo > 1:
+            print dqed_err_dict[igo]
+        # check to make sure that the alpha sum to 1.0
+        sum_alpha = sum(alpha[ii] for ii in range(num_rho))
+        if abs(sum_alpha-1.0) > 1e-8:
+            print "WARNING: sum_i alpha_i - 1.0 = " + str(sum_alpha-1.0) + ". It should be equal to 0.0. Proceeding using guess."
+            return alpha, 1
+        return alpha, igo
+
+    def optimisation_routine3(self, num_rho):
+        """
+        Solve the matrix vector equation approximately such that the alpha lie
+        between 0 and 1 and the constraint that sum_i alpha_i = 1:
+
+        {M_11   M_12    ...    M_1N  {alpha_1     {0
+         M_21   M_22    ...    M_2N   alpha_2      0
+         .              .                 .        .
+         .                .               .    =   .
+         .                  .             .        .
+         M_N1   M_N2           M_NN}  alpha_N}     0}
+
+        We use the library PyDQED to find a good solution with alpha_i bound
+        between 0 and 1. To ensure that alpha_i are bound between 0 and 1 we
+        replace alpha_i by sin^2(alpha_i). To ensure that sum_i alpha_i = 1 
+        we replace sin^2(alpha_i) by sin^2(alpha_i)/sum_a, where 
+        sum_a = sum_i sin^2(alpha_i).
+        """
+
+        verboseprint(self.Job.Def['extraverbose'], "optimisation_routine3")
+        # If there is only one density matrix the solution is simple.
+        if num_rho == 1:
+            return np.array([1.0], dtype='double'), 0
+
+        alpha = np.zeros(num_rho, dtype='double')
+        # initial guess for alpha:
+        alpha.fill(1.0/float(num_rho))
+        self.Mmat = np.zeros((num_rho, num_rho), dtype='complex')
+        # calculate Mmat.
+        for i in range(num_rho):
+            self.Mmat[i, i] = np.trace(np.matrix(self.residue[i])*np.matrix(self.residue[i]).H)
+            for j in range(i+1, num_rho):
+                self.Mmat[i, j] = np.trace(np.matrix(self.residue[i])*np.matrix(self.residue[j]).H)
+                # if np.sum(np.matrix(self.residue[j]).H*np.matrix(self.residue[i])) != Mmat[i, j].conj():
+                #     print "Mmat[%i,%i] = %f. Mmat[%i,%i].conj() = %f." % (j, i, np.sum(np.matrix(self.residue[j]).H*np.matrix(self.residue[i])), i, j, Mmat[i, j].conj())
+                self.Mmat[j, i] = self.Mmat[i, j].conj()
+
+        # Initialise the PyDQED class       
+        opt = optimisation_rho_Duff()
+        opt.Mmat = self.Mmat
+        # bounds for the x values
+        # mybounds = [(0,1) for kk in range(num_rho)]
+        mybounds = None
+        # No bounds for lambda
+        # mybounds += [(None, None)]
+        # Strict bounds for the constraint
+        # mybounds += [(-1e-12, 1e-12)]
+        opt.initialize(Nvars=num_rho, Ncons=0, Neq=num_rho, bounds=mybounds, tolf=1e-16, told=1e-8, tolx=1e-8, maxIter=100, verbose=False)
+        alpha, igo = opt.solve(alpha)
+        if igo > 1:
+            verboseprint(self.Job.Def['extraverbose'], dqed_err_dict[igo])
+        # replace alpha[i] by sin^2(alpha[i])/sum_i sin^2(alpha[i])
+        sum_alpha = sum(np.sin(alpha[ii])*np.sin(alpha[ii]) for ii in range(num_rho))
+        alpha = np.array([np.sin(alpha[ii])*np.sin(alpha[ii])/sum_alpha for ii in range(num_rho)])
+        if abs(sum(alpha)-1.0) > 1e-8:
+            print "WARNING: sum_i alpha_i - 1.0 = " + str(sum_alpha-1.0) + ". It should be equal to 0.0. Proceeding using guess."
+            return alpha, 1
+
+        if self.Job.Def['random_seeds'] == 1:
+            # try the random seeds
+            trial_alpha, trial_cMc, trial_err = self.random_seeds_optimisation(num_rho, self.Job.Def['num_random_seeds'])
+
+            # Check to find out which solution is better, the guessed or the random seeds
+            cMc = alpha.conjugate().dot(self.Mmat.dot(alpha))
+            if cMc < trial_cMc:
+                return alpha, igo
+            else:
+                # print "Returning random seed answer. cMc = ", str(cMc), "; trial_cMc = ", str(trial_cMc)
+                return trial_alpha, trial_err
+
+
+        return alpha, igo
+
+
+    def random_seeds_optimisation(self, num_rho, num_trials):
+        cMc_vec = []
+        cMc_val = []
+        cMc_err = []
+        random.seed()
+        # Initialise the PyDQED class       
+        opt = optimisation_rho_Duff()
+        opt.Mmat = self.Mmat
+        mybounds = None
+        opt.initialize(Nvars=num_rho, Ncons=0, Neq=num_rho, bounds=mybounds, tolf=1e-16, told=1e-8, tolx=1e-8, maxIter=100, verbose=False)
+        # random starting seeds
+        for gg in range(num_trials):
+            alpha = np.array([random.random() for hh in range(num_rho)])
+            alpha, igo = opt.solve(alpha)
+            if igo > 1:
+                verboseprint(self.Job.Def['extraverbose'], dqed_err_dict[igo])
+            # replace alpha[i] by sin^2(alpha[i])/sum_i sin^2(alpha[i])
+            sum_alpha = sum(np.sin(alpha[ii])*np.sin(alpha[ii]) for ii in range(num_rho))
+            alpha = np.array([np.sin(alpha[ii])*np.sin(alpha[ii])/sum_alpha for ii in range(num_rho)])
+            cMc_vec.append(alpha)
+            cMc_val.append(alpha.conjugate().dot(self.Mmat.dot(alpha)))
+            cMc_err.append(igo)
+
+        # print "Trial values of cMc are: ", cMc_val
+        val, idx = min((val, idx) for (idx, val) in enumerate(cMc_val))
+        # print "chosen index = ", idx 
+        return cMc_vec[idx], cMc_val[idx], cMc_err[idx]
+
+class optimisation_rho(DQED):
+    """
+    A DQED class containing the functions to optimise.
+
+    It requires the Mmat matrix to work. Takes in only the M_{pq} values for
+    Mmat, not the whole thing. 
+    """
+    def evaluate(self, x):
+        Neq = self.Neq; Nvars = self.Nvars; Ncons = self.Ncons
+        f = np.zeros((Neq), np.float64)
+        J = np.zeros((Neq, Nvars), np.float64)
+        fcons = np.zeros((Ncons), np.float64)
+        Jcons = np.zeros((Ncons, Nvars), np.float64)
+
+        for pp in range(Neq):
+            f[pp] = sum((self.Mmat[pp, ii] - self.Mmat[pp, Nvars-1])*x[ii] for ii in range(Nvars-1)) + self.Mmat[pp, Nvars-1] + x[Nvars-1]
+            for kk in range(Nvars-1):
+                J[pp, kk] = self.Mmat[pp, kk] - self.Mmat[pp, Nvars-1]
+            J[pp, Nvars-1] = 1
+
+        return f, J, fcons, Jcons
+
+class optimisation_rho_total(DQED):
+    """
+    A DQED class containing the functions to optimise.
+
+    It requires the Mmat matrix to work. Takes in the large version of Mmat
+
+    {M_11   M_12    ...    M_1N   1
+     M_21   M_22    ...    M_2N   1
+     .              .             .
+     .                .           .
+     .                  .         .
+     M_N1   M_N2           M_NN   1
+     1      1       ...    1      0}
+    """
+    def evaluate(self, x):
+        Neq = self.Neq; Nvars = self.Nvars; Ncons = self.Ncons
+        f = np.zeros((Neq), np.float64)
+        J = np.zeros((Neq, Nvars), np.float64)
+        fcons = np.zeros((Ncons), np.float64)
+        Jcons = np.zeros((Ncons, Nvars), np.float64)
+
+        for pp in range(Neq-1):
+            f[pp] = sum((self.Mmat[pp, ii])*x[ii] for ii in range(Nvars))
+            for kk in range(Nvars):
+                J[pp, kk] = self.Mmat[pp, kk]
+
+        # Do the final equation separately as we want to subtract the 1 from the RHS
+        f[Neq-1] = sum(x[ii] for ii in range(Nvars-1)) - 1.0
+        for kk in range(Nvars):
+            J[Neq-1, kk] = self.Mmat[Neq-1, kk]
+
+
+        return f, J, fcons, Jcons
+
+class optimisation_rho_Duff(DQED):
+    """
+    A DQED class containing the functions to optimise.
+
+    It requires the small Mmat matrix to work.
+
+    {M_11   M_12    ...    M_1N
+     M_21   M_22    ...    M_2N
+     .              .          
+     .                .        
+     .                  .      
+     M_N1   M_N2           M_NN}
+
+    It implements the constraint that the sum_i x[i] = 1, and the bounds
+    0 < x[i] < 1 by replacing x[i] by sin^2(x[i])/sum_i sin^2(x[i]).
+    """
+    def evaluate(self, x):
+        Neq = self.Neq; Nvars = self.Nvars; Ncons = self.Ncons
+        f = np.zeros((Neq), np.float64)
+        J = np.zeros((Neq, Nvars), np.float64)
+        fcons = np.zeros((Ncons), np.float64)
+        Jcons = np.zeros((Ncons, Nvars), np.float64)
+
+
+        # Replace x[i] by sin^2(x[i])/sum_i sin^2(x[i])
+        y = []
+        sum_x = sum(np.sin(x[ii])*np.sin(x[ii]) for ii in range(Nvars-1))
+        for ii in range(Nvars):
+            y.append(np.sin(x[ii])*np.sin(x[ii])/sum_x)
+
+        for pp in range(Neq):
+            f[pp] = sum((self.Mmat[pp, ii])*y[ii] for ii in range(Nvars))
+            for kk in range(Nvars):
+                # find this equation by differentiating f[pp] w.r.t. x[kk]
+                J[pp, kk] = 2*np.sin(x[kk])*np.cos(x[kk])*(f[pp] - self.Mmat[pp, kk])/sum_x
+
+        return f, J, fcons, Jcons
+
+
+dqed_err_dict={}
+dqed_err_dict[2] = "The norm of the residual is zero; the solution vector is a root of the system."
+dqed_err_dict[3] = "The bounds on the trust region are being encountered on each step; the solution vector may or may not be a local minimum."
+dqed_err_dict[4] = "The solution vector is a local minimum."
+dqed_err_dict[5] = "A significant amount of noise or uncertainty has been observed in the residual; the solution may or may not be a local minimum."
+dqed_err_dict[6] = "The solution vector is only changing by small absolute amounts; the solution may or may not be a local minimum."
+dqed_err_dict[7] = "The solution vector is only changing by small relative amounts; the solution may or may not be a local minimum."
+dqed_err_dict[8] = "The maximum number of iterations has been reached; the solution is the best found, but may or may not be a local minimum."
+for ii in range(9,19):
+    dqed_err_dict[ii] = "An error occurred during the solve operation; the solution is not a local minimum."  
 
 
 

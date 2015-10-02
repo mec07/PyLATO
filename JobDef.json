@@ -17,7 +17,7 @@
     // Build cubic geometry: 1 (on) or 0 (off)
     "build_geom":1,
     // Crystal symmetry. Currently only have cubic, fcc and bcc implemented.
-    "crystal":"fcc",
+    "crystal":"cubic",
     // supercell. nx = 1, ny = 1 and nz = 1 corresponds to just the crystal basis
     "nx":2,
     "ny":2,
@@ -35,7 +35,7 @@
     "spin_orbit":0,
 
     // electronic temperature in eV
-    "el_kT": 0.0001,
+    "el_kT": 0.005,
     // the tolerance in finding the chemical potential
     "mu_tol": 1e-13,
     // max number of bisections when finding mu
@@ -43,11 +43,23 @@
 
     // self-consistent field parameters
     "scf_on": 1,
-    "scf_mix": 0.001,
+    "scf_mix": 0.0001,
     "scf_tol": 1.0e-8,
     "scf_max_loops": 50000,
     // Pulay mixing A
-    "A": 0.02,
+    "A": 0.1,
+    // Optimisation routines:
+    // 1: the default that we implemented
+    // 2: the DIIS, pretty much equivalent results to 1
+    // 3: A slow but robust routine. It is more physical than routines 1 and 2
+    // in that it requires the coefficients of the linear combination of
+    // density matrices lie between 0 and 1.
+    "optimisation_routine":3,
+    // Random seeds may be used for routine 3. When this is on, (1), although
+    // less scf loops are required it tends to take longer to run. It could be
+    // parallelised without much difficulty but I haven't done that yet.
+    "random_seeds":0,
+    "num_random_seeds":10,
     // Number of density matrices to mix. Reduces to linear mixing when num_rho = 1. Note that 5 seems to be the optimal value.
     "num_rho":5,
     // McWeeny transformation: enforce idempotency in the density matrix, 1 (on), 0 (off).
@@ -72,7 +84,7 @@
 
     // Verbosity
     "verbose": 1,
-    "extraverbose": 1,
+    "extraverbose": 0,
 
     // InterSiteElectrostatics is set when the 1/r terms are to be included in SCC-TB.
     "InterSiteElectrostatics": 0
