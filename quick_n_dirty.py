@@ -18,7 +18,6 @@ To vary U and J I have to mess with the model.
 """
 import numpy as np
 import commentjson
-import shutil, os, sys
 import myfunctions
 from Verbosity import verboseprint
 import pdb

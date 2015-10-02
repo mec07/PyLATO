@@ -15,6 +15,7 @@ matplotlib.use('Agg')
 from matplotlib import cm
 import matplotlib.pyplot as plt
 from Verbosity import verboseprint
+import shutil, os, sys
 import numpy as np
 import TB
 import commentjson
