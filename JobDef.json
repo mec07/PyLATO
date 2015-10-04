@@ -3,10 +3,10 @@
     "model": "TBcanonical",
 
     // Hamiltonian, "standard", "collinearS", "vectorS", "scase", "pcase" or "dcase"
-    "Hamiltonian": "dcase",
+    "Hamiltonian": "pcase",
 
     // Periodic boundary conditions: 1 (on) or 0 (off)
-    "PBC": 0,
+    "PBC": 1,
 
     // Save results in following directory. This is optional. If this is not
     // included the results will be saved in the current directory.
@@ -17,7 +17,7 @@
     // Build cubic geometry: 1 (on) or 0 (off)
     "build_geom":1,
     // Crystal symmetry. Currently only have cubic, fcc and bcc implemented.
-    "crystal":"cubic",
+    "crystal":"bcc",
     // supercell. nx = 1, ny = 1 and nz = 1 corresponds to just the crystal basis
     "nx":2,
     "ny":2,
@@ -30,12 +30,12 @@
     "uc_file": "UnitCell.csv",
 
     // magnetic field
-    "so_eB": [0.0, 0.0, 0.1],
+    "so_eB": [0.0, 0.01, 0.0],
     // spin orbit. 1 (on) or 0 (off).
     "spin_orbit":0,
 
     // electronic temperature in eV
-    "el_kT": 0.005,
+    "el_kT": 0.009,
     // the tolerance in finding the chemical potential
     "mu_tol": 1e-13,
     // max number of bisections when finding mu
@@ -54,7 +54,7 @@
     // 3: A slow but robust routine. It is more physical than routines 1 and 2
     // in that it requires the coefficients of the linear combination of
     // density matrices lie between 0 and 1.
-    "optimisation_routine":3,
+    "optimisation_routine":1,
     // Random seeds may be used for routine 3. When this is on, (1), although
     // less scf loops are required it tends to take longer to run. It could be
     // parallelised without much difficulty but I haven't done that yet.

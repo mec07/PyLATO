@@ -502,7 +502,7 @@ class Electronic:
                 self.Mmat[j, i] = self.Mmat[i, j].conj()
 
         # Initialise the PyDQED class       
-        opt = optimisation_rho_Duff()
+        opt = optimisation_rho_Duff_Meloni()
         opt.Mmat = self.Mmat
         # bounds for the x values
         # mybounds = [(0,1) for kk in range(num_rho)]
@@ -516,8 +516,8 @@ class Electronic:
         if igo > 1:
             verboseprint(self.Job.Def['extraverbose'], dqed_err_dict[igo])
         # replace alpha[i] by sin^2(alpha[i])/sum_i sin^2(alpha[i])
-        sum_alpha = sum(np.sin(alpha[ii])*np.sin(alpha[ii]) for ii in range(num_rho))
-        alpha = np.array([np.sin(alpha[ii])*np.sin(alpha[ii])/sum_alpha for ii in range(num_rho)])
+        sum_alpha = sum(alpha[ii]*alpha[ii] for ii in range(num_rho))
+        alpha = np.array([alpha[ii]*alpha[ii]/sum_alpha for ii in range(num_rho)])
         if abs(sum(alpha)-1.0) > 1e-8:
             print "WARNING: sum_i alpha_i - 1.0 = " + str(sum_alpha-1.0) + ". It should be equal to 0.0. Proceeding using guess."
             return alpha, 1
@@ -593,7 +593,7 @@ class optimisation_rho_Duff(DQED):
 
         # Replace x[i] by sin^2(x[i])/sum_i sin^2(x[i])
         y = []
-        sum_x = sum(np.sin(x[ii])*np.sin(x[ii]) for ii in range(Nvars-1))
+        sum_x = sum(np.sin(x[ii])*np.sin(x[ii]) for ii in range(Nvars))
         for ii in range(Nvars):
             y.append(np.sin(x[ii])*np.sin(x[ii])/sum_x)
 
@@ -602,6 +602,46 @@ class optimisation_rho_Duff(DQED):
             for kk in range(Nvars):
                 # find this equation by differentiating f[pp] w.r.t. x[kk]
                 J[pp, kk] = 2*np.sin(x[kk])*np.cos(x[kk])*(f[pp] - self.Mmat[pp, kk])/sum_x
+
+        return f, J, fcons, Jcons
+
+class optimisation_rho_Duff_Meloni(DQED):
+    """
+    A DQED class containing the functions to optimise.
+
+    It requires the small Mmat matrix to work.
+
+    {M_11   M_12    ...    M_1N
+     M_21   M_22    ...    M_2N
+     .              .          
+     .                .        
+     .                  .      
+     M_N1   M_N2           M_NN}
+
+    It implements the constraint that the sum_i x[i] = 1, and the bounds
+    0 <= x[i] <= 1 by replacing x[i] by y[i] = x[i]^2/sum_i x[i]^2. As the y[i]
+    must be positive and they must sum to 1, they must also lie between 0 and
+    1.
+    """
+    def evaluate(self, x):
+        Neq = self.Neq; Nvars = self.Nvars; Ncons = self.Ncons
+        f = np.zeros((Neq), np.float64)
+        J = np.zeros((Neq, Nvars), np.float64)
+        fcons = np.zeros((Ncons), np.float64)
+        Jcons = np.zeros((Ncons, Nvars), np.float64)
+
+
+        # Replace x[i] by sin^2(x[i])/sum_i sin^2(x[i])
+        y = []
+        sum_x = sum(x[ii]*x[ii] for ii in range(Nvars))
+        for ii in range(Nvars):
+            y.append(x[ii]*x[ii]/sum_x)
+
+        for pp in range(Neq):
+            f[pp] = sum((self.Mmat[pp, ii])*y[ii] for ii in range(Nvars))
+            for kk in range(Nvars):
+                # find this equation by differentiating f[pp] w.r.t. x[kk]
+                J[pp, kk] = 2*x[kk]*(self.Mmat[pp, kk] - f[pp])/sum_x
 
         return f, J, fcons, Jcons
 
