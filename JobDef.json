@@ -30,7 +30,7 @@
     "uc_file": "UnitCell.csv",
 
     // magnetic field
-    "so_eB": [0.0, 0.01, 0.0],
+    "so_eB": [0.0, 0.0, 0.0],
     // spin orbit. 1 (on) or 0 (off).
     "spin_orbit":0,
 
