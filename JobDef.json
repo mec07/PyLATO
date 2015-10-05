@@ -6,7 +6,7 @@
     "Hamiltonian": "pcase",
 
     // Periodic boundary conditions: 1 (on) or 0 (off)
-    "PBC": 1,
+    "PBC": 0,
 
     // Save results in following directory. This is optional. If this is not
     // included the results will be saved in the current directory.
@@ -54,11 +54,12 @@
     // 3: A slow but robust routine. It is more physical than routines 1 and 2
     // in that it requires the coefficients of the linear combination of
     // density matrices lie between 0 and 1.
-    "optimisation_routine":1,
+    // 4: This routine just seems to do linear mixing...
+    "optimisation_routine":4,
     // Random seeds may be used for routine 3. When this is on, (1), although
     // less scf loops are required it tends to take longer to run. It could be
     // parallelised without much difficulty but I haven't done that yet.
-    "random_seeds":0,
+    "random_seeds":1,
     "num_random_seeds":10,
     // Number of density matrices to mix. Reduces to linear mixing when num_rho = 1. Note that 5 seems to be the optimal value.
     "num_rho":5,
@@ -84,7 +85,7 @@
 
     // Verbosity
     "verbose": 1,
-    "extraverbose": 0,
+    "extraverbose": 1,
 
     // InterSiteElectrostatics is set when the 1/r terms are to be included in SCC-TB.
     "InterSiteElectrostatics": 0
