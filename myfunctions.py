@@ -83,8 +83,31 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                 # write out the new modelfile
                 with open(temp_modelfile, 'w') as f:
                     commentjson.dump(model, f, sort_keys=True, indent=4, separators=(',', ': '))
+                try:
+                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = TB.main()
+                # if we end up with a linear algebra error then we can re-run with a different optimisation scheme.
+                except numpy.linalg.linalg.LinAlgError:
+                    # store original optimisation routine choice
+                    old_routine = jobdef['optimisation_routine']
+                    if jobdef['optimisation_routine'] == 1:
+                        # then set it to routine 2
+                        jobdef['optimisation_routine'] = 2
+                    else:
+                        # then set it to routine 1
+                        jobdef['optimisation_routine'] = 1
+                    # write jobdef back to file
+                    with open(jobdef_file, 'w') as f:
+                        commentjson.dump(jobdef, f, sort_keys=True, indent=4, separators=(',', ': '))
+                    # and run again
+                    print("SCF did not converge. Re-running simulation with different optimisation routine. ")
+                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = TB.main()
+                    # reset optimisation routine
+                    jobdef['optimisation_routine'] = old_routine
+                    # write jobdef back to file
+                    with open(jobdef_file, 'w') as f:
+                        commentjson.dump(jobdef, f, sort_keys=True, indent=4, separators=(',', ': '))
 
-                SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = TB.main()
+
                 # If the SCF has converged then we can trust the result
                 if SCFflag == True:
                     pass
