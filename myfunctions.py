@@ -89,7 +89,7 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                 except numpy.linalg.linalg.LinAlgError:
                     # store original optimisation routine choice
                     old_routine = jobdef['optimisation_routine']
-                    if jobdef['optimisation_routine'] == 1:
+                    if old_routine == 1:
                         # then set it to routine 2
                         jobdef['optimisation_routine'] = 2
                     else:
