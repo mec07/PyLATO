@@ -45,6 +45,7 @@ import numpy
 cimport numpy
 cimport cython
 
+__version__ = '1.0.1'
 ################################################################################
 
 # Expose the (double-precision) DQED function prototype to this module
@@ -114,15 +115,15 @@ cdef class DQED:
         
         * `tolf` - The tolerance used for stopping when the norm of the 
           residual has absolute length less than `tolf`, i.e.
-          :math:`\| \vector{f} \| \le \epsilon_f.
+          :math:`\\| \\vec{f} \\| \\le \\epsilon_f.`
         
         * `told` - The tolerance used for stopping when changes to the unknown
           variables has absolute length less than `told`, i.e.
-          :math:`\| \Delta \vector{x} \| \le \epsilon_d.
+          :math:`\\| \\Delta \\vec{x} \\| \\le \\epsilon_d.`
         
         * `tolx` - The tolerance used for stopping when changes to the unknown
           variables has relative length less than `tolx`, i.e.
-          :math:`\| \Delta \vector{x} \| \le \epsilon_x \cdot \| \vector{x} \|`.
+          :math:`\\| \\Delta \\vec{x} \\| \\le \\epsilon_x \\cdot \\| \\vec{x} \\|.`
         
         * `maxIter` - The maximum number of iterations to use
         
@@ -294,13 +295,13 @@ cdef class DQED:
         vector `x`. Return a tuple containing three items:
         
         * A vector of the current values of the system of equations 
-          :math:`\vector{f}(\vector{x})`.
+          :math:`\\vector{f}(\\vector{x})`.
           
         * A matrix of the current values of the Jacobian of the system of
-          equations: :math:`J_{ij} = \frac{\partial f_i}{\partial x_j}`.
+          equations: :math:`J_{ij} = \\frac{\\partial f_i}{\\partial x_j}`.
           
         * A matrix of the current values of the Jacobian of the (linear)
-          constrains: :math:`J_{ij}^\prime = \frac{\partial g_i}{\partial x_j}`.
+          constrains: :math:`J_{ij}^\\prime = \\frac{\\partial g_i}{\\partial x_j}`.
         
         """
         print('DQEDError: You must implement the evaluate() method in your derived class.')

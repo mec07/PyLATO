@@ -11,13 +11,18 @@ populated by electrons.
 import numpy as np
 import math
 import TBH
-import sys
+import sys, os, importlib
 import time
 import myfunctions
 from Verbosity import *
 import random
 
+dir_path = os.path.dirname(os.path.realpath(__file__))
+pydqed_path = os.path.join(os.path.sep, dir_path, "pydqed")
+
+sys.path.append(pydqed_path)
 # PyDQED module
+#importlib.import_module("pydqed.pydqed")
 from pydqed import DQED
 
 class Electronic:
