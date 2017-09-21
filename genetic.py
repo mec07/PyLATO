@@ -21,6 +21,7 @@ from random import randint, random
 from operator import add
 from math import copysign
 
+
 def individual(length, target, data):
     """Create a member of the population. Start from a 0 vector and
     keep adding 1s until the value of the target has been exceeded."""
@@ -33,6 +34,7 @@ def individual(length, target, data):
 
     return individual
 
+
 def population(count, length, target, data):
     """
     Create a number of individuals (i.e. a population).
@@ -43,7 +45,8 @@ def population(count, length, target, data):
     max: the maximum possible value in an individual's list of values
 
     """
-    return [ individual(length, target, data) for x in xrange(count) ]
+    return [individual(length, target, data) for x in xrange(count)]
+
 
 def fitness(individual, target, data):
     """
@@ -58,12 +61,13 @@ def fitness(individual, target, data):
         sum += individual[ii]*data[ii]
     return abs(target-sum), copysign(1, target-sum)
 
+
 def best_individual(population, target, data):
     """
-    Find the best individual from a population by selecting the one 
+    Find the best individual from a population by selecting the one
     with the smallest value of fitness that also has a negative sign.
     """
-    best = [(None, 1e20)] # start best off at a very large value
+    best = [(None, 1e20)]  # start best off at a very large value
     for ii in range(len(population)):
         fit, sgn = fitness(population[ii], target, data)
         # print sgn*fit
@@ -73,20 +77,20 @@ def best_individual(population, target, data):
 
     try:
         individual = population[best[0][0]]
-        err = 0
     except TypeError:
         individual = []
-        err = 1
-    return individual, err
+    return individual
+
 
 def grade(pop, target, data):
     'Find average fitness for a population.'
     summed = reduce(add, (fitness(x, target, data)[0] for x in pop))
     return summed / (len(pop) * 1.0)
 
+
 def evolve(pop, target, data, retain=0.2, random_select=0.05, mutate=0.05):
-    graded = [ (fitness(x, target, data)[0], x) for x in pop]
-    graded = [ x[1] for x in sorted(graded)]
+    graded = [(fitness(x, target, data)[0], x) for x in pop]
+    graded = [x[1] for x in sorted(graded)]
     retain_length = int(len(graded)*retain)
     parents = graded[:retain_length]
     # randomly add other individuals to
