@@ -12,8 +12,6 @@ It merges the old TBH0 and TBHSO modules
 import numpy as np
 from scipy.special import erf
 import math
-from Verbosity import *
-
 
 
 class Hamiltonian:
@@ -34,12 +32,12 @@ class Hamiltonian:
         # Compute the sizes of the Hamiltonian matrices
         self.H0size = self.Hindex[self.Job.NAtom]
         self.HSOsize = 2*self.H0size
-        
+
         # Allocate memory for the Hamiltonian matrices
         self.H0   = np.zeros((self.H0size,  self.H0size),  dtype='double')
         self.HSO  = np.zeros((self.HSOsize, self.HSOsize), dtype='complex')
         self.Fock = np.zeros((self.HSOsize, self.HSOsize), dtype='complex')
-        
+
         # Allocate memeory for the charge and spin
         self.q = np.zeros(self.Job.NAtom, dtype='double')
         self.s = np.zeros((3, self.Job.NAtom), dtype='double')
@@ -79,7 +77,6 @@ class Hamiltonian:
                 gij = complex(self.Job.Model.atomic[atype1]['U'], 0.0)
             else:
                 if self.Job.Def["InterSiteElectrostatics"] == 1:
-                    
                     dr = self.Job.Pos[atom2] - self.Job.Pos[atom1]
                     rij = np.sqrt(dr.dot(dr))
 
@@ -87,10 +84,10 @@ class Hamiltonian:
                     ai = vacuum*vacuum*np.pi*np.pi*np.pi*8.0 * self.Job.Model.atomic[atype1]['U'] * self.Job.Model.atomic[atype1]['U'] 
                     aj = vacuum*vacuum*np.pi*np.pi*np.pi*8.0 * self.Job.Model.atomic[atype2]['U'] * self.Job.Model.atomic[atype2]['U']
                     b =  np.sqrt(ai * aj / (ai + aj))
-                    
+
                     gij = 1.0/vacuum/(4.0*np.pi) * complex(erf(b * rij) / rij, 0.0)
                 else:
-                    gij = complex(0.0, 0.0)                  
+                    gij = complex(0.0, 0.0)
 
             return gij
 
@@ -113,7 +110,6 @@ class Hamiltonian:
 
     def buildfock(self):
         """Build the Fock matrix by adding charge and spin terms to the Hamiltonian."""
-        
         # Copy the Hamiltonian, complete with spin-orbit terms, to the Fock matrix
         self.fock = np.copy(self.HSO)
         h0s = self.H0size
@@ -122,7 +118,7 @@ class Hamiltonian:
 
             # Add in diagonal corrections for charge and spin
             des = np.zeros((2, 2), dtype="complex")
-            
+
             # Compute on-site and (if enabled) intersite electrostatic terms.
             self.electrostatics()
 
@@ -272,7 +268,7 @@ class Hamiltonian:
 
         # Allocate space for the final block of the Hamiltonian
         block = np.zeros((2*l1+1, 2*l2+1), dtype='double')
-        
+
         # Compute the direction cosines
         d = math.sqrt(dr[0]*dr[0] + dr[1]*dr[1] + dr[2]*dr[2])
         if d > 1.0e-15:
@@ -283,40 +279,35 @@ class Hamiltonian:
             l = 0.0
             m = 0.0
             n = 1.0
-        
+
         # Evaluate the matrix elements
         if (l1,l2) == (0,0):
-            
             # s-s
             block[0,0] = v[0]
         elif (l1,l2) == (1,0):
-            
             # p-s
             block[0,0] = n*v[0]
             block[1,0] = l*v[0]
             block[2,0] = m*v[0]
         elif (l1,l2) == (0,1):
-            
             # s-p
             block[0,0] = n*v[0]
             block[0,1] = l*v[0]
             block[0,2] = m*v[0]
         elif (l1,l2) == (1,1):
-            
             # p-p
             block[0,0] = n*n*(v[0]-v[1]) + v[1]
             block[0,1] = n*l*(v[0]-v[1])
             block[0,2] = n*m*(v[0]-v[1])
-            
+
             block[1,0] = block[0,1]
             block[1,1] = l*l*(v[0]-v[1]) + v[1]
             block[1,2] = l*m*(v[0]-v[1])
-            
+
             block[2,0] = block[0,2]
             block[2,1] = block[1,2]
             block[2,2] = m*m*(v[0]-v[1]) + v[1]
         elif (l1,l2) == (2,2):
-
             # d-d
             block[0,0] = (n*n-0.5*(l*l+m*m))*(n*n-0.5*(l*l+m*m))*v[0] + 3*n*n*(l*l+m*m)*v[1] + 0.75*(l*l+m*m)*(l*l+m*m)*v[2]
             block[0,1] = math.sqrt(3.0)*n*l*(n*n*(v[0]-v[1]) - 0.5*(l*l+m*m)*(v[0] - 2.0*v[1] + v[2]))
@@ -348,7 +339,6 @@ class Hamiltonian:
             block[4,3] = block[3,4]
             block[4,4] = 0.75*(l*l-m*m)*(l*l-m*m)*v[0] + (l*l+m*m-(l*l-m*m)*(l*l-m*m))*v[1] + (n*n+0.25*(l*l-m*m)*(l*l-m*m))*v[2]
 
-                    
         # Return the Hamiltonian block
         return block
 
@@ -369,10 +359,10 @@ class Hamiltonian:
         be calculated e.g. extend the jx, jy, and jz loops to go from -2 to 2
         or -3 to 3...
         """
-        
+
         # Clear the memory for the Hamiltonian matrix
         self.H0.fill(0.0)
-        
+
         # Step through all pairs of atoms
         for a1 in range(self.Job.NAtom):
             for a2 in range(a1, self.Job.NAtom):
@@ -383,7 +373,7 @@ class Hamiltonian:
                     self.Hindex[a1]:self.Hindex[a1+1]] = \
                         np.transpose(self.H0[self.Hindex[a1]:self.Hindex[a1+1],
                             self.Hindex[a2]:self.Hindex[a2+1]])
-                    
+
 
         # periodic boundary conditions
         if self.Job.Def["PBC"] == 1:
@@ -429,10 +419,10 @@ class Hamiltonian:
                                         + jy*self.Job.UnitCell[1] 
                                         + jz*self.Job.UnitCell[2])
             distance = np.sqrt(dr.dot(dr))
-            
+
             # Build the set of hopping integrals
             v, v_bgn, v_end = self.Job.Model.helements(distance, type1, type2)
-            
+
             # Build the block one pair of shells at a time
             k1 = 0 # Counter for orbital
 
@@ -467,7 +457,7 @@ class Hamiltonian:
         # Copy H0 into the two diagonal blocks
         self.HSO[0           :h0s,            0:h0s] = np.copy(self.H0)
         self.HSO[h0s:self.HSOsize, h0s:self.HSOsize] = np.copy(self.H0)
-       
+
         # Add in magnetic field contribution
         eB = self.Job.Def['so_eB']
         for i in range(h0s):
@@ -475,7 +465,7 @@ class Hamiltonian:
             self.HSO[      i, h0s + i] += complex( eB[0], -eB[1])
             self.HSO[h0s + i,       i] += complex( eB[0],  eB[1])
             self.HSO[h0s + i, h0s + i] += complex(-eB[2],    0.0)
-        
+
         # Add in the spin-orbit corrections
         if self.Job.Def["spin_orbit"] == 1:
             for atom in range(self.Job.NAtom):

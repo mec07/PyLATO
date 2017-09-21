@@ -24,7 +24,7 @@ Units used are:
 # Import the modules to be used here
 import TBIO
 import TBinit
-from Verbosity import *
+from Verbosity import verboseprint
 import numpy as np
 import math
 import os, sys
@@ -59,7 +59,6 @@ def main():
     # Allocate memory for the eigenvalues and eigenvectors
     Job.e   = np.zeros( Job.Hamilton.HSOsize, dtype='double')
     Job.psi = np.zeros((Job.Hamilton.HSOsize, Job.Hamilton.HSOsize), dtype='complex')
-
 
     # Initial step to solve H0 and initialise the Mulliken chareges
 
@@ -122,12 +121,11 @@ def main():
                 if Job.Def['McWeeny'] == 1:
                     Job.Electron.McWeeny()
 
-                if Job.Def['extraverbose']==1:
-                    print "number of electrons = "+str(Job.Electron.electronspersite().sum())
-                    print "output rho idempotency error is: ", Job.Electron.idempotency_error(Job.Electron.rho)
-                    print "input rho idempotency error is: ", Job.Electron.idempotency_error(Job.Electron.rhotot)
-                    print "SCF charges = ", Job.Hamilton.q
-                    print "Magnetic moments = ", Job.Electron.spinpersite().T
+                verboseprint(Job.Def['extraverbose'], "number of electrons = "+str(Job.Electron.electronspersite().sum()))
+                verboseprint(Job.Def['extraverbose'], "output rho idempotency error is: ", Job.Electron.idempotency_error(Job.Electron.rho))
+                verboseprint(Job.Def['extraverbose'], "input rho idempotency error is: ", Job.Electron.idempotency_error(Job.Electron.rhotot))
+                verboseprint(Job.Def['extraverbose'], "SCF charges = ", Job.Hamilton.q)
+                verboseprint(Job.Def['extraverbose'], "Magnetic moments = ", Job.Electron.spinpersite().T)
 
             else:
                 #
