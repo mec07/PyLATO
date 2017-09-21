@@ -13,7 +13,7 @@ import math
 import TBH
 import sys, os, importlib
 import time
-import myfunctions
+import Fermi
 from Verbosity import *
 import random
 
@@ -51,9 +51,9 @@ class Electronic:
         self.residue = np.zeros((self.Job.Def['num_rho'], self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
 
         if self.Job.Def['el_kT'] == 0.0:
-            self.fermi = myfunctions.fermi_0
+            self.fermi = Fermi.fermi_0
         else:
-            self.fermi = myfunctions.fermi_non0
+            self.fermi = Fermi.fermi_non0
 
         if self.Job.Def['optimisation_routine'] == 1:
             self.optimisation_routine = self.optimisation_routine1

@@ -6,7 +6,7 @@ Created on Monday, July 27, 2015
 
 @author: Marc Coury
 
-A few useful functions for my quick 'n' dirty python code....
+A few useful functions to make graphs from PyLATO
 """
 # Avoid errors when running matplotlib over ssh without X forwarding.
 # Must be before importing matplotlib.pyplot or pylab!
@@ -376,33 +376,6 @@ def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps
             # os.chdir(currentdir)
         else:
             print("WARNING: Orbital type is not correct for function Plot_OpSq_U_J.")
-
-def fermi_non0(e, mu, kT):
-    """Evaluate the Fermi function."""
-    x = (e-mu)/kT
-    f = np.zeros(x.size, dtype='double')
-    for i in range(0, x.size):
-        if x[i] > 35.0:
-            f[i] = 0.0
-        elif x[i] < -35.0:
-            f[i] = 1.0
-        else:
-            f[i] = 1.0/(1.0 + np.exp(x[i]))
-    return f
-
-def fermi_0(e, mu, kT):
-    """Evaluate the Fermi function."""
-    x = e-mu
-    f = np.zeros(x.size, dtype='double')
-    for i in range(0, x.size):
-        if x[i] > 0.0:
-            f[i] = 0.0
-        elif x[i] < 0.0:
-            f[i] = 1.0
-        else:
-            f[i] = 0.5
-    return f
-
 
 
 def make_magmomcorr_graphs(numeperatom):

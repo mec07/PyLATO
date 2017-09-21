@@ -5,7 +5,7 @@ Created on Friday, July 24, 2015
 
 @auther: Marc Coury
 
-My quick and dirty way of generating the results that I want.
+My way of generating the results that I want.
 
 What I want:
     * Vary values of U and J and print out the following for each one
@@ -18,7 +18,7 @@ To vary U and J I have to mess with the model.
 """
 import numpy as np
 import commentjson
-import myfunctions
+import graphs
 from Verbosity import verboseprint
 import pdb
 
@@ -28,4 +28,4 @@ import pdb
 #       * Run the code and store the mag corr value.
 #   * Make the plot of the magnetic correlation phase diagram.
 for ii in range(3):
-    myfunctions.make_magmomcorr_graphs(ii)
+    graphs.make_magmomcorr_graphs(ii)
