@@ -21,9 +21,11 @@ For a python virtual environment you will need to install the `virtualenv` packa
 
 When you are inside the PyLATO folder you can start the virtual environment and install all the packages type in a terminal window:
 
-```virtualenv venv
+```
+virtualenv venv
 pip install -r requirements.txt
-source venv/bin/activate```
+source venv/bin/activate
+```
 
 To exit from the virtual environment just type in a terminal window:
 
@@ -32,9 +34,10 @@ To exit from the virtual environment just type in a terminal window:
 # Running the code
 This is the main program for computing the eigenvalues and eigenfunctions for a noncollinear tight binding model chosen in the JobDef.json file. The input file can be given a different name, but it must be specified when running this programme. To run the programme from the commandline type:
 
-./TB.py specificationfile.json
+```./TB.py specificationfile.json```
 or
-python TB.py specificationfile.json
+
+```python TB.py specificationfile.json```
 
 where "specificationfile.json" can be any name as long as it's a json file.
 
