@@ -33,8 +33,15 @@ To exit from the virtual environment just type in a terminal window:
 
 
 # Tests
+After you have setup the repository, and have activated the virtual environment you can run the tests.
 Some tests have been added recently. To run the tests type in a terminal window:
 ```pytest```
+
+To run the behave test suite, type the following into the terminal:
+
+```behave```
+
+You should see the tests get executed and see that all of the tests have passed.
 
 
 # Running the code
