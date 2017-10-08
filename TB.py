@@ -190,9 +190,6 @@ def main():
     if Job.Def['write_magnetic_correlation'] == 1:
         TBIO.WriteMagneticCorrelation(Job, 0, 1)
 
-    # This is a little hack to get the quick_n_dirty.py to work properly
-    return SCFflag, Job.Electron.magnetic_correlation(0, 1).real
-
 if __name__ == "__main__":
     # Execute the main code if run as a script.
     main()
