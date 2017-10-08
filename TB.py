@@ -174,27 +174,24 @@ def main():
     if Job.Def['Hamiltonian'] == "collinear":
         verboseprint(Job.Def['extraverbose'], "Mulliken charges: ", Job.Hamilton.q)
         verboseprint(Job.Def['extraverbose'], (Job.Hamilton.s).T)
-    #
-    # Write out the spins for each orbital
-    TBIO.PsiSpin(Job)
 
-    # Print out final density matrix if turned on
-    TBIO.WriteRho(Job)
-    TBIO.WriteRhoAsMatrix(Job)
-    TBIO.WriteFock(Job)
-    TBIO.WriteFockAsMatrix(Job)
-    TBIO.WriteRhoOnSite(Job)
+    # Write out information about the simulation
+    if Job.Def['write_spin'] == 1:
+        TBIO.PsiSpin(Job)
+    if Job.Def['write_density_matrix'] == 1:
+        TBIO.WriteRho(Job)
+        TBIO.WriteRhoAsMatrix(Job)
+        TBIO.WriteRhoOnSite(Job)
+    if Job.Def['write_fock_matrix'] == 1:
+        TBIO.WriteFock(Job)
+        TBIO.WriteFockAsMatrix(Job)
+    if Job.Def['write_orbital_occupations'] == 1:
+        TBIO.WriteOrbitalOccupations(Job)
+    if Job.Def['write_magnetic_correlation'] == 1:
+        TBIO.WriteMagneticCorrelation(Job, 0, 1)
 
-
-
-    ############################
-    # DEBUGGING NEW FUNCTIONS: #
-    ############################
-    TBIO.WriteOrbitalOccupations(Job)
-    TBIO.WriteMagneticCorrelation(Job,0,1)
-    #print "J = ", Job.Model.atomic[0]["I"]
     # This is a little hack to get the quick_n_dirty.py to work properly
-    return SCFflag, Job.Electron.magnetic_correlation(0,1).real
+    return SCFflag, Job.Electron.magnetic_correlation(0, 1).real
 
 if __name__ == "__main__":
     # Execute the main code if run as a script.

@@ -78,6 +78,13 @@
     "verbose": 1,
     "extraverbose": 1,
 
+    // Output
+    "write_spin": 1,
+    "write_density_matrix": 1,
+    "write_fock_matrix": 1,
+    "write_orbital_occupations": 1,
+    "write_magnetic_correlation": 1,
+
     // InterSiteElectrostatics is set when the 1/r terms are to be included in SCC-TB.
     "InterSiteElectrostatics": 0
     // Note: remember that there is no comma after the last entry!
