@@ -48,9 +48,9 @@ def main():
             print("ERROR: Unable to find default job file: JobDef.json")
             sys.exit()
 
-    # Check to see if my Hamiltonians are being used and hence if the linear mixing is required
+    # Check to see if a noncollinear Hamiltonian is being used and hence if the linear mixing is required
     myHami = False
-    if Job.Def['Hamiltonian'] in ('scase','pcase','dcase','vectorS'):
+    if Job.Def['Hamiltonian'] in ('scase','pcase','dcase','noncollinear'):
         # myHami is a flag
         myHami = True
     #
@@ -61,7 +61,7 @@ def main():
     Job.e   = np.zeros( Job.Hamilton.HSOsize, dtype='double')
     Job.psi = np.zeros((Job.Hamilton.HSOsize, Job.Hamilton.HSOsize), dtype='complex')
 
-    
+
     # Initial step to solve H0 and initialise the Mulliken chareges
 
     # Diagonalise the HSO matrix
@@ -171,7 +171,7 @@ def main():
 
     verboseprint(Job.Def['verbose'], "Energy eigenvalues: ")
     verboseprint(Job.Def['verbose'], Job.e)
-    if Job.Def['Hamiltonian'] == "standard":
+    if Job.Def['Hamiltonian'] == "collinear":
         verboseprint(Job.Def['extraverbose'], "Mulliken charges: ", Job.Hamilton.q)
         verboseprint(Job.Def['extraverbose'], (Job.Hamilton.s).T)
     #

@@ -131,7 +131,7 @@ class Electronic:
         rho_n+1 = 3*rho_n^3 - 2*rho_n^2
 
         """
-        if self.Job.Def['Hamiltonian'] in ('scase','pcase','dcase','vectorS'):
+        if self.Job.Def['Hamiltonian'] in ('scase','pcase','dcase','noncollinear'):
             rho_temp = self.rhotot
         else:
             rho_temp = self.rho
@@ -157,7 +157,7 @@ class Electronic:
 
         # if this is going to be treated like a success then reassign rho_temp.
         if flag == True:
-            if self.Job.Def['Hamiltonian'] in ('scase','pcase','dcase','vectorS'):
+            if self.Job.Def['Hamiltonian'] in ('scase','pcase','dcase','noncollinear'):
                 self.rhotot = rho_temp
             else:
                 self.rho = rho_temp

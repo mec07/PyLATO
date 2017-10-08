@@ -118,7 +118,7 @@ class Hamiltonian:
         self.fock = np.copy(self.HSO)
         h0s = self.H0size
 
-        if self.Job.Def["Hamiltonian"] == "standard":
+        if self.Job.Def["Hamiltonian"] == "collinear":
 
             # Add in diagonal corrections for charge and spin
             des = np.zeros((2, 2), dtype="complex")
@@ -144,7 +144,7 @@ class Hamiltonian:
                     self.fock[h0s+j,     j] +=              des[1, 0]  # down/up block
                     self.fock[h0s+j, h0s+j] += self.Wi[a] + des[1, 1]  # down/down block
 
-        elif self.Job.Def['Hamiltonian'] == "vectorS":
+        elif self.Job.Def['Hamiltonian'] == "noncollinear":
             norb = self.Job.NOrb
             natom = self.Job.NAtom
             rho = self.Job.Electron.rhotot
