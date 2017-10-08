@@ -3,7 +3,6 @@ Feature: Find the groundstate energy
     We can use these to make sure that PyLATO numerically finds the correct solution
     And this will help to ensure that we do not break PyLATO while developing it
 
-    Scenario: find the groundstate energy of a single atom in a repeating cell
-        Given there is a specification file for a single atom in a repeating cell
-        When PyLATO is run
+    Scenario: find the groundstate energy of a single hydrogen atom
+        When PyLATO is run using the single hydrogen job definition file
         Then the energy in the output file is ...
