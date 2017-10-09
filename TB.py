@@ -175,20 +175,15 @@ def main():
         verboseprint(Job.Def['extraverbose'], "Mulliken charges: ", Job.Hamilton.q)
         verboseprint(Job.Def['extraverbose'], (Job.Hamilton.s).T)
 
-    # Write out information about the simulation
-    if Job.Def['write_spin'] == 1:
-        TBIO.PsiSpin(Job)
-    if Job.Def['write_density_matrix'] == 1:
-        TBIO.WriteRho(Job)
-        TBIO.WriteRhoAsMatrix(Job)
-        TBIO.WriteRhoOnSite(Job)
-    if Job.Def['write_fock_matrix'] == 1:
-        TBIO.WriteFock(Job)
-        TBIO.WriteFockAsMatrix(Job)
-    if Job.Def['write_orbital_occupations'] == 1:
-        TBIO.WriteOrbitalOccupations(Job)
-    if Job.Def['write_magnetic_correlation'] == 1:
-        TBIO.WriteMagneticCorrelation(Job, 0, 1)
+    # Write out information about the simulation if it is specified in the job definition
+    TBIO.PsiSpin(Job)
+    TBIO.WriteRho(Job)
+    TBIO.WriteRhoAsMatrix(Job)
+    TBIO.WriteRhoOnSite(Job)
+    TBIO.WriteFock(Job)
+    TBIO.WriteFockAsMatrix(Job)
+    TBIO.WriteOrbitalOccupations(Job)
+    TBIO.WriteMagneticCorrelation(Job, 0, 1)
 
 if __name__ == "__main__":
     # Execute the main code if run as a script.

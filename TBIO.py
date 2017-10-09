@@ -18,29 +18,33 @@ def DOS(e, nbin):
     return hist, binedges
 
 
-def PsiSpin(JobClass):
+def PsiSpin(JobClass, filename='spins.txt'):
     """Write out the spin vector for each eigenstate."""
-    spin = np.zeros( 3, dtype='double')
-    rho  = np.zeros((2, 2), dtype='complex')
-    verboseprint(JobClass.Def['verbose'],'state   sx     sy     sz')
+    if JobClass.Def['write_spins'] == 1:
+        with open(os.path.join(JobClass.results_dir+filename), 'w') as f:
+            spin = np.zeros(3, dtype='double')
+            rho = np.zeros((2, 2), dtype='complex')
+            line_info = 'state \t sx \t sy \t sz'
+            f.write(line_info)
 
-    jH = JobClass.Hamilton
-    
-    for n in range(0, jH.HSOsize):
-        #
-        # Build the spin density matrix
-        rho[0, 0] = np.vdot(JobClass.psi[0        :jH.H0size,  n], JobClass.psi[        0:jH.H0size, n])
-        rho[0, 1] = np.vdot(JobClass.psi[0        :jH.H0size,  n], JobClass.psi[jH.H0size:jH.HSOsize,n])
-        rho[1, 0] = np.vdot(JobClass.psi[jH.H0size:jH.HSOsize, n], JobClass.psi[        0:jH.H0size, n])
-        rho[1, 1] = np.vdot(JobClass.psi[jH.H0size:jH.HSOsize, n], JobClass.psi[jH.H0size:jH.HSOsize,n])
-        #
-        # Build the spin expectation values
-        spin[0] = (rho[0, 1] + rho[1, 0]).real
-        spin[1] = (rho[0, 1] - rho[1, 0]).imag
-        spin[2] = (rho[0, 0] - rho[1, 1]).real
-        #
-        # Write out the spins
-        verboseprint(JobClass.Def['verbose'],'{0:4d}  {1:5.2f}  {2:5.2f}  {3:5.2f}'.format(n, spin[0], spin[1], spin[2]))
+            jH = JobClass.Hamilton
+
+            for n in range(0, jH.HSOsize):
+                #
+                # Build the spin density matrix
+                rho[0, 0] = np.vdot(JobClass.psi[0        :jH.H0size,  n], JobClass.psi[        0:jH.H0size, n])
+                rho[0, 1] = np.vdot(JobClass.psi[0        :jH.H0size,  n], JobClass.psi[jH.H0size:jH.HSOsize,n])
+                rho[1, 0] = np.vdot(JobClass.psi[jH.H0size:jH.HSOsize, n], JobClass.psi[        0:jH.H0size, n])
+                rho[1, 1] = np.vdot(JobClass.psi[jH.H0size:jH.HSOsize, n], JobClass.psi[jH.H0size:jH.HSOsize,n])
+                #
+                # Build the spin expectation values
+                spin[0] = (rho[0, 1] + rho[1, 0]).real
+                spin[1] = (rho[0, 1] - rho[1, 0]).imag
+                spin[2] = (rho[0, 0] - rho[1, 1]).real
+                #
+                # Write out the spins
+                line_info = '{0:4d}  {1:5.2f}  {2:5.2f}  {3:5.2f}'.format(n, spin[0], spin[1], spin[2])
+                f.write(line_info)
 
 
 def WriteXYZ(JobClass, NAtom, Comment, AtomType, Pos, filename='geometry.xyz'):
@@ -145,22 +149,24 @@ def WriteOrbitalOccupations(JobClass, filename="occupations.txt"):
     """
     Write out the orbital occupations to a file.
     """
-    # Save the file in the results directory
-    filename = os.path.join(JobClass.results_dir, filename)
-    occupation=JobClass.Electron.electrons_orbital_occupation_vec()
-    information = "\t".join(str(occ) for occ in occupation)
-    with open(filename,'w') as f:
-        f.write(information)
+    if JobClass.Def['write_orbital_occupations'] == 1:
+        # Save the file in the results directory
+        filename = os.path.join(JobClass.results_dir, filename)
+        occupation=JobClass.Electron.electrons_orbital_occupation_vec()
+        information = "\t".join(str(occ) for occ in occupation)
+        with open(filename,'w') as f:
+            f.write(information)
 
 def WriteMagneticCorrelation(JobClass, site1, site2, filename="mag_corr.txt"):
     """
     Write the magnetic correlation between sites 1 and 2 to a file.
     """
-    # Save the file in the results directory
-    filename = os.path.join(JobClass.results_dir, filename)
-    C_avg = JobClass.Electron.magnetic_correlation(site1,site2).real
-    with open(filename,'w') as f:
-        f.write(str(C_avg))
+    if JobClass.Def['write_magnetic_correlation'] == 1:
+        # Save the file in the results directory
+        filename = os.path.join(JobClass.results_dir, filename)
+        C_avg = JobClass.Electron.magnetic_correlation(site1,site2).real
+        with open(filename,'w') as f:
+            f.write(str(C_avg))
 
 def WriteRho(JobClass, filename="rho.txt"):
     """
@@ -170,7 +176,7 @@ def WriteRho(JobClass, filename="rho.txt"):
 
     where j >= i (don't need j<i as the density matrix is Hermitian).
     """
-    if JobClass.Def['print_rho'] == 1:
+    if JobClass.Def['write_rho'] == 1:
         with open(os.path.join(JobClass.results_dir, filename), 'w') as f:
             for ii in range(JobClass.Hamilton.HSOsize):
                 for jj in range(ii, JobClass.Hamilton.HSOsize):
@@ -181,7 +187,7 @@ def WriteRhoAsMatrix(JobClass, filename="rhoMatrix.txt"):
     Write out the density matrix as a matrix. Not recommended for large
     density matrices...
     """
-    if JobClass.Def['print_rho_mat'] == 1:
+    if JobClass.Def['write_rho_mat'] == 1:
         with open(os.path.join(JobClass.results_dir+filename), 'w') as f:
             for ii in range(JobClass.Hamilton.HSOsize):
                 temp = np.array(JobClass.Electron.rho[ii,:]).flatten()
@@ -192,7 +198,7 @@ def WriteRhoOnSite(JobClass, filename="rhoOnSite.txt"):
     """
     Write out the on-site density matrices for each of the sites.
     """
-    if JobClass.Def['print_rho_on_site'] == 1:
+    if JobClass.Def['write_rho_on_site'] == 1:
         with open(os.path.join(JobClass.results_dir+filename), 'w') as f:
             # spin up
             for ii in range(JobClass.NAtom):
@@ -213,7 +219,7 @@ def WriteRhoOnSite(JobClass, filename="rhoOnSite.txt"):
                     temp = np.array(JobClass.Electron.rho[jj, startindex:endindex]).flatten()
                     line_info = "\t".join(map(str, temp))+"\n"
                     f.write(line_info)
-                f.write("\n")      
+                f.write("\n")
 
 def WriteFock(JobClass, filename="fock.txt"):
     """
@@ -223,7 +229,7 @@ def WriteFock(JobClass, filename="fock.txt"):
 
     where j >= i (don't need j<i as the Fock matrix is Hermitian).
     """
-    if JobClass.Def['print_fock'] == 1:
+    if JobClass.Def['write_fock'] == 1:
         with open(os.path.join(JobClass.results_dir+filename), 'w') as f:
             for ii in range(JobClass.Hamilton.HSOsize):
                 for jj in range(ii, JobClass.Hamilton.HSOsize):
@@ -234,17 +240,9 @@ def WriteFockAsMatrix(JobClass, filename="fockMatrix.txt"):
     Write out the Fock matrix as a matrix. Not recommended for large
     Fock matrices...
     """
-    if JobClass.Def['print_fock_mat'] == 1:
+    if JobClass.Def['write_fock_mat'] == 1:
         with open(os.path.join(JobClass.results_dir+filename), 'w') as f:
             for ii in range(JobClass.Hamilton.HSOsize):
                 temp = JobClass.Hamilton.fock[ii,:].flatten()
                 line_info = "\t".join(map(str, temp))+"\n"
                 f.write(line_info)
-
-
-
-
-
-
-
-

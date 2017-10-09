@@ -58,18 +58,26 @@
     "McWeeny":0,
     "McWeeny_tol":1.0e-8,
     "McWeeny_max_loops":100,
-    // Print density matrix in "i    j    val" format, with j >= i to file, 1 is
+
+    // Output
+    // write the spin on each site
+    "write_spins": 1,
+    // write density matrix in "i    j    val" format, with j >= i to file, 1 is
     // on, 0 is off. Will be called "rho.txt".
-    "print_rho":0,
-    // Print density matrix as a matrix (not recommended for large systems).
-    "print_rho_mat":0,
-    // Print the on-site density matrices
-    "print_rho_on_site":1,
-    // Print fock matrix in "i    j    val" format, with j >= i to file, 1 is
+    "write_rho":0,
+    // write density matrix as a matrix (not recommended for large systems).
+    "write_rho_mat":0,
+    // write the on-site density matrices
+    "write_rho_on_site":1,
+    // write fock matrix in "i    j    val" format, with j >= i to file, 1 is
     // on, 0 is off. Will be called "fock.txt".
-    "print_fock":0,
-    // Print fock matrix as a matrix (not recommended for large systems).
-    "print_fock_mat":0,
+    "write_fock":0,
+    // write fock matrix as a matrix (not recommended for large systems).
+    "write_fock_mat":0,
+    // write the orbital occupations
+    "write_orbital_occupations": 0,
+    // write the magnetic correlation
+    "write_magnetic_correlation": 0,
 
     // number of bins for the density of states
     "dos_nbin": 20,
@@ -77,13 +85,6 @@
     // Verbosity
     "verbose": 1,
     "extraverbose": 1,
-
-    // Output
-    "write_spin": 1,
-    "write_density_matrix": 1,
-    "write_fock_matrix": 1,
-    "write_orbital_occupations": 1,
-    "write_magnetic_correlation": 1,
 
     // InterSiteElectrostatics is set when the 1/r terms are to be included in SCC-TB.
     "InterSiteElectrostatics": 0
