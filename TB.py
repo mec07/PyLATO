@@ -176,14 +176,7 @@ def main():
         verboseprint(Job.Def['extraverbose'], (Job.Hamilton.s).T)
 
     # Write out information about the simulation if it is specified in the job definition
-    TBIO.PsiSpin(Job)
-    TBIO.WriteRho(Job)
-    TBIO.WriteRhoAsMatrix(Job)
-    TBIO.WriteRhoOnSite(Job)
-    TBIO.WriteFock(Job)
-    TBIO.WriteFockAsMatrix(Job)
-    TBIO.WriteOrbitalOccupations(Job)
-    TBIO.WriteMagneticCorrelation(Job, 0, 1)
+    TBIO.WriteSimulationResults(Job)
 
 if __name__ == "__main__":
     # Execute the main code if run as a script.

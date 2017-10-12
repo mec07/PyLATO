@@ -7,18 +7,18 @@ This module contains functions that perform input and output operations
 """
 #
 # Import modules
-import TBH
 import numpy as np
 import os
 from Verbosity import *
 
+
 def DOS(e, nbin):
     """Produce a total density of states (NEEDS TO BE UPDATED TO PLOT THE DOS)"""
     hist, bin_edges = np.histogram(e, nbin)
-    return hist, binedges
+    return hist, bin_edges
 
 
-def PsiSpin(JobClass, filename='spins.txt'):
+def WriteSpins(JobClass, filename='spins.txt'):
     """Write out the spin vector for each eigenstate."""
     if JobClass.Def['write_spins'] == 1:
         with open(os.path.join(JobClass.results_dir+filename), 'w') as f:
@@ -65,7 +65,7 @@ def WriteXYZ(JobClass, NAtom, Comment, AtomType, Pos, filename='geometry.xyz'):
     f_xyz.write('{0:d}\n'.format(NAtom))
     f_xyz.write('{0}\n'.format(Comment))
     for i in range(0, NAtom):
-        f_xyz.write('{0} {1:11.6f} {2:11.6f} {3:11.6f}\n'.format(JobClass.Model.atomic[AtomType[i]]['ChemSymb'], Pos[i,0], Pos[i,1], Pos[i,2]))
+        f_xyz.write('{0} {1:11.6f} {2:11.6f} {3:11.6f}\n'.format(JobClass.Model.atomic[AtomType[i]]['ChemSymb'], Pos[i, 0], Pos[i, 1], Pos[i, 2]))
     f_xyz.close()
 
 
@@ -108,6 +108,7 @@ def ReadGeom(filename):
     # Return the geometry
     return NAtom, Pos, AtomType
 
+
 def ReadUnitCell(filename):
     """
     This function reads in the unit cell file.
@@ -145,6 +146,7 @@ def ReadUnitCell(filename):
         a3 = np.array([float(line[0]), float(line[1]), float(line[2])])
     return a1, a2, a3
 
+
 def WriteOrbitalOccupations(JobClass, filename="occupations.txt"):
     """
     Write out the orbital occupations to a file.
@@ -157,6 +159,7 @@ def WriteOrbitalOccupations(JobClass, filename="occupations.txt"):
         with open(filename,'w') as f:
             f.write(information)
 
+
 def WriteMagneticCorrelation(JobClass, site1, site2, filename="mag_corr.txt"):
     """
     Write the magnetic correlation between sites 1 and 2 to a file.
@@ -167,6 +170,7 @@ def WriteMagneticCorrelation(JobClass, site1, site2, filename="mag_corr.txt"):
         C_avg = JobClass.Electron.magnetic_correlation(site1,site2).real
         with open(filename,'w') as f:
             f.write(str(C_avg))
+
 
 def WriteRho(JobClass, filename="rho.txt"):
     """
@@ -182,6 +186,7 @@ def WriteRho(JobClass, filename="rho.txt"):
                 for jj in range(ii, JobClass.Hamilton.HSOsize):
                     f.write("%i\t%i\t%f%+fj\n" % (ii, jj, JobClass.Electron.rho[ii, jj].real, JobClass.Electron.rho[ii, jj].imag))
 
+
 def WriteRhoAsMatrix(JobClass, filename="rhoMatrix.txt"):
     """
     Write out the density matrix as a matrix. Not recommended for large
@@ -193,6 +198,7 @@ def WriteRhoAsMatrix(JobClass, filename="rhoMatrix.txt"):
                 temp = np.array(JobClass.Electron.rho[ii,:]).flatten()
                 line_info = "\t".join(map(str, temp))+"\n"
                 f.write(line_info)
+
 
 def WriteRhoOnSite(JobClass, filename="rhoOnSite.txt"):
     """
@@ -221,6 +227,7 @@ def WriteRhoOnSite(JobClass, filename="rhoOnSite.txt"):
                     f.write(line_info)
                 f.write("\n")
 
+
 def WriteFock(JobClass, filename="fock.txt"):
     """
     Write out the Fock matrix in the following format:
@@ -235,6 +242,7 @@ def WriteFock(JobClass, filename="fock.txt"):
                 for jj in range(ii, JobClass.Hamilton.HSOsize):
                     f.write("%i\t%i\t%f%+fj\n" % (ii, jj, JobClass.Hamilton.fock[ii, jj].real, JobClass.Hamilton.fock[ii, jj].imag))
 
+
 def WriteFockAsMatrix(JobClass, filename="fockMatrix.txt"):
     """
     Write out the Fock matrix as a matrix. Not recommended for large
@@ -246,3 +254,14 @@ def WriteFockAsMatrix(JobClass, filename="fockMatrix.txt"):
                 temp = JobClass.Hamilton.fock[ii,:].flatten()
                 line_info = "\t".join(map(str, temp))+"\n"
                 f.write(line_info)
+
+
+def WriteSimulationResults(Job):
+    WriteSpins(Job)
+    WriteRho(Job)
+    WriteRhoAsMatrix(Job)
+    WriteRhoOnSite(Job)
+    WriteFock(Job)
+    WriteFockAsMatrix(Job)
+    WriteOrbitalOccupations(Job)
+    WriteMagneticCorrelation(Job, 0, 1)
