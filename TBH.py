@@ -149,9 +149,9 @@ class Hamiltonian:
             for a in range(natom):
                 # Get the atom type
                 atype = self.Job.AtomType[a]
+                J_S = self.Job.Model.atomic[atype]['I']
+                U = self.Job.Model.atomic[atype]['U']
                 for jj in range(self.Hindex[a], self.Hindex[a+1]):
-                    J_S = self.Job.Model.atomic[atype]['I']
-                    U = self.Job.Model.atomic[atype]['U']
                     for ii in range(self.Hindex[a], self.Hindex[a+1]):
                         # up/up block
                         self.fock[    jj,     ii] += self.add_H_pcase(    jj,     ii, U, J_S, J_ph, natom, norb, rho)
@@ -170,8 +170,8 @@ class Hamiltonian:
             for a in range(natom):
                 # Get the atom type
                 atype = self.Job.AtomType[a]
+                U = self.Job.Model.atomic[atype]['U']
                 for jj in range(self.Hindex[a], self.Hindex[a+1]):
-                    U = self.Job.Model.atomic[atype]['U']
                     for ii in range(self.Hindex[a], self.Hindex[a+1]):
                         # up/up block
                         self.fock[    jj,     ii] += self.add_H_scase(    jj,     ii, U, natom, norb, rho)
@@ -190,9 +190,9 @@ class Hamiltonian:
             for a in range(natom):
                 # Get the atom type
                 atype = self.Job.AtomType[a]
+                J = self.Job.Model.atomic[atype]['I']
+                U = self.Job.Model.atomic[atype]['U']
                 for jj in range(self.Hindex[a], self.Hindex[a+1]):
-                    J = self.Job.Model.atomic[atype]['I']
-                    U = self.Job.Model.atomic[atype]['U']
                     for ii in range(self.Hindex[a], self.Hindex[a+1]):
                         # up/up block
                         self.fock[    jj,     ii] += self.add_H_pcase(    jj,     ii, U, J, J, natom, norb, rho)
@@ -211,10 +211,10 @@ class Hamiltonian:
             for a in range(natom):
                 # Get the atom type
                 atype = self.Job.AtomType[a]
+                J  = self.Job.Model.atomic[atype]['I']
+                U  = self.Job.Model.atomic[atype]['U']
+                dJ = self.Job.Model.atomic[atype]['dJ']
                 for jj in range(self.Hindex[a], self.Hindex[a+1]):
-                    J  = self.Job.Model.atomic[atype]['I']
-                    U  = self.Job.Model.atomic[atype]['U']
-                    dJ = self.Job.Model.atomic[atype]['dJ']
                     for ii in range(self.Hindex[a], self.Hindex[a+1]):
                         # up/up block
                         self.fock[    jj,     ii] += self.add_H_dcase(    jj,     ii, U, J, J, dJ, natom, norb, rho)
