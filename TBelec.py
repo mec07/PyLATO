@@ -219,7 +219,7 @@ class Electronic:
         # density matrices).
         if scf_iteration < num_rho:
             num_rho = scf_iteration
-        
+
         # Shift along the density and residue matrices
         for ii in range(num_rho-1):
             self.inputrho[num_rho - 1 - ii] = np.copy(self.inputrho[num_rho - 2 - ii])
