@@ -49,10 +49,9 @@ def main():
             sys.exit()
 
     # Check to see if a noncollinear Hamiltonian is being used and hence if the linear mixing is required
-    myHami = False
+    isNoncollinearHami = False
     if Job.Def['Hamiltonian'] in ('scase','pcase','dcase','noncollinear'):
-        # myHami is a flag
-        myHami = True
+        isNoncollinearHami = True
     #
     # Build the non-self-consistent Hamiltonian (incl hopping and spin-orbit)
     Job.Hamilton.buildHSO()
@@ -72,7 +71,7 @@ def main():
     # Build the density matrix
     Job.Electron.densitymatrix()
     # if it's one of my Hamiltonians then we need to initialise rhotot
-    if myHami:
+    if isNoncollinearHami:
         Job.Electron.rhotot = Job.Electron.rho
     #
     # Compute the net charge on each site
@@ -107,8 +106,7 @@ def main():
             # Build the density matrix
             Job.Electron.densitymatrix()
 
-
-            if myHami:
+            if isNoncollinearHami:
                 # Compare the difference between the new and the old on-site density matrix elements
                 SCFerror = Job.Electron.SCFerror()
                 verboseprint(Job.Def['verbose'], 'SCF loop = ', ii+1, '; SCF error = ', SCFerror)
@@ -123,7 +121,7 @@ def main():
 
                 if Job.Def['McWeeny'] == 1:
                     Job.Electron.McWeeny()
-                
+
                 if Job.Def['extraverbose']==1:
                     print "number of electrons = "+str(Job.Electron.electronspersite().sum())
                     print "output rho idempotency error is: ", Job.Electron.idempotency_error(Job.Electron.rho)
