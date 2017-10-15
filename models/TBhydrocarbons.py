@@ -10,12 +10,14 @@ Orthogonal tight-binding model for hydrocarbons
 """
 #
 # Import the modules that will be needed
-import os, sys
+import os
+import sys
 import numpy as np
 from scipy.interpolate import UnivariateSpline
 import math
 import commentjson
 import copy
+
 
 class GoodWin:
     """Orthogonal tight-binding model for hydrocarbons
@@ -77,7 +79,7 @@ class MatrixElements:
 
     MatrixElements always needs to have the named methods helements,
     slements (for overlap), and pairpotentials (for forces and energy).
-    The TBH assumes the model to have a MatrixElements class with these
+    The Hamiltonian assumes the model to have a MatrixElements class with these
     methods.
 
     This model supports:

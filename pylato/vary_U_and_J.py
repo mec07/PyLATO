@@ -19,7 +19,7 @@ To vary U and J I have to mess with the model.
 import numpy as np
 import commentjson
 import graphs
-from Verbosity import verboseprint
+from verbosity import verboseprint
 import pdb
 
 # The steps:

@@ -14,10 +14,10 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib import cm
 import matplotlib.pyplot as plt
-from Verbosity import verboseprint
+from verbosity import verboseprint
 import shutil, os, sys
 import numpy as np
-import TB
+import pylato
 import commentjson
 
 
@@ -84,7 +84,7 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                 with open(temp_modelfile, 'w') as f:
                     commentjson.dump(model, f, sort_keys=True, indent=4, separators=(',', ': '))
                 try:
-                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = TB.main()
+                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = pylato.main()
                 # if we end up with a linear algebra error then we can re-run with a different optimisation scheme.
                 except numpy.linalg.linalg.LinAlgError:
                     # store original optimisation routine choice
@@ -100,7 +100,7 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                         commentjson.dump(jobdef, f, sort_keys=True, indent=4, separators=(',', ': '))
                     # and run again
                     print("SCF did not converge. Re-running simulation with different optimisation routine. ")
-                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = TB.main()
+                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = pylato.main()
                     # reset optimisation routine
                     jobdef['optimisation_routine'] = old_routine
                     # write jobdef back to file
@@ -122,7 +122,7 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                         commentjson.dump(jobdef, f, sort_keys=True, indent=4, separators=(',', ': '))
                     # and run again
                     print("SCF did not converge. Re-running simulation with smaller mixing value. ")
-                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = TB.main()
+                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = pylato.main()
                     
                     # Re-set the jobdef variables:
                     jobdef["A"] = jobdef["A"]*10.0

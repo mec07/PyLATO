@@ -6,7 +6,7 @@ Created on Thursday, October 12, 2017
 This module performs the self consistency iterations.
 """
 
-from Verbosity import verboseprint
+from verbosity import verboseprint
 import numpy as np
 import math
 

@@ -1,3 +1,7 @@
 numpy
 scipy
 commentjson
+pytest
+
+# Puts the project on the Python path
+-e .

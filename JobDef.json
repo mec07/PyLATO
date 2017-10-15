@@ -41,7 +41,7 @@
     // max number of bisections when finding mu
     "mu_max_loops": 5000,
 
-    // self-consistent field parameters
+    // Self-consistent field parameters
     "scf_on": 1,
     "scf_mix": 0.0001,
     "scf_tol": 1.0e-8,
@@ -58,6 +58,16 @@
     "McWeeny":0,
     "McWeeny_tol":1.0e-8,
     "McWeeny_max_loops":100,
+
+    // Genetic algorithm parameters
+    //     -- this is an alternative to self-consistency, so self-consistency must
+    //        be off for this to work.
+    "genetic_on": 1,
+    "population_size": 50,
+    "genetic_max_evolutions": 50,
+    "genetic_tol": 1.0e-8,
+
+
 
     // Output
     // write the spin on each site

@@ -22,10 +22,10 @@ Units used are:
 """
 #
 # Import the modules to be used here
-import TBIO
-import TBinit
-from TBSelfConsistency import PerformSelfConsistency
-from Verbosity import verboseprint
+import pylato_IO
+import init_job
+from self_consistency import PerformSelfConsistency
+from verbosity import verboseprint
 import numpy as np
 import os
 import sys
@@ -35,7 +35,7 @@ def initialisation():
     if len(sys.argv) > 1:
         jobpath = sys.argv[1]
         if os.path.exists(jobpath):
-            Job = TBinit.InitJob(jobpath)
+            Job = init_job.InitJob(jobpath)
         else:
             print("ERROR: Unable to find job file:")
             print(jobpath)
@@ -43,7 +43,7 @@ def initialisation():
     else:
         if os.path.exists("JobDef.json"):
             print("No Job file specified. Proceeding with default JobDef.json.")
-            Job = TBinit.InitJob("JobDef.json")
+            Job = init_job.InitJob("JobDef.json")
         else:
             print("ERROR: Unable to find default job file: JobDef.json")
             sys.exit()
@@ -82,6 +82,8 @@ def main():
     success = True
     if Job.Def["scf_on"] == 1:
         success = PerformSelfConsistency(Job)
+    #elif Job.Def["genetic_on"] == 1:
+    #    success = PerformGeneticAlgorithm(Job)
 
     verboseprint(Job.Def['verbose'], "Energy eigenvalues: ")
     verboseprint(Job.Def['verbose'], Job.e)
@@ -92,7 +94,7 @@ def main():
     # Write out information about the simulation if it is specified in the job definition
     if success:
         print("\n\n\nSuccessfully completed calculation!")
-        TBIO.WriteSimulationResults(Job)
+        pylato_IO.WriteSimulationResults(Job)
 
 
 if __name__ == "__main__":
