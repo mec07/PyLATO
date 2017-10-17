@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 """
 Created on Sunday April 12, 2015
 
@@ -10,7 +10,7 @@ noncollinear tight binding model chosen in the JobDef.json file. The input file
 can be given a different name, but it must be specified when running this
 programme. To run the programme from the commandline type:
 
-./TB.py specificationfile.json
+pylato/pylato.py specificationfile.json
 
 where "specificationfile.json" can be any name as long as it's a json file.
 
@@ -25,6 +25,7 @@ Units used are:
 import pylato_IO
 import init_job
 from self_consistency import PerformSelfConsistency
+from genetic import PerformGeneticAlgorithm
 from verbosity import verboseprint
 import numpy as np
 import os
@@ -82,8 +83,8 @@ def main():
     success = True
     if Job.Def["scf_on"] == 1:
         success = PerformSelfConsistency(Job)
-    #elif Job.Def["genetic_on"] == 1:
-    #    success = PerformGeneticAlgorithm(Job)
+    elif Job.Def["genetic_on"] == 1:
+        success = PerformGeneticAlgorithm(Job)
 
     verboseprint(Job.Def['verbose'], "Energy eigenvalues: ")
     verboseprint(Job.Def['verbose'], Job.e)

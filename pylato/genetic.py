@@ -17,6 +17,48 @@ for i in xrange(100):
 """
 
 import numpy as np
+from verbosity import verboseprint
+
+
+def PerformGeneticAlgorithm(Job):
+    population_size = Job.Def['population_size']
+    individual_length = Job.Hamilton.HSOsize
+    num_electrons = Job.Electron.NElectrons
+    max_num_evolutions = Job.Def.get('max_num_evolutions', 50)
+    genetic_tol = Job.Def.get('genetic_tol', 1.0e-8)
+    retain = Job.Def.get('proportion_to_retain', 0.2)
+    random_select = Job.Def.get('random_select_chance', 0.05)
+    mutation_chance = Job.Def.get('mutation_chance', 0.05)
+    best_individual = None
+
+    population = create_population(population_size,
+                                   individual_length,
+                                   num_electrons)
+
+    for num_generations in range(max_num_evolutions):
+        avg_fitness, population = evolve(
+            Job,
+            population,
+            num_electrons,
+            retain=retain,
+            random_select=random_select,
+            mutation_chance=mutation_chance
+        )
+        # the best individual from the generation just before the evolution
+        best_individual = population[0]
+        verboseprint(
+            Job.Def['verbose'],
+            "Generation {}: Average fitness = {}, best fitness = {}".format(
+                num_generations,
+                avg_fitness,
+                best_individual.fitness,
+            )
+        )
+        if best_individual.fitness < genetic_tol:
+            break
+
+    # recreate the best individual as that info will be passed back inside Job
+    fitness(Job, best_individual)
 
 
 def can_normalise(individual, sum_constraint):
@@ -118,8 +160,11 @@ def fitness(Job, individual):
     # construct the density using the new eigenvalues and eigenvectors -- into Job.Electron.rhotot
     Job.Electron.constructDensityMatrixFromEigenvaluesAndEigenvectors(eigenvalues, eigenvectors)
 
+    num_electrons_sq = Job.Electron.NElectrons*Job.Electron.NElectrons
+    residue = Job.Electron.rho - Job.Electron.rhotot
+
     # compare the densities
-    return np.absolute(Job.Electron.rho-Job.Electron.rhotot).sum()/(Job.Electron.NElectrons*Job.Electron.NElectrons)
+    return np.absolute(residue).sum()/num_electrons_sq
 
 
 def grade(Job, population):

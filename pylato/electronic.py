@@ -14,7 +14,7 @@ import hamiltonian
 import sys, os, importlib
 import time
 import Fermi
-from verbosity import *
+from verbosity import verboseprint
 import random
 
 dir_path = os.path.dirname(os.path.realpath(__file__))

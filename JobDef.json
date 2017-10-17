@@ -64,9 +64,14 @@
     //        be off for this to work.
     "genetic_on": 1,
     "population_size": 50,
-    "genetic_max_evolutions": 50,
+    "max_num_evolutions": 50,
     "genetic_tol": 1.0e-8,
-
+    // the proportion of the population to retain every evolution
+    "proportion_to_retain": 0.2,
+    // the chance of selecting additional members of the population to survive to reproduce
+    "random_select_chance": 0.05,
+    // the chance of children having a mutation
+    "mutation_chance": 0.05,
 
 
     // Output

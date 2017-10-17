@@ -10,7 +10,8 @@ from pylato.genetic import (can_produce_num_children,
                             mutate,
                             normalise,
                             reproduce,
-                            survive)
+                            survive,
+                            PerformGeneticAlgorithm)
 from pylato.hamiltonian import Hamiltonian
 from pylato.electronic import Electronic
 from tests.utils import GenericClass, return_a_function, approx_equal
@@ -30,8 +31,15 @@ def job():
             'mu_max_loops': 5000,
             'num_rho': 1,
             'PBC': 0,
+            'population_size': 50,
+            'max_num_evolutions': 50,
+            'genetic_tol': 1.0e-8,
+            'proportion_to_retain': 0.2,
+            'random_select_chance': 0.1,
+            'mutation_chance': 0.05,
             'so_eB': [0, 0, 0],
             'spin_orbit': 0,
+            'verbose': 1,
         },
         Model=GenericClass(
             atomic={
@@ -243,11 +251,10 @@ class TestGenetic:
 
         assert np.array_equal(individual, individual_after_mutate)
 
-    def test_mutate_definitely(self, capsys):
+    def test_mutate_definitely(self):
         length = 6
         individual = create_individual(length, 3)
-        with capsys.disabled():
-            individual_after_mutate = mutate(individual, 1.0)
+        individual_after_mutate = mutate(individual, 1.0)
 
         # Expect that exactly one of the values has changed
         assert num_values_changed(individual, individual_after_mutate) == 1
@@ -311,7 +318,7 @@ class TestGenetic:
         assert approx_equal(children[0].sum(), sum_constraint)
         assert approx_equal(children[1].sum(), sum_constraint)
 
-    def test_evolve_no_random_select_no_mutation(self, job, capsys):
+    def test_evolve_no_random_select_no_mutation(self, job):
         population = np.array([
             [0.5, 0.5, 0.5, 0.5],
             [1.0, 0.0, 1.0, 0.0],
@@ -327,16 +334,14 @@ class TestGenetic:
         expected_child1 = normalise(np.append(population[0][:half], population[1][half:]), sum_constraint)
         expected_child2 = normalise(np.append(population[1][:half], population[0][half:]), sum_constraint)
 
-        with capsys.disabled():
-            average_fitness, new_population = evolve(
-                job,
-                population,
-                sum_constraint,
-                retain=retain,
-                random_select=random_select,
-                mutation_chance=mutation_chance
-            )
-            print("new_population = {}".format(new_population))
+        average_fitness, new_population = evolve(
+            job,
+            population,
+            sum_constraint,
+            retain=retain,
+            random_select=random_select,
+            mutation_chance=mutation_chance
+        )
 
         assert np.array_equal(new_population[0], population[0])
         assert np.array_equal(new_population[1], population[1])
@@ -344,3 +349,12 @@ class TestGenetic:
                  np.array_equal(new_population[3], expected_child2)) or
                 (np.array_equal(new_population[2], expected_child2) and
                  np.array_equal(new_population[3], expected_child1)))
+
+    def test_perform_genetic_algorithm(self, job):
+        PerformGeneticAlgorithm(job)
+
+        num_electrons_sq = job.Electron.NElectrons*job.Electron.NElectrons
+        residue = job.Electron.rho - job.Electron.rhotot
+        fitness = np.absolute(residue).sum()/num_electrons_sq
+
+        assert approx_equal(fitness, 0.0)
