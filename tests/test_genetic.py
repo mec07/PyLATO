@@ -4,6 +4,7 @@ Tests for the genetic module
 from pylato.genetic import (can_produce_num_children,
                             create_individual,
                             create_population,
+                            evolve,
                             fitness,
                             grade,
                             mutate,
@@ -309,3 +310,37 @@ class TestGenetic:
         # We also check the normalisation has worked correctly:
         assert approx_equal(children[0].sum(), sum_constraint)
         assert approx_equal(children[1].sum(), sum_constraint)
+
+    def test_evolve_no_random_select_no_mutation(self, job, capsys):
+        population = np.array([
+            [0.5, 0.5, 0.5, 0.5],
+            [1.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0, 1.0],
+            [0.0, 0.9, 0.1, 1.0]
+        ])
+        retain = 0.5
+        random_select = 0.0
+        mutation_chance = 0.0
+        half = 2
+        sum_constraint = 2
+
+        expected_child1 = normalise(np.append(population[0][:half], population[1][half:]), sum_constraint)
+        expected_child2 = normalise(np.append(population[1][:half], population[0][half:]), sum_constraint)
+
+        with capsys.disabled():
+            average_fitness, new_population = evolve(
+                job,
+                population,
+                sum_constraint,
+                retain=retain,
+                random_select=random_select,
+                mutation_chance=mutation_chance
+            )
+            print("new_population = {}".format(new_population))
+
+        assert np.array_equal(new_population[0], population[0])
+        assert np.array_equal(new_population[1], population[1])
+        assert ((np.array_equal(new_population[2], expected_child1) and
+                 np.array_equal(new_population[3], expected_child2)) or
+                (np.array_equal(new_population[2], expected_child2) and
+                 np.array_equal(new_population[3], expected_child1)))

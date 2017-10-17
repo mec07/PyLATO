@@ -53,8 +53,6 @@ def normalise(individual, sum_constraint):
     if can_normalise(individual, sum_constraint):
         while (abs(individual.sum() - sum_constraint) > 1.0e-13):
             individual = individual*(sum_constraint/individual.sum())
-            print(individual)
-            print('{0:.16f}'.format(abs(individual.sum() - sum_constraint)))
             if individual.max() > 1.0:
                 # cut the values that are too large in half
                 for index in range(individual.size):
@@ -131,7 +129,6 @@ def grade(Job, population):
 
     """
     graded_population = [(fitness(Job, x), x) for x in population]
-    print(graded_population)
     sorted_population = np.empty(shape=population.shape)
     for index, graded_individual in enumerate(sorted(graded_population, key=lambda graded: graded[0])):
         sorted_population[index] = graded_individual[1]
@@ -218,9 +215,6 @@ def reproduce(parents, num_children, sum_constraint, mutation_chance):
             male = np.random.randint(0, num_parents)
             female = np.random.randint(0, num_parents)
             can_mate = (male != female and (male, female) not in mated_list)
-            print("male = {}".format(male))
-            print("female = {}".format(female))
-            print("can_mate = {}".format(can_mate))
             if can_mate:
                 mated_list.append((male, female))
                 male = parents[male]
@@ -233,7 +227,7 @@ def reproduce(parents, num_children, sum_constraint, mutation_chance):
     return children
 
 
-def evolve(Job, population, retain=0.2, random_select=0.05, mutation_chance=0.05):
+def evolve(Job, population, sum_constraint, retain=0.2, random_select=0.05, mutation_chance=0.05):
     """
     This function takes in the current population and returns the average
     grade of the inputted population and the new generation.
@@ -241,6 +235,7 @@ def evolve(Job, population, retain=0.2, random_select=0.05, mutation_chance=0.05
     Job: the object containing the Electron object, the Hamilton object, and
          the eigenvalues and eigenvectors to an already solved Fock matrix.
     population: an array of indiviuals.
+    sum_constraint: the value that the sum of any individual has to equal.
     retain: the proportion of the population that survive to reproduce and live
             on in the next generation.
     random_select: the chance to randomly select additional individuals that
@@ -254,5 +249,6 @@ def evolve(Job, population, retain=0.2, random_select=0.05, mutation_chance=0.05
     parents = survive(sorted_population, retain, random_select)
 
     num_children = len(population) - len(parents)
-    children = reproduce(parents, num_children)
-    return average_fitness, np.append(parents, children)
+    children = reproduce(parents, num_children, sum_constraint, mutation_chance)
+
+    return average_fitness, np.append(parents, children, axis=0)
