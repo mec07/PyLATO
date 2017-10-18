@@ -1,16 +1,8 @@
 """
 Tests for the genetic module
 """
-from pylato.genetic import (can_produce_num_children,
-                            create_individual,
-                            create_population,
-                            evolve,
-                            fitness,
-                            grade,
-                            mutate,
-                            normalise,
-                            reproduce,
-                            survive,
+from pylato.genetic import (Individual,
+                            Population,
                             PerformGeneticAlgorithm)
 from pylato.hamiltonian import Hamiltonian
 from pylato.electronic import Electronic
@@ -93,7 +85,37 @@ def num_values_changed(array1, array2):
     return numValuesChanged
 
 
-class TestGenetic:
+class TestGeneticIndividual:
+    def test_individual(self, capsys):
+        length = 100
+        sum_constraint = 10
+        min_value = 0.0
+        max_value = 1.0
+
+        with capsys.disabled():
+            an_individual = Individual(length, sum_constraint)
+            print("DNA sum = {}".format(an_individual.DNA.sum()))
+
+        assert len(an_individual.DNA) == length
+        assert an_individual.DNA.min() >= min_value
+        assert an_individual.DNA.max() <= max_value
+        assert approx_equal(an_individual.DNA.sum(), sum_constraint)
+
+    def test_individual_checks(self):
+        length = 100
+        # Raises for a constraint greater than 80% of length
+        with pytest.raises(Exception):
+            Individual(length, 0.9*length)
+        # Raises for a constraint less than 1 of length
+        with pytest.raises(Exception):
+            Individual(length, 0.1)
+        # Raises if length is not an int
+        with pytest.raises(Exception):
+            Individual('hi', 2)
+        # Raises if constraint is not a number
+        with pytest.raises(Exception):
+            Individual(length, 'hi')
+
     def test_normalise(self):
         example1 = np.array([0.1, 0.2, 0.3, 0.4])
         example2 = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7])
@@ -109,33 +131,9 @@ class TestGenetic:
         assert approx_equal(normalised_example2.sum(), sum_constraint2)
         assert approx_equal(normalised_example3.sum(), sum_constraint3)
 
-    def test_create_individual(self):
-        length = 100
-        sum_constraint = 10
-        min_value = 0.0
-        max_value = 1.0
-        an_individual = create_individual(length, sum_constraint)
 
-        assert len(an_individual) == length
-        assert an_individual.min() >= min_value
-        assert an_individual.max() <= max_value
-        assert approx_equal(an_individual.sum(), sum_constraint)
 
-    def test_create_individual_checks(self):
-        length = 100
-        # Raises for a constraint greater than 80% of length
-        with pytest.raises(Exception):
-            create_individual(length, 0.9*length)
-        # Raises for a constraint less than 1 of length
-        with pytest.raises(Exception):
-            create_individual(length, 0.1)
-        # Raises if length is not an int
-        with pytest.raises(Exception):
-            create_individual('hi', 2)
-        # Raises if constraint is not a number
-        with pytest.raises(Exception):
-            create_individual(length, 'hi')
-
+class TestGeneticPopulation:
     def test_create_population(self):
         count = 50
         length = 100
@@ -246,7 +244,7 @@ class TestGenetic:
         assert np.array_equal(survivors[3], sorted_population[3])
 
     def test_mutate_no_mutation(self):
-        individual = create_individual(100, 10)
+        individual = Individual(100, 10)
         individual_after_mutate = mutate(individual, 0.0)
 
         assert np.array_equal(individual, individual_after_mutate)
