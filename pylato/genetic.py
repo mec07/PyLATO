@@ -17,6 +17,8 @@ for i in xrange(100):
 """
 
 import numpy as np
+import copy
+
 from verbosity import verboseprint
 
 
@@ -39,38 +41,41 @@ def PerformGeneticAlgorithm(Job):
     mutation_chance = Job.Def.get('mutation_chance', 0.05)
     best_individual = None
 
-    population = Population(population_size,
+    population = Population(Job,
+                            population_size,
                             individual_length,
                             num_electrons)
 
     for num_generations in range(max_num_evolutions):
-        avg_fitness = population.evolve(
-            Job,
-            retain=retain,
-            random_select=random_select,
-            mutation_chance=mutation_chance
-        )
+        average_fitness = population.grade()
         # the best individual from the generation just before the evolution
         best_individual = population.individuals[0]
         verboseprint(
             Job.Def['verbose'],
             "Generation {}: Average fitness = {}, best fitness = {}".format(
                 num_generations,
-                avg_fitness,
+                average_fitness,
                 best_individual.fitness,
             )
         )
         if best_individual.fitness < genetic_tol:
             break
+        else:
+            population.evolve(
+                retain=retain,
+                random_select=random_select,
+                mutation_chance=mutation_chance
+            )
 
     # recreate the best individual as that info will be passed back inside Job
-    best_individual.calculate_fitness(Job)
+    Job = best_individual.Job
 
 
 class Individual(object):
-    def __init__(self, length, sum_constraint, DNA=None):
+    def __init__(self, Job, length, sum_constraint, DNA=None):
         self.fitness = None
         self.sum_constraint = float(sum_constraint)
+        self.Job = copy.deepcopy(Job)
 
         if DNA is None:
             self.create_random_DNA(length)
@@ -190,7 +195,7 @@ class Individual(object):
 
 
 class Population(object):
-    def __init__(self, population_size, length, sum_constraint):
+    def __init__(self, Job, population_size, length, sum_constraint):
         """
         Create a number of individuals (i.e. a population).
 
@@ -201,10 +206,10 @@ class Population(object):
         """
         self.population_size = population_size
         self.individuals = [
-            Individual(length, sum_constraint) for x in range(population_size)
+            Individual(Job, length, sum_constraint) for x in range(population_size)
         ]
 
-    def grade(self, Job):
+    def grade(self):
         """
         Calculate the fitness of the population and order the population by the
         fitness of the individuals.
@@ -216,9 +221,9 @@ class Population(object):
         """
         for index, individual in enumerate(self.individuals):
             # The most expensive step of the genetic algorithm:
-            individual.calculate_fitness(Job)
+            individual.calculate_fitness()
             verboseprint(
-                Job.Def['extraverbose'],
+                individual.Job.Def['extraverbose'],
                 "Graded individual {} out of {}".format(index + 1,
                                                         self.population_size)
             )
@@ -292,13 +297,11 @@ class Population(object):
                     child.normalise()
                     self.individuals.append(child)
 
-    def evolve(self, Job, retain=0.2, random_select=0.05, mutation_chance=0.05):
+    def evolve(self, retain=0.2, random_select=0.05, mutation_chance=0.05):
         """
         This function takes in the current population and returns the average
         grade of the inputted population and the new generation.
 
-        Job: the object containing the Electron object, the Hamilton object, and
-             the eigenvalues and eigenvectors to an already solved Fock matrix.
         retain: the proportion of the population that survive to reproduce and
                 live on in the next generation.
         random_select: the chance to randomly select additional individuals
@@ -307,8 +310,6 @@ class Population(object):
         mutation_chance: the chance that a mutation occurs in a child, it
                          should lie in the interval [0.0, 1.0).
         """
-        average_fitness = self.grade(Job)
-
         self.survive(retain, random_select)
 
         self.reproduce(mutation_chance)
