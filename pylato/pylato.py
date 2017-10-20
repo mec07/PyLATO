@@ -58,7 +58,7 @@ def main():
 
     #
     # Build the non-self-consistent Hamiltonian (incl hopping and spin-orbit)
-    Job.Hamilton.buildHSO()
+    Job.Hamilton.buildHSO(Job)
     #
     # Allocate memory for the eigenvalues and eigenvectors
     Job.e   = np.zeros( Job.Hamilton.HSOsize, dtype='double')

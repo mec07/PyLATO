@@ -16,21 +16,18 @@ import math
 
 class Hamiltonian:
     """Initialise and build the hamiltonian."""
-    def __init__(self, JobClass):
+    def __init__(self, Job):
         """Initialise the hamiltonian."""
 
-        # Save job reference as an attribute for internal use.
-        self.Job = JobClass
-
         # Build index of starting positions in Hamiltonian for each atom
-        self.Hindex = np.zeros(self.Job.NAtom + 1, dtype='int')
+        self.Hindex = np.zeros(Job.NAtom + 1, dtype='int')
         self.Hindex[0] = 0
 
-        for a in range(self.Job.NAtom):
-            self.Hindex[a+1] = self.Hindex[a] + self.Job.Model.atomic[self.Job.AtomType[a]]['NOrbitals']
+        for a in range(Job.NAtom):
+            self.Hindex[a+1] = self.Hindex[a] + Job.Model.atomic[Job.AtomType[a]]['NOrbitals']
 
         # Compute the sizes of the Hamiltonian matrices
-        self.H0size = self.Hindex[self.Job.NAtom]
+        self.H0size = self.Hindex[Job.NAtom]
         self.HSOsize = 2*self.H0size
 
         # Allocate memory for the Hamiltonian matrices
@@ -39,10 +36,10 @@ class Hamiltonian:
         self.Fock = np.zeros((self.HSOsize, self.HSOsize), dtype='complex')
 
         # Allocate memeory for the charge and spin
-        self.q = np.zeros(self.Job.NAtom, dtype='double')
-        self.s = np.zeros((3, self.Job.NAtom), dtype='double')
+        self.q = np.zeros(Job.NAtom, dtype='double')
+        self.s = np.zeros((3, Job.NAtom), dtype='double')
 
-        if self.Job.Def["spin_orbit"] == 1:
+        if Job.Def["spin_orbit"] == 1:
             # Spin orbit data
             self.SOmatrix = {0: np.array([[complex( 0.0, 0.0), complex( 0.0, 0.0)],
                                           [complex( 0.0, 0.0), complex( 0.0, 0.0)]]),
@@ -59,7 +56,7 @@ class Hamiltonian:
                                      [complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0), 
                                       complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 0.0, 0.0)]])}
 
-        if self.Job.Def["Hamiltonian"]=="dcase":
+        if Job.Def["Hamiltonian"]=="dcase":
             self.quad_xi_mat = np.zeros((5,5,5,5), dtype = 'double')
             for alpha in range(5):
                 for beta in range(5):
@@ -67,22 +64,22 @@ class Hamiltonian:
                         for chi in range(5):
                             self.quad_xi_mat[alpha,beta,gamma,chi] = xicontfour(alpha, beta, gamma, chi)
 
-    def electrostatics(self):
-        def SCFGamma(self, atom1, atom2):
+    def electrostatics(self, Job):
+        def SCFGamma(self, Job, atom1, atom2):
 
-            atype1 = self.Job.AtomType[atom1]
-            atype2 = self.Job.AtomType[atom2]
+            atype1 = Job.AtomType[atom1]
+            atype2 = Job.AtomType[atom2]
 
             if atom1 == atom2:
-                gij = complex(self.Job.Model.atomic[atype1]['U'], 0.0)
+                gij = complex(Job.Model.atomic[atype1]['U'], 0.0)
             else:
-                if self.Job.Def["InterSiteElectrostatics"] == 1:
-                    dr = self.Job.Pos[atom2] - self.Job.Pos[atom1]
+                if Job.Def["InterSiteElectrostatics"] == 1:
+                    dr = Job.Pos[atom2] - Job.Pos[atom1]
                     rij = np.sqrt(dr.dot(dr))
 
                     vacuum = 0.00552639
-                    ai = vacuum*vacuum*np.pi*np.pi*np.pi*8.0 * self.Job.Model.atomic[atype1]['U'] * self.Job.Model.atomic[atype1]['U'] 
-                    aj = vacuum*vacuum*np.pi*np.pi*np.pi*8.0 * self.Job.Model.atomic[atype2]['U'] * self.Job.Model.atomic[atype2]['U']
+                    ai = vacuum*vacuum*np.pi*np.pi*np.pi*8.0 * Job.Model.atomic[atype1]['U'] * Job.Model.atomic[atype1]['U']
+                    aj = vacuum*vacuum*np.pi*np.pi*np.pi*8.0 * Job.Model.atomic[atype2]['U'] * Job.Model.atomic[atype2]['U']
                     b =  np.sqrt(ai * aj / (ai + aj))
 
                     gij = 1.0/vacuum/(4.0*np.pi) * complex(erf(b * rij) / rij, 0.0)
@@ -91,47 +88,47 @@ class Hamiltonian:
 
             return gij
 
-        SCF1g = np.zeros((self.Job.NAtom, self.Job.NAtom), dtype="complex")
-        Wi = np.zeros(self.Job.NAtom, dtype="complex")
+        SCF1g = np.zeros((Job.NAtom, Job.NAtom), dtype="complex")
+        Wi = np.zeros(Job.NAtom, dtype="complex")
 
         # Compute SCF1g matrix
-        for i in range(self.Job.NAtom):
-            for j in range(i, self.Job.NAtom):
-                gij = SCFGamma(self, i, j)
+        for i in range(Job.NAtom):
+            for j in range(i, Job.NAtom):
+                gij = SCFGamma(self, Job, i, j)
                 SCF1g[i, j] = gij
                 SCF1g[j, i] = gij
 
         # Compute electrostatic term
-        for i in range(self.Job.NAtom):
-            for j in range(self.Job.NAtom):
+        for i in range(Job.NAtom):
+            for j in range(Job.NAtom):
                 Wi[i] += -self.q[j] * SCF1g[i, j]
 
         self.Wi = Wi
 
-    def buildfock(self):
+    def buildFock(self, Job):
         """Build the Fock matrix by adding charge and spin terms to the Hamiltonian."""
         # Copy the Hamiltonian, complete with spin-orbit terms, to the Fock matrix
         self.fock = np.copy(self.HSO)
         h0s = self.H0size
 
-        if self.Job.Def["Hamiltonian"] == "collinear":
+        if Job.Def["Hamiltonian"] == "collinear":
 
             # Add in diagonal corrections for charge and spin
             des = np.zeros((2, 2), dtype="complex")
 
             # Compute on-site and (if enabled) intersite electrostatic terms.
-            self.electrostatics()
+            self.electrostatics(Job)
 
-            for a in range(self.Job.NAtom):
+            for a in range(Job.NAtom):
                 #
                 # Get the atom type
-                atype = self.Job.AtomType[a]
+                atype = Job.AtomType[a]
                 #
                 # Stoner onsite energy shifts are present for all four spins combinations
-                des[0, 0] = -0.5 * self.Job.Model.atomic[atype]['I'] * complex( self.s[2, a],           0.0)
-                des[0, 1] = -0.5 * self.Job.Model.atomic[atype]['I'] * complex( self.s[0, a], -self.s[1, a])
-                des[1, 0] = -0.5 * self.Job.Model.atomic[atype]['I'] * complex( self.s[0, a],  self.s[1, a])
-                des[1, 1] = -0.5 * self.Job.Model.atomic[atype]['I'] * complex(-self.s[2, a],           0.0)
+                des[0, 0] = -0.5 * Job.Model.atomic[atype]['I'] * complex( self.s[2, a],           0.0)
+                des[0, 1] = -0.5 * Job.Model.atomic[atype]['I'] * complex( self.s[0, a], -self.s[1, a])
+                des[1, 0] = -0.5 * Job.Model.atomic[atype]['I'] * complex( self.s[0, a],  self.s[1, a])
+                des[1, 1] = -0.5 * Job.Model.atomic[atype]['I'] * complex(-self.s[2, a],           0.0)
                 #
                 # Step through each orbital on the atom
                 for j in range(self.Hindex[a], self.Hindex[a+1]):
@@ -140,17 +137,17 @@ class Hamiltonian:
                     self.fock[h0s+j,     j] +=              des[1, 0]  # down/up block
                     self.fock[h0s+j, h0s+j] += self.Wi[a] + des[1, 1]  # down/down block
 
-        elif self.Job.Def['Hamiltonian'] == "noncollinear":
-            norb = self.Job.NOrb
-            natom = self.Job.NAtom
-            rho = self.Job.Electron.rhotot
+        elif Job.Def['Hamiltonian'] == "noncollinear":
+            norb = Job.NOrb
+            natom = Job.NAtom
+            rho = Job.Electron.rhotot
             J_ph = 0.0
 
             for a in range(natom):
                 # Get the atom type
-                atype = self.Job.AtomType[a]
-                J_S = self.Job.Model.atomic[atype]['I']
-                U = self.Job.Model.atomic[atype]['U']
+                atype = Job.AtomType[a]
+                J_S = Job.Model.atomic[atype]['I']
+                U = Job.Model.atomic[atype]['U']
                 for jj in range(self.Hindex[a], self.Hindex[a+1]):
                     for ii in range(self.Hindex[a], self.Hindex[a+1]):
                         # up/up block
@@ -162,15 +159,15 @@ class Hamiltonian:
                         # down/down block
                         self.fock[h0s+jj, h0s+ii] += self.add_H_pcase(h0s+jj, h0s+ii, U, J_S, J_ph, natom, norb, rho)
 
-        elif self.Job.Def['Hamiltonian'] == "scase":
-            norb = self.Job.NOrb
-            natom = self.Job.NAtom
-            rho = self.Job.Electron.rhotot
+        elif Job.Def['Hamiltonian'] == "scase":
+            norb = Job.NOrb
+            natom = Job.NAtom
+            rho = Job.Electron.rhotot
 
             for a in range(natom):
                 # Get the atom type
-                atype = self.Job.AtomType[a]
-                U = self.Job.Model.atomic[atype]['U']
+                atype = Job.AtomType[a]
+                U = Job.Model.atomic[atype]['U']
                 for jj in range(self.Hindex[a], self.Hindex[a+1]):
                     for ii in range(self.Hindex[a], self.Hindex[a+1]):
                         # up/up block
@@ -182,16 +179,16 @@ class Hamiltonian:
                         # down/down block
                         self.fock[h0s+jj, h0s+ii] += self.add_H_scase(h0s+jj, h0s+ii, U, natom, norb, rho)
 
-        elif self.Job.Def['Hamiltonian'] == "pcase":
-            norb = self.Job.NOrb
-            natom = self.Job.NAtom
-            rho = self.Job.Electron.rhotot
+        elif Job.Def['Hamiltonian'] == "pcase":
+            norb = Job.NOrb
+            natom = Job.NAtom
+            rho = Job.Electron.rhotot
 
             for a in range(natom):
                 # Get the atom type
-                atype = self.Job.AtomType[a]
-                J = self.Job.Model.atomic[atype]['I']
-                U = self.Job.Model.atomic[atype]['U']
+                atype = Job.AtomType[a]
+                J = Job.Model.atomic[atype]['I']
+                U = Job.Model.atomic[atype]['U']
                 for jj in range(self.Hindex[a], self.Hindex[a+1]):
                     for ii in range(self.Hindex[a], self.Hindex[a+1]):
                         # up/up block
@@ -203,17 +200,17 @@ class Hamiltonian:
                         # down/down block
                         self.fock[h0s+jj, h0s+ii] += self.add_H_pcase(h0s+jj, h0s+ii, U, J, J, natom, norb, rho)
 
-        elif self.Job.Def['Hamiltonian'] == "dcase":
-            norb = self.Job.NOrb
-            natom = self.Job.NAtom
-            rho = self.Job.Electron.rhotot
+        elif Job.Def['Hamiltonian'] == "dcase":
+            norb = Job.NOrb
+            natom = Job.NAtom
+            rho = Job.Electron.rhotot
 
             for a in range(natom):
                 # Get the atom type
-                atype = self.Job.AtomType[a]
-                J  = self.Job.Model.atomic[atype]['I']
-                U  = self.Job.Model.atomic[atype]['U']
-                dJ = self.Job.Model.atomic[atype]['dJ']
+                atype = Job.AtomType[a]
+                J  = Job.Model.atomic[atype]['I']
+                U  = Job.Model.atomic[atype]['U']
+                dJ = Job.Model.atomic[atype]['dJ']
                 for jj in range(self.Hindex[a], self.Hindex[a+1]):
                     for ii in range(self.Hindex[a], self.Hindex[a+1]):
                         # up/up block
@@ -228,7 +225,7 @@ class Hamiltonian:
         # for i in range(h0s):
         #     for j in range(i, h0s):
         #         if abs(self.fock[i,j] - self.fock[i,j]) > 0.000001:
-        #             verboseprint(self.Job.Def['extraverbose'], i, j,
+        #             verboseprint(Job.Def['extraverbose'], i, j,
         #                          round(self.fock[i,j].real, 4), round(self.fock2[i,j].real, 4), "|",
         #                          round(self.fock[i,j].imag, 4), round(self.fock2[i,j].imag, 4))
         #print "fock:", self.fock
@@ -343,7 +340,7 @@ class Hamiltonian:
         return block
 
 
-    def buildH0(self):
+    def buildH0(self, Job):
         """
         Build the hamiltonian one block at a time, with a block corresponding to
         a pair of atoms.
@@ -364,10 +361,10 @@ class Hamiltonian:
         self.H0.fill(0.0)
 
         # Step through all pairs of atoms
-        for a1 in range(self.Job.NAtom):
-            for a2 in range(a1, self.Job.NAtom):
+        for a1 in range(Job.NAtom):
+            for a2 in range(a1, Job.NAtom):
                 self.H0[self.Hindex[a1]:self.Hindex[a1+1],
-                    self.Hindex[a2]:self.Hindex[a2+1]] = self.hopping_block(a1, a2)
+                    self.Hindex[a2]:self.Hindex[a2+1]] = self.hopping_block(Job, a1, a2)
                 # Now add the corresponding section with a1 and a2 swapped.
                 self.H0[self.Hindex[a2]:self.Hindex[a2+1],
                     self.Hindex[a1]:self.Hindex[a1+1]] = \
@@ -376,9 +373,9 @@ class Hamiltonian:
 
 
         # periodic boundary conditions
-        if self.Job.Def["PBC"] == 1:
-            for a1 in range(self.Job.NAtom):
-                for a2 in range(a1, self.Job.NAtom):
+        if Job.Def["PBC"] == 1:
+            for a1 in range(Job.NAtom):
+                for a2 in range(a1, Job.NAtom):
                     # loop over the 26 adjacent cubes.
                     for jx in range(-1,2):
                         for jy in range(-1,2):
@@ -389,13 +386,13 @@ class Hamiltonian:
                                 else:
                                     self.H0[self.Hindex[a1]:self.Hindex[a1+1],
                                         self.Hindex[a2]:self.Hindex[a2+1]] += \
-                                            self.hopping_block(a1, a2, jx, jy, jz)
+                                            self.hopping_block(Job, a1, a2, jx, jy, jz)
                                     self.H0[self.Hindex[a2]:self.Hindex[a2+1],
                                         self.Hindex[a1]:self.Hindex[a1+1]] = \
                                             np.transpose(self.H0[self.Hindex[a1]:self.Hindex[a1+1],
                                                 self.Hindex[a2]:self.Hindex[a2+1]])
 
-    def hopping_block(self, atom1, atom2, jx=0, jy=0, jz=0):
+    def hopping_block(self, Job, atom1, atom2, jx=0, jy=0, jz=0):
         """
         Calculate and return the matrix block of the hopping integrals between
         the provided two atoms, atom1 and atom2. This also works for periodic
@@ -405,34 +402,34 @@ class Hamiltonian:
         simulation directory.
         """
         # If the atoms are the same, compute an onsite block, otherwise compute a hopping block
-        type1 = self.Job.AtomType[atom1]
+        type1 = Job.AtomType[atom1]
         if atom1 == atom2 and (jx, jy, jz) == (0, 0, 0):
-            return self.Job.Model.atomic[type1]['e']
+            return Job.Model.atomic[type1]['e']
         else:
-            type2 = self.Job.AtomType[atom2]
-            norb1 = self.Job.Model.atomic[type1]['NOrbitals']
-            norb2 = self.Job.Model.atomic[type2]['NOrbitals']
+            type2 = Job.AtomType[atom2]
+            norb1 = Job.Model.atomic[type1]['NOrbitals']
+            norb2 = Job.Model.atomic[type2]['NOrbitals']
             temp_mat = np.zeros((norb1, norb2), dtype='double')
             # Compute the atomic displacement
-            dr = self.Job.Pos[atom1] - (self.Job.Pos[atom2] 
-                                        + jx*self.Job.UnitCell[0] 
-                                        + jy*self.Job.UnitCell[1] 
-                                        + jz*self.Job.UnitCell[2])
+            dr = Job.Pos[atom1] - (Job.Pos[atom2]
+                                        + jx*Job.UnitCell[0]
+                                        + jy*Job.UnitCell[1]
+                                        + jz*Job.UnitCell[2])
             distance = np.sqrt(dr.dot(dr))
 
             # Build the set of hopping integrals
-            v, v_bgn, v_end = self.Job.Model.helements(distance, type1, type2)
+            v, v_bgn, v_end = Job.Model.helements(distance, type1, type2)
 
             # Build the block one pair of shells at a time
             k1 = 0 # Counter for orbital
 
             # Step through shells of atom 1
-            for i1, l1 in enumerate(self.Job.Model.atomic[type1]['l']):  
+            for i1, l1 in enumerate(Job.Model.atomic[type1]['l']):
                 n1 = 2*l1+1  # Compute number of orbitals in the shell                       
                 k2 = 0  # Counter for orbital 
 
                 # Step through shells of atom 2
-                for i2, l2 in enumerate(self.Job.Model.atomic[type2]['l']):  
+                for i2, l2 in enumerate(Job.Model.atomic[type2]['l']):
                     n2 = 2*l2+1  # Compute number of orbitals in the shell
                     temp_mat[k1:k1+n1, k2:k2+n2] = self.slaterkoster(l1, l2, dr, v[v_bgn[i1,i2]:v_end[i1,i2]])
                     k2 += n2  # Advance to the start of the next set of orbitals
@@ -442,7 +439,7 @@ class Hamiltonian:
             return temp_mat
 
 
-    def buildHSO(self):
+    def buildHSO(self, Job):
         """Build the Hamiltonian with spin orbit coupling."""
 
         h0s = self.H0size
@@ -452,14 +449,14 @@ class Hamiltonian:
 
         # Build the basic Hamiltonian. This is independent of spin and appears in the
         # up-up and down-down blocks of the full spin dependent Hamiltonian
-        self.buildH0()
+        self.buildH0(Job)
 
         # Copy H0 into the two diagonal blocks
         self.HSO[0           :h0s,            0:h0s] = np.copy(self.H0)
         self.HSO[h0s:self.HSOsize, h0s:self.HSOsize] = np.copy(self.H0)
 
         # Add in magnetic field contribution
-        eB = self.Job.Def['so_eB']
+        eB = Job.Def['so_eB']
         for i in range(h0s):
             self.HSO[      i,       i] += complex( eB[2],    0.0)
             self.HSO[      i, h0s + i] += complex( eB[0], -eB[1])
@@ -467,18 +464,18 @@ class Hamiltonian:
             self.HSO[h0s + i, h0s + i] += complex(-eB[2],    0.0)
 
         # Add in the spin-orbit corrections
-        if self.Job.Def["spin_orbit"] == 1:
-            for atom in range(self.Job.NAtom):
-                atype = self.Job.AtomType[atom]
+        if Job.Def["spin_orbit"] == 1:
+            for atom in range(Job.NAtom):
+                atype = Job.AtomType[atom]
 
                 k = self.Hindex[atom]  # Counter for orbital
-                for i, l in enumerate(self.Job.Model.atomic[atype]['l']):  # Step through each shell
+                for i, l in enumerate(Job.Model.atomic[atype]['l']):  # Step through each shell
                     print i, l
                     n = 2*l+1  # Compute number of orbitals in the shell
-                    self.HSO[    k:    k+n,     k:    k+n] += self.Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][  0:  n,   0:  n]
-                    self.HSO[    k:    k+n, h0s+k:h0s+k+n] += self.Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][  0:  n, n+0:n+n]
-                    self.HSO[h0s+k:h0s+k+n,     k:    k+n] += self.Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][n+0:n+n,   0:  n]
-                    self.HSO[h0s+k:h0s+k+n, h0s+k:h0s+k+n] += self.Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][n+0:n+n, n+0:n+n]
+                    self.HSO[    k:    k+n,     k:    k+n] += Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][  0:  n,   0:  n]
+                    self.HSO[    k:    k+n, h0s+k:h0s+k+n] += Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][  0:  n, n+0:n+n]
+                    self.HSO[h0s+k:h0s+k+n,     k:    k+n] += Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][n+0:n+n,   0:  n]
+                    self.HSO[h0s+k:h0s+k+n, h0s+k:h0s+k+n] += Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][n+0:n+n, n+0:n+n]
                     k += n  # Advance to the start of the next set of orbitals
 
     def add_H_scase(self, ii, jj, U, num_atoms, num_orbitals, rho):

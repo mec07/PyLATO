@@ -30,7 +30,7 @@ def PerformSelfConsistency(Job):
     for ii in range(max_loops):
         #
         # Build the fock matrix (adds the density matrix dependent terms)
-        Job.Hamilton.buildfock()
+        Job.Hamilton.buildFock(Job)
         #
         # Diagonalise the Fock matrix
         Job.e, Job.psi = np.linalg.eigh(Job.Hamilton.fock)

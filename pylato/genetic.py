@@ -1,19 +1,9 @@
 """
 @author: Marc Coury
 
-This module was heavily inspired by this source, although extensively modified:
+This module took inspiration from this source:
 http://lethain.com/genetic-algorithms-cool-name-damn-simple/
 
-# Example usage
-from genetic import population, evolve
-p_count = 100
-i_length = 200
-i_sum = 50
-p = population(p_count, i_length, i_sum)
-fitness_history = []
-for i in xrange(100):
-    avg_fitness, p = evolve(p, target, data)
-    fitness_history.append(avg_fitness))
 """
 
 import numpy as np
@@ -23,9 +13,9 @@ from verbosity import verboseprint
 
 
 def PerformGeneticAlgorithm(Job):
-    # Build fock
+    # Build Fock matrix
     Job.Electron.densitymatrix()
-    Job.Hamilton.buildfock()
+    Job.Hamilton.buildFock(Job)
 
     # Find the eigenvalues & eigenvectors -- these will be used as the basis
     # this genetic algorithm approach
@@ -58,6 +48,7 @@ def PerformGeneticAlgorithm(Job):
                 best_individual.fitness,
             )
         )
+        print("best fitness DNA = {}".format(best_individual.DNA))
         if best_individual.fitness < genetic_tol:
             break
         else:
@@ -70,9 +61,20 @@ def PerformGeneticAlgorithm(Job):
     # recreate the best individual as that info will be passed back inside Job
     Job = best_individual.Job
 
+    return Job
+
 
 class Individual(object):
     def __init__(self, Job, length, sum_constraint, DNA=None):
+        """
+        Instantiate an individual which has a DNA of length 'length' which must
+        meet the constraint that it sums to 'sum_constraint'. As the DNA
+        represents the occupation vector of electrons, each value within it
+        must be between 0.0 and 1.0.
+
+        Job: the object containing the Electron object, the Hamilton object, and
+             the eigenvalues and eigenvectors to an already solved Fock matrix.
+        """
         self.fitness = None
         self.sum_constraint = float(sum_constraint)
         self.Job = copy.deepcopy(Job)
@@ -80,7 +82,7 @@ class Individual(object):
         if DNA is None:
             self.create_random_DNA(length)
         else:
-            self.DNA = DNA
+            self.DNA = np.copy(DNA)
             self.normalise()
 
     def can_normalise(self):
@@ -158,28 +160,26 @@ class Individual(object):
 
         self.DNA = new_DNA
 
-    def calculate_fitness(self, Job):
+    def calculate_fitness(self):
         """
         Determine the fitness of an individual. Lower is better.
 
-        Job: the object containing the Electron object, the Hamilton object, and
-             the eigenvalues and eigenvectors to an already solved Fock matrix.
         """
         if self.fitness is None:
-            # construct the density using individual -- into Job.Electron.rho
-            Job.Electron.constructDensityMatrixFromOccupation(self.DNA)
+            # construct the density using individual -- into Job.Electron.rhotot
+            self.Job.Electron.constructDensityMatrixFromOccupation(self.DNA)
 
             # construct the fock matrix -- into Job.Hamilton.fock
-            Job.Hamilton.buildfock()
+            self.Job.Hamilton.buildFock(self.Job)
 
             # find the eigenvalues & eigenvectors
-            eigenvalues, eigenvectors = np.linalg.eigh(Job.Hamilton.fock)
+            eigenvalues, eigenvectors = np.linalg.eigh(self.Job.Hamilton.fock)
 
-            # construct the density using the new eigenvalues and eigenvectors -- into Job.Electron.rhotot
-            Job.Electron.constructDensityMatrixFromEigenvaluesAndEigenvectors(eigenvalues, eigenvectors)
+            # construct the density using the new eigenvalues and eigenvectors -- into Job.Electron.rho
+            self.Job.Electron.constructDensityMatrixFromEigenvaluesAndEigenvectors(eigenvalues, eigenvectors)
 
-            num_electrons_sq = Job.Electron.NElectrons*Job.Electron.NElectrons
-            residue = Job.Electron.rho - Job.Electron.rhotot
+            num_electrons_sq = self.Job.Electron.NElectrons*self.Job.Electron.NElectrons
+            residue = self.Job.Electron.rho - self.Job.Electron.rhotot
 
             # compare the densities
             self.fitness = np.absolute(residue).sum()/num_electrons_sq
@@ -188,6 +188,7 @@ class Individual(object):
         length = self.DNA.size
         half = int(length / 2)
         return Individual(
+            self.Job,
             length,
             self.sum_constraint,
             DNA=np.append(self.DNA[:half], another_individual.DNA[half:])
@@ -215,9 +216,6 @@ class Population(object):
         fitness of the individuals.
 
         Return the average fitness of the generation.
-
-        Job: the object containing the Electron object, the Hamilton object, and
-             the eigenvalues and eigenvectors to an already solved Fock matrix.
         """
         for index, individual in enumerate(self.individuals):
             # The most expensive step of the genetic algorithm:
@@ -253,7 +251,7 @@ class Population(object):
         # promote genetic diversity
         for individual in self.individuals[retain_length:]:
             if random_select > np.random.uniform():
-                survivors = survivors.append(individual)
+                survivors.append(individual)
 
         self.individuals = survivors
 
@@ -313,5 +311,3 @@ class Population(object):
         self.survive(retain, random_select)
 
         self.reproduce(mutation_chance)
-
-        return average_fitness

@@ -95,12 +95,12 @@ class Electronic:
 
     def constructDensityMatrixFromOccupation(self, occupation):
         """Build the density matrix using stored eigenvectors and a provided occupation vector."""
-        self.rho = np.matrix(self.Job.psi)*np.diag(occupation)*np.matrix(self.Job.psi).H
+        self.rhotot = np.matrix(self.Job.psi)*np.diag(occupation)*np.matrix(self.Job.psi).H
 
     def constructDensityMatrixFromEigenvaluesAndEigenvectors(self, eigenvalues, eigenvectors):
         """Build the density matrix using provided eigenvectors and eigenvalues."""
         self.occupy(eigenvalues, self.Job.Def['el_kT'], self.Job.Def['mu_tol'], self.Job.Def['mu_max_loops'])
-        self.rhotot = np.matrix(eigenvectors)*np.diag(self.occ)*np.matrix(eigenvectors).H
+        self.rho = np.matrix(eigenvectors)*np.diag(self.occ)*np.matrix(eigenvectors).H
 
     def SCFerror(self):
         """
