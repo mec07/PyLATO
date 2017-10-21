@@ -30,6 +30,7 @@ def PerformGeneticAlgorithm(Job):
     random_select = Job.Def.get('random_select_chance', 0.05)
     mutation_chance = Job.Def.get('mutation_chance', 0.05)
     best_individual = None
+    success = False
 
     population = Population(Job,
                             population_size,
@@ -50,6 +51,7 @@ def PerformGeneticAlgorithm(Job):
         )
         print("best fitness DNA = {}".format(best_individual.DNA))
         if best_individual.fitness < genetic_tol:
+            success = True
             break
         else:
             population.evolve(
@@ -61,7 +63,7 @@ def PerformGeneticAlgorithm(Job):
     # recreate the best individual as that info will be passed back inside Job
     Job = best_individual.Job
 
-    return Job
+    return Job, success
 
 
 class Individual(object):
@@ -153,12 +155,16 @@ class Individual(object):
         mutation_chance: the threshold (between 0.0 and 1.0) for mutation of the
                          individual.
         """
-        new_DNA = np.copy(self.DNA)
         if mutation_chance > np.random.uniform():
-            pos_to_mutate = np.random.randint(0, self.DNA.size)
-            new_DNA[pos_to_mutate] = np.random.uniform()
-
-        self.DNA = new_DNA
+            perturbation = np.random.uniform(size=self.DNA.size)
+            # make perturbation sum to 0
+            perturbation = perturbation - (perturbation.sum()/perturbation.size)
+            new_DNA = self.DNA + perturbation
+            # scale the perturbation until it doesn't violate the boundaries on the values
+            while (new_DNA.max() > 1.0 or new_DNA.min() < 0.0):
+                perturbation = perturbation*np.random.uniform()
+                new_DNA = self.DNA + perturbation
+            self.DNA = new_DNA
 
     def calculate_fitness(self):
         """
@@ -186,12 +192,12 @@ class Individual(object):
 
     def mate(self, another_individual):
         length = self.DNA.size
-        half = int(length / 2)
+        new_DNA = 0.5*(self.DNA + another_individual.DNA)
         return Individual(
             self.Job,
             length,
             self.sum_constraint,
-            DNA=np.append(self.DNA[:half], another_individual.DNA[half:])
+            DNA=new_DNA
         )
 
 
@@ -265,7 +271,7 @@ class Population(object):
         num_parents = len(self.individuals)
         num_children = self.population_size - num_parents
 
-        if num_children > (num_parents*(num_parents - 1)):
+        if num_children > 0.5*(num_parents*(num_parents - 1)):
             error_message = "It is not possible to create {} children from {} parents".format(num_children, num_parents)
             raise Exception(error_message)
 
@@ -285,7 +291,8 @@ class Population(object):
             while len(self.individuals) < self.population_size:
                 male = np.random.randint(0, num_parents)
                 female = np.random.randint(0, num_parents)
-                can_mate = (male != female and (male, female) not in mated_list)
+                can_mate = (male != female and (male, female) not in mated_list
+                            and (female, male) not in mated_list)
                 if can_mate:
                     mated_list.append((male, female))
                     male = self.individuals[male]

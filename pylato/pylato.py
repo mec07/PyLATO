@@ -84,7 +84,7 @@ def main():
     if Job.Def["scf_on"] == 1:
         success = PerformSelfConsistency(Job)
     elif Job.Def["genetic_on"] == 1:
-        success = PerformGeneticAlgorithm(Job)
+        Job, success = PerformGeneticAlgorithm(Job)
 
     verboseprint(Job.Def['verbose'], "Energy eigenvalues: ")
     verboseprint(Job.Def['verbose'], Job.e)

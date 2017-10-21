@@ -24,8 +24,8 @@ def job():
             'mu_max_loops': 5000,
             'num_rho': 1,
             'PBC': 0,
-            'population_size': 50,
-            'max_num_evolutions': 1000,
+            'population_size': 200,
+            'max_num_evolutions': 100,
             'genetic_tol': 1.0e-8,
             'proportion_to_retain': 0.2,
             'random_select_chance': 0.05,
@@ -321,111 +321,120 @@ class TestGeneticPopulation:
     def test_reproduce_no_mutation(self, job):
         parents_DNA = np.array([
             [0.5, 0.5, 0.5, 0.5],
-            [1.0, 0.0, 1.0, 0.0]
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 1.0, 1.0, 0.0]
         ])
-        population_size = 4
+        population_size = 6
         length = 4
         sum_constraint = 2
-        individuals = [Individual(job, length, sum_constraint, parents_DNA[x]) for x in range(2)]
+        individuals = [Individual(job, length, sum_constraint, DNA) for DNA in parents_DNA]
         population = Population(job, population_size, length, sum_constraint)
         population.individuals = individuals
         mutation_chance = 0.0
 
-        assert len(population.individuals) == 2
+        assert len(population.individuals) == 3
         population.reproduce(mutation_chance)
 
-        assert len(population.individuals) == 4
+        assert len(population.individuals) == 6
 
-        # We know that the children must be half of one parent and half of the
-        # other (as we chose the parents so that their children would be
-        # normalised at birth), so test both options.
-        expected_child1 = np.array([1.0, 0.0, 0.5, 0.5])
-        expected_child2 = np.array([0.5, 0.5, 1.0, 0.0])
-        assert ((np.array_equal(population.individuals[2].DNA, expected_child1) and
-                 np.array_equal(population.individuals[3].DNA, expected_child2)) or
-                (np.array_equal(population.individuals[2].DNA, expected_child2) and
-                 np.array_equal(population.individuals[3].DNA, expected_child1)))
+        # There are three possible children, so all must be created
+        children_DNA = []
+        for female_index in range(len(parents_DNA)):
+            for male_index in range(female_index+1, len(parents_DNA)):
+                child_DNA = 0.5*(parents_DNA[female_index] + parents_DNA[male_index])
+                children_DNA.append(child_DNA)
+
+        for child_DNA in children_DNA:
+            assert (np.array_equal(population.individuals[3].DNA, child_DNA) or
+                    np.array_equal(population.individuals[4].DNA, child_DNA) or
+                    np.array_equal(population.individuals[5].DNA, child_DNA))
 
     def test_reproduce_with_mutation(self):
         parents_DNA = np.array([
             [0.5, 0.5, 0.5, 0.5],
-            [1.0, 0.0, 1.0, 0.0]
+            [1.0, 0.0, 1.0, 0.0],
+            [0.0, 1.0, 1.0, 0.0]
         ])
-        population_size = 4
+        population_size = 6
         length = 4
         sum_constraint = 2
-        individuals = [Individual(job, length, sum_constraint, parents_DNA[x]) for x in range(2)]
+        individuals = [Individual(job, length, sum_constraint, DNA) for DNA in parents_DNA]
         population = Population(job, population_size, length, sum_constraint)
         population.individuals = individuals
         mutation_chance = 1.0
 
-        assert len(population.individuals) == 2
+        assert len(population.individuals) == 3
         population.reproduce(mutation_chance)
 
-        assert len(population.individuals) == 4
+        assert len(population.individuals) == 6
 
-        # We know that the children must be half of one parent and half of the
-        # other (as we chose the parents so that their children would be
-        # normalised at birth), so test both options.
-        expected_child1 = np.array([1.0, 0.0, 0.5, 0.5])
-        expected_child2 = np.array([0.5, 0.5, 1.0, 0.0])
+        # There are three possible children, so all must be created
+        children_DNA = []
+        for female_index in range(len(parents_DNA)):
+            for male_index in range(female_index+1, len(parents_DNA)):
+                child_DNA = 0.5*(parents_DNA[female_index] + parents_DNA[male_index])
+                children_DNA.append(child_DNA)
+
         # The mutated children will be different from the expected children. To
         # make sure of that we test to see that they are not the same, but we
-        # don't know which way around the children will be, so we check both
+        # don't know which way around the children will be, so we check all
         # options.
-        assert ((not np.array_equal(population.individuals[2].DNA, expected_child1) and
-                 not np.array_equal(population.individuals[3].DNA, expected_child2)) or
-                (not np.array_equal(population.individuals[2].DNA, expected_child2) and
-                 not np.array_equal(population.individuals[3].DNA, expected_child1)))
+        for child_DNA in children_DNA:
+            assert (not np.array_equal(population.individuals[3].DNA, child_DNA) or
+                    not np.array_equal(population.individuals[4].DNA, child_DNA) or
+                    not np.array_equal(population.individuals[5].DNA, child_DNA))
 
         # We also check the normalisation has worked correctly:
-        assert approx_equal(population.individuals[2].DNA.sum(), sum_constraint)
         assert approx_equal(population.individuals[3].DNA.sum(), sum_constraint)
+        assert approx_equal(population.individuals[4].DNA.sum(), sum_constraint)
+        assert approx_equal(population.individuals[5].DNA.sum(), sum_constraint)
 
     def test_evolve_no_random_select_no_mutation(self, job):
         sorted_population_DNA = np.array([
             [0.5, 0.5, 0.5, 0.5],
             [1.0, 0.0, 1.0, 0.0],
             [0.0, 1.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0, 1.0]
+            [0.0, 0.0, 1.0, 1.0],
+            [1.0, 1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 1.0]
         ])
         retain = 0.5
         random_select = 0.0
         mutation_chance = 0.0
-        population_size = 4
+        population_size = 6
         length = 4
         sum_constraint = 2
-        individuals = [Individual(job, length, sum_constraint, sorted_population_DNA[x]) for x in range(4)]
+        individuals = [Individual(job, length, sum_constraint, DNA) for DNA in sorted_population_DNA]
         population = Population(job, population_size, length, sum_constraint)
         population.individuals = individuals
 
+        assert len(population.individuals) == 6
         population.evolve(retain, random_select, mutation_chance)
-        assert len(population.individuals) == 4
+        assert len(population.individuals) == 6
         # We've kept the first two
         assert np.array_equal(population.individuals[0].DNA, sorted_population_DNA[0])
         assert np.array_equal(population.individuals[1].DNA, sorted_population_DNA[1])
+        assert np.array_equal(population.individuals[2].DNA, sorted_population_DNA[2])
 
+        # There are three possible children from the 3 surviving parents, so all must be created
+        children_DNA = []
+        parents_DNA = sorted_population_DNA[:3]
+        for female_index in range(len(parents_DNA)):
+            for male_index in range(female_index+1, len(parents_DNA)):
+                child_DNA = 0.5*(parents_DNA[female_index] + parents_DNA[male_index])
+                children_DNA.append(child_DNA)
 
-        # We know that the children must be half of one parent and half of the
-        # other (as we chose the parents so that their children would be
-        # normalised at birth), so test both options.
-        expected_child1 = np.array([1.0, 0.0, 0.5, 0.5])
-        expected_child2 = np.array([0.5, 0.5, 1.0, 0.0])
-
-        assert ((np.array_equal(population.individuals[2].DNA, expected_child1) and
-                 np.array_equal(population.individuals[3].DNA, expected_child2)) or
-                (np.array_equal(population.individuals[2].DNA, expected_child2) and
-                 np.array_equal(population.individuals[3].DNA, expected_child1)))
+        for child_DNA in children_DNA:
+            assert (np.array_equal(population.individuals[3].DNA, child_DNA) or
+                    np.array_equal(population.individuals[4].DNA, child_DNA) or
+                    np.array_equal(population.individuals[5].DNA, child_DNA))
 
     def test_perform_genetic_algorithm(self, job, capsys):
         Job = job
-        Job.Model.atomic['A']['U'] = 2.0
+        Job.Model.atomic['A']['U'] = 3.5
         Job.Def['el_kT'] = 0.009
+        Job.Def['mutation_chance'] = 1.0
         with capsys.disabled():
-            Job = PerformGeneticAlgorithm(Job)
+            Job, success = PerformGeneticAlgorithm(Job)
 
-        num_electrons_sq = job.Electron.NElectrons*job.Electron.NElectrons
-        residue = Job.Electron.rho - Job.Electron.rhotot
-        fitness = np.absolute(residue).sum()/num_electrons_sq
-
-        assert approx_equal(fitness, 0.0)
+        assert success
