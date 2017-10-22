@@ -24,7 +24,7 @@ def job():
             'mu_max_loops': 5000,
             'num_rho': 1,
             'PBC': 0,
-            'population_size': 200,
+            'population_size': 50,
             'max_num_evolutions': 100,
             'genetic_tol': 1.0e-8,
             'proportion_to_retain': 0.2,
@@ -153,13 +153,19 @@ class TestGeneticIndividual:
         assert np.array_equal(DNA_before, DNA_after)
 
     def test_mutate_definitely(self, job):
-        individual = Individual(job, 6, 3)
+        sum_constraint = 3
+        length = 6
+        individual = Individual(job, length, sum_constraint)
         DNA_before = np.copy(individual.DNA)
         individual.mutate(1.0)
         DNA_after = np.copy(individual.DNA)
 
-        # Expect that exactly one of the values has changed
-        assert num_values_changed(DNA_before, DNA_after) == 1
+        # Expect that at least 2 values will have changed
+        assert num_values_changed(DNA_before, DNA_after) > 2
+        # Expect the sum to have not changed
+        assert approx_equal(individual.DNA.sum(), sum_constraint)
+        assert individual.DNA.max() <= 1.0
+        assert individual.DNA.min() >= 0.0
 
     def test_fitness_groundstate(self, job):
         # fake a Job and Hamiltonian
@@ -318,7 +324,7 @@ class TestGeneticPopulation:
         with pytest.raises(Exception):
             population.can_produce_num_children()
 
-    def test_reproduce_no_mutation(self, job):
+    def test_reproduce_sexually_no_mutation(self, job):
         parents_DNA = np.array([
             [0.5, 0.5, 0.5, 0.5],
             [1.0, 0.0, 0.0, 1.0],
@@ -333,7 +339,7 @@ class TestGeneticPopulation:
         mutation_chance = 0.0
 
         assert len(population.individuals) == 3
-        population.reproduce(mutation_chance)
+        population.reproduce_sexually(mutation_chance)
 
         assert len(population.individuals) == 6
 
@@ -349,7 +355,7 @@ class TestGeneticPopulation:
                     np.array_equal(population.individuals[4].DNA, child_DNA) or
                     np.array_equal(population.individuals[5].DNA, child_DNA))
 
-    def test_reproduce_with_mutation(self):
+    def test_reproduce_sexually_with_mutation(self, job):
         parents_DNA = np.array([
             [0.5, 0.5, 0.5, 0.5],
             [1.0, 0.0, 1.0, 0.0],
@@ -364,7 +370,7 @@ class TestGeneticPopulation:
         mutation_chance = 1.0
 
         assert len(population.individuals) == 3
-        population.reproduce(mutation_chance)
+        population.reproduce_sexually(mutation_chance)
 
         assert len(population.individuals) == 6
 
@@ -389,7 +395,29 @@ class TestGeneticPopulation:
         assert approx_equal(population.individuals[4].DNA.sum(), sum_constraint)
         assert approx_equal(population.individuals[5].DNA.sum(), sum_constraint)
 
-    def test_evolve_no_random_select_no_mutation(self, job):
+    def test_reproduce_asexually(self, job):
+        population_size = 6
+        length = 4
+        sum_constraint = 2
+        individuals = [Individual(job, length, sum_constraint) for x in range(3)]
+        population = Population(job, population_size, length, sum_constraint)
+        population.individuals = individuals
+
+        assert len(population.individuals) == 3
+        population.reproduce_asexually()
+        assert len(population.individuals) == 6
+
+        # verify that the children's DNA is different from the original DNA
+        children_DNA = [population.individuals[x].DNA for x in range(3, 6)]
+        for child_DNA in children_DNA:
+            # check boundary conditions
+            assert approx_equal(child_DNA.sum(), sum_constraint)
+            assert child_DNA.max() <= 1.0
+            assert child_DNA.min() >= 0.0
+            for index in range(3):
+                assert not np.array_equal(child_DNA, population.individuals[index].DNA)
+
+    def test_evolve_sexually_no_random_select_no_mutation(self, job):
         sorted_population_DNA = np.array([
             [0.5, 0.5, 0.5, 0.5],
             [1.0, 0.0, 1.0, 0.0],
@@ -404,6 +432,7 @@ class TestGeneticPopulation:
         population_size = 6
         length = 4
         sum_constraint = 2
+        job.Def['reproduce_sexually'] = 1
         individuals = [Individual(job, length, sum_constraint, DNA) for DNA in sorted_population_DNA]
         population = Population(job, population_size, length, sum_constraint)
         population.individuals = individuals
@@ -428,6 +457,42 @@ class TestGeneticPopulation:
             assert (np.array_equal(population.individuals[3].DNA, child_DNA) or
                     np.array_equal(population.individuals[4].DNA, child_DNA) or
                     np.array_equal(population.individuals[5].DNA, child_DNA))
+
+    def test_evolve_asexually_no_random_select(self, job):
+        sorted_population_DNA = np.array([
+            [0.5, 0.5, 0.5, 0.5],
+            [0.99, 0.01, 0.99, 0.01],
+            [0.01, 0.99, 0.99, 0.01],
+            [0.0, 0.0, 1.0, 1.0],
+            [1.0, 1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 1.0]
+        ])
+        retain = 0.5
+        random_select = 0.0
+        population_size = 6
+        length = 4
+        sum_constraint = 2
+        individuals = [Individual(job, length, sum_constraint, DNA) for DNA in sorted_population_DNA]
+        population = Population(job, population_size, length, sum_constraint)
+        population.individuals = individuals
+
+        assert len(population.individuals) == 6
+        population.evolve(retain, random_select)
+        assert len(population.individuals) == 6
+        # We've kept the first two
+        assert np.array_equal(population.individuals[0].DNA, sorted_population_DNA[0])
+        assert np.array_equal(population.individuals[1].DNA, sorted_population_DNA[1])
+        assert np.array_equal(population.individuals[2].DNA, sorted_population_DNA[2])
+
+        # verify that the children's DNA is different from the original DNA
+        children_DNA = [population.individuals[x].DNA for x in range(3, 6)]
+        for child_DNA in children_DNA:
+            # check boundary conditions
+            assert approx_equal(child_DNA.sum(), sum_constraint)
+            assert child_DNA.max() <= 1.0
+            assert child_DNA.min() >= 0.0
+            for index in range(population_size):
+                assert not np.array_equal(child_DNA, sorted_population_DNA[index])
 
     def test_perform_genetic_algorithm(self, job, capsys):
         Job = job

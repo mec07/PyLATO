@@ -146,14 +146,13 @@ class Individual(object):
 
     def mutate(self, mutation_chance):
         """
-        If a randomly drawn value between 0.0 and 1.0 is less than the threshold,
-        mutation_chance, then mutate a randomly chosen index, to a random value
-        between 0.0 and 1.0.
+        If a randomly drawn value from the interval [0.0, 1.0) is less than the
+        mutation_chance, then apply a perturbation that does not alter the sum
+        of the individual and does not violate the boundary conditions on the
+        values, i.e. that they have to be between 0.0 and 1.0.
 
-        NOTE THAT THIS FUNCTION DOES NORMALISE THE INDIVIDUAL.
-
-        mutation_chance: the threshold (between 0.0 and 1.0) for mutation of the
-                         individual.
+        mutation_chance: the chance that a mutation occurs in a child, it
+                         should lie in the interval [0.0, 1.0).
         """
         if mutation_chance > np.random.uniform():
             perturbation = np.random.uniform(size=self.DNA.size)
@@ -215,6 +214,10 @@ class Population(object):
         self.individuals = [
             Individual(Job, length, sum_constraint) for x in range(population_size)
         ]
+        # default to asexual reproduction
+        self.reproduce = self.reproduce_asexually
+        if Job.Def.get('reproduce_sexually') == 1:
+            self.reproduce = self.reproduce_sexually
 
     def grade(self):
         """
@@ -277,10 +280,12 @@ class Population(object):
 
         return True
 
-    def reproduce(self, mutation_chance):
+    def reproduce_sexually(self, mutation_chance):
         """
         This routine creates an array of the desired number of children by
         randomly crossing the supplied parents with the chance of a mutation.
+        There is a limit to the number of children that can be produced this
+        way, i.e. 0.5*num_parents*(num_parents - 1).
 
         mutation_chance: the chance that a mutation occurs in a child, it
                          should lie in the interval [0.0, 1.0).
@@ -301,6 +306,25 @@ class Population(object):
                     child.mutate(mutation_chance)
                     child.normalise()
                     self.individuals.append(child)
+
+    def reproduce_asexually(self, *args):
+        """
+        This routine creates the children by copying the parents exactly and
+        allowing them to mutate. There is no limit to the number of children
+        that can be created this way.
+        """
+        mutation_chance = 1.0
+        num_parents = len(self.individuals)
+        while len(self.individuals) < self.population_size:
+            parent_index = np.random.randint(0, num_parents)
+            parent = self.individuals[parent_index]
+            child = Individual(parent.Job,
+                               parent.DNA.size,
+                               parent.sum_constraint,
+                               parent.DNA)
+            child.mutate(mutation_chance)
+            child.normalise()
+            self.individuals.append(child)
 
     def evolve(self, retain=0.2, random_select=0.05, mutation_chance=0.05):
         """
