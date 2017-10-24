@@ -470,7 +470,6 @@ class Hamiltonian:
 
                 k = self.Hindex[atom]  # Counter for orbital
                 for i, l in enumerate(Job.Model.atomic[atype]['l']):  # Step through each shell
-                    print i, l
                     n = 2*l+1  # Compute number of orbitals in the shell
                     self.HSO[    k:    k+n,     k:    k+n] += Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][  0:  n,   0:  n]
                     self.HSO[    k:    k+n, h0s+k:h0s+k+n] += Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][  0:  n, n+0:n+n]

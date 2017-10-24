@@ -55,7 +55,7 @@ class Electronic:
         elif self.Job.Def.get('optimisation_routine') == 2:
             self.optimisation_routine = self.optimisation_routine2
         else:
-            print "WARNING: No optimisation routine selected. Using optimisation_routine1."
+            print("WARNING: No optimisation routine selected. Using optimisation_routine1.")
             self.optimisation_routine = self.optimisation_routine1
 
     def occupy(self, s, kT, n_tol, max_loops):
@@ -154,10 +154,10 @@ class Electronic:
             # if the iterations did not converge but the idempotency error has
             # gotten smaller then print a warning but treat as a success.
             if err < err_orig:
-                print "Max iterations, ", iterations, " reached. Idempotency error = ", err
+                print("Max iterations, {} reached. Idempotency error = {}".format(iterations, err))
                 flag = True
             else:
-                print "McWeeny transformation unsuccessful. Proceeding using input density matrix."
+                print("McWeeny transformation unsuccessful. Proceeding using input density matrix.")
                 # Turn off using the McWeeny transformation as once it doesn't work it seems to not work again.
                 self.Job.Def["McWeeny"] = 0
 
@@ -240,7 +240,7 @@ class Electronic:
         # Calculate the values of alpha to minimise the residue
         alpha, igo = self.optimisation_routine(num_rho)
         if igo == 1:
-            print "WARNING: Unable to optimise alpha for combining density matrices. Proceeding using guess."
+            print("WARNING: Unable to optimise alpha for combining density matrices. Proceeding using guess.")
             # Guess for alpha is just 1.0 divided by the number of density matrices
             alpha = np.zeros((num_rho), dtype='double')
             alpha.fill(1.0/num_rho)
@@ -403,8 +403,8 @@ class Electronic:
         alpha = np.linalg.solve(Mmat, lamb)
         myscale = np.sum(alpha)
         if myscale == 0:
-            print "ERROR: alpha summed to 0 in optimisation_routine. Cannot be scaled to 1."
-            print alpha
+            print("ERROR: alpha summed to 0 in optimisation_routine. Cannot be scaled to 1.")
+            print(alpha)
             return alpha, 1
         else:
             alpha = alpha/myscale
@@ -464,8 +464,8 @@ class Electronic:
         alpha = np.linalg.solve(Mmat, RHS)
         myscale = abs(np.sum(alpha)-alpha[-1])
         if abs(myscale-1.0) > small:
-            print "ERROR: optimisation_routine2 -- sum alpha = %f. alpha must sum to 1.0." % myscale
-            print alpha
+            print("ERROR: optimisation_routine2 -- sum alpha = %f. alpha must sum to 1.0." % myscale)
+            print(alpha)
             return alpha, 1
         # if successful then return result and no error code.
         return alpha, 0

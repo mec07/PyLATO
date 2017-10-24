@@ -120,6 +120,6 @@ class InitJob:
             a = 2*self.Def['nearest_neighbour_sep']/np.sqrt(3)
             return (a,0)
         else:
-            print "WARNING: To build a crystal, the crystal type inserted must be one of cubic, fcc or bcc."
-            print "Continuing using the geometry file "+position_file+"."
+            print("WARNING: To build a crystal, the crystal type inserted must be one of cubic, fcc or bcc.")
+            print("Continuing using the geometry file "+position_file+".")
             return (0,1)
