@@ -10,11 +10,11 @@ populated by electrons.
 # Import the modules that will be needed
 import numpy as np
 import math
-import TBH
+import hamiltonian
 import sys, os, importlib
 import time
 import Fermi
-from Verbosity import *
+from verbosity import verboseprint
 import random
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -50,14 +50,13 @@ class Electronic:
         else:
             self.fermi = Fermi.fermi_non0
 
-        if self.Job.Def['optimisation_routine'] == 1:
+        if self.Job.Def.get('optimisation_routine') == 1:
             self.optimisation_routine = self.optimisation_routine1
-        elif self.Job.Def['optimisation_routine'] == 2:
+        elif self.Job.Def.get('optimisation_routine') == 2:
             self.optimisation_routine = self.optimisation_routine2
         else:
-            print "WARNING: No optimisation routine selected. Using optimisation_routine1."
+            print("WARNING: No optimisation routine selected. Using optimisation_routine1.")
             self.optimisation_routine = self.optimisation_routine1
-
 
     def occupy(self, s, kT, n_tol, max_loops):
         """Populate the eigenstates using the Fermi function.
@@ -90,10 +89,18 @@ class Electronic:
             n = np.sum(self.fermi(self.Job.e, mu, kT))
         self.occ = self.fermi(self.Job.e, mu, kT)
 
-
     def densitymatrix(self):
         """Build the density matrix."""
         self.rho = np.matrix(self.Job.psi)*np.diag(self.occ)*np.matrix(self.Job.psi).H
+
+    def constructDensityMatrixFromOccupation(self, occupation):
+        """Build the density matrix using stored eigenvectors and a provided occupation vector."""
+        self.rhotot = np.matrix(self.Job.psi)*np.diag(occupation)*np.matrix(self.Job.psi).H
+
+    def constructDensityMatrixFromEigenvaluesAndEigenvectors(self, eigenvalues, eigenvectors):
+        """Build the density matrix using provided eigenvectors and eigenvalues."""
+        self.occupy(eigenvalues, self.Job.Def['el_kT'], self.Job.Def['mu_tol'], self.Job.Def['mu_max_loops'])
+        self.rho = np.matrix(eigenvectors)*np.diag(self.occ)*np.matrix(eigenvectors).H
 
     def SCFerror(self):
         """
@@ -104,8 +111,8 @@ class Electronic:
 
         """
         return sum(abs(
-                self.rho[TBH.map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb),TBH.map_atomic_to_index(atom1, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)]
-           - self.rhotot[TBH.map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb),TBH.map_atomic_to_index(atom1, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)])
+                self.rho[hamiltonian.map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb),hamiltonian.map_atomic_to_index(atom1, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)]
+           - self.rhotot[hamiltonian.map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb),hamiltonian.map_atomic_to_index(atom1, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)])
                 for atom1 in range(self.Job.NAtom) for orbital1 in range(self.Job.NOrb[atom1]) for spin1 in range(2)
                 for orbital2 in range(orbital1, self.Job.NOrb[atom1]) for spin2 in range(spin1, 2)
                 )/(self.Job.Electron.NElectrons**2)
@@ -118,7 +125,6 @@ class Electronic:
         rho*rho - rho = 0.
 
         We normalise by the number of electrons.
-        
         """
         rho_err = np.linalg.norm((np.dot(rho, rho) - rho))/self.NElectrons
         return rho_err
@@ -148,10 +154,10 @@ class Electronic:
             # if the iterations did not converge but the idempotency error has
             # gotten smaller then print a warning but treat as a success.
             if err < err_orig:
-                print "Max iterations, ", iterations, " reached. Idempotency error = ", err
+                print("Max iterations, {} reached. Idempotency error = {}".format(iterations, err))
                 flag = True
             else:
-                print "McWeeny transformation unsuccessful. Proceeding using input density matrix."
+                print("McWeeny transformation unsuccessful. Proceeding using input density matrix.")
                 # Turn off using the McWeeny transformation as once it doesn't work it seems to not work again.
                 self.Job.Def["McWeeny"] = 0
 
@@ -219,7 +225,7 @@ class Electronic:
         # density matrices).
         if scf_iteration < num_rho:
             num_rho = scf_iteration
-        
+
         # Shift along the density and residue matrices
         for ii in range(num_rho-1):
             self.inputrho[num_rho - 1 - ii] = np.copy(self.inputrho[num_rho - 2 - ii])
@@ -234,7 +240,7 @@ class Electronic:
         # Calculate the values of alpha to minimise the residue
         alpha, igo = self.optimisation_routine(num_rho)
         if igo == 1:
-            print "WARNING: Unable to optimise alpha for combining density matrices. Proceeding using guess."
+            print("WARNING: Unable to optimise alpha for combining density matrices. Proceeding using guess.")
             # Guess for alpha is just 1.0 divided by the number of density matrices
             alpha = np.zeros((num_rho), dtype='double')
             alpha.fill(1.0/num_rho)
@@ -259,7 +265,7 @@ class Electronic:
 
     def electrons_site_orbital_spin(self,site,orbital,spin):
         """Compute the number of electrons with specified spin, orbital and site. """
-        index = TBH.map_atomic_to_index(site, orbital, spin, self.Job.NAtom, self.Job.NOrb)
+        index = hamiltonian.map_atomic_to_index(site, orbital, spin, self.Job.NAtom, self.Job.NOrb)
         return self.rho[index,index].real
 
     def electrons_orbital_occupation_vec(self):
@@ -338,10 +344,10 @@ class Electronic:
             for z in range(2):
                 for a in range(norb_1):
                     for b in range(norb_2):
-                        index_az = TBH.map_atomic_to_index(site1,a,z,self.Job.NAtom, self.Job.NOrb)
-                        index_bz = TBH.map_atomic_to_index(site1,b,z,self.Job.NAtom, self.Job.NOrb)
-                        index_bs = TBH.map_atomic_to_index(site1,b,s,self.Job.NAtom, self.Job.NOrb)
-                        index_as = TBH.map_atomic_to_index(site1,a,s,self.Job.NAtom, self.Job.NOrb)
+                        index_az = hamiltonian.map_atomic_to_index(site1,a,z,self.Job.NAtom, self.Job.NOrb)
+                        index_bz = hamiltonian.map_atomic_to_index(site1,b,z,self.Job.NAtom, self.Job.NOrb)
+                        index_bs = hamiltonian.map_atomic_to_index(site1,b,s,self.Job.NAtom, self.Job.NOrb)
+                        index_as = hamiltonian.map_atomic_to_index(site1,a,s,self.Job.NAtom, self.Job.NOrb)
                         # term 1: 2.0*rho_{aa}^{zs} rho_{bb}^{sz}
                         C_avg += 2.0*self.rho[index_az,index_as]*self.rho[index_bs,index_bz]
                         # term 2: -2.0*rho_{ab}^{zz}rho_{ba}^{ss})
@@ -397,8 +403,8 @@ class Electronic:
         alpha = np.linalg.solve(Mmat, lamb)
         myscale = np.sum(alpha)
         if myscale == 0:
-            print "ERROR: alpha summed to 0 in optimisation_routine. Cannot be scaled to 1."
-            print alpha
+            print("ERROR: alpha summed to 0 in optimisation_routine. Cannot be scaled to 1.")
+            print(alpha)
             return alpha, 1
         else:
             alpha = alpha/myscale
@@ -458,8 +464,8 @@ class Electronic:
         alpha = np.linalg.solve(Mmat, RHS)
         myscale = abs(np.sum(alpha)-alpha[-1])
         if abs(myscale-1.0) > small:
-            print "ERROR: optimisation_routine2 -- sum alpha = %f. alpha must sum to 1.0." % myscale
-            print alpha
+            print("ERROR: optimisation_routine2 -- sum alpha = %f. alpha must sum to 1.0." % myscale)
+            print(alpha)
             return alpha, 1
         # if successful then return result and no error code.
         return alpha, 0

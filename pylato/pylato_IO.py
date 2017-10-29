@@ -9,7 +9,7 @@ This module contains functions that perform input and output operations
 # Import modules
 import numpy as np
 import os
-from Verbosity import *
+from verbosity import *
 
 
 def DOS(e, nbin):

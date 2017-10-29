@@ -8,13 +8,13 @@ This module carries out the needed initialisation tasks
 #
 # Import modules
 import os, sys, importlib
-import TBH
-import TBelec
-import TBIO
+import hamiltonian
+import electronic
+import pylato_IO
 import commentjson
 import numpy as np
 import crystal
-from Verbosity import *
+from verbosity import *
 
 class InitJob:
     """Set up the job, build the initial geometry, hamiltonian, and electronic structure."""
@@ -62,10 +62,10 @@ class InitJob:
         self.init_geom(self.Def['gy_file'], self.Def['uc_file'])
 
         # Initialise the Hamiltonian class
-        self.Hamilton = TBH.Hamiltonian(self)
+        self.Hamilton = hamiltonian.Hamiltonian(self)
 
         # Initialise the electron module
-        self.Electron = TBelec.Electronic(self)
+        self.Electron = electronic.Electronic(self)
 
 
 
@@ -83,15 +83,15 @@ class InitJob:
                 mycry = crystal.Crystal(a=a, lattice="cubic")
                 mycry.populateUnitCell(self.Def['crystal'], geom_filename=position_file, uc_filename=unitcell_file, nx=self.Def['nx'], ny=self.Def['ny'], nz=self.Def['nz'], PBCs=PBCs)
         # Read in the geometry from file
-        NAtom, Pos, AtomType = TBIO.ReadGeom(position_file)
+        NAtom, Pos, AtomType = pylato_IO.ReadGeom(position_file)
         # If PBCs are turned on then read in the unit cell
         if PBCs:
-            a1, a2, a3 = TBIO.ReadUnitCell(unitcell_file)
+            a1, a2, a3 = pylato_IO.ReadUnitCell(unitcell_file)
         else:
             a1, a2, a3 = np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0))
 
         # Write out the geometry
-        TBIO.WriteXYZ(self, NAtom, '', AtomType, Pos)
+        pylato_IO.WriteXYZ(self, NAtom, '', AtomType, Pos)
 
         # Transfer geometry to the JobClass
         self.NAtom    = NAtom
@@ -120,6 +120,6 @@ class InitJob:
             a = 2*self.Def['nearest_neighbour_sep']/np.sqrt(3)
             return (a,0)
         else:
-            print "WARNING: To build a crystal, the crystal type inserted must be one of cubic, fcc or bcc."
-            print "Continuing using the geometry file "+position_file+"."
+            print("WARNING: To build a crystal, the crystal type inserted must be one of cubic, fcc or bcc.")
+            print("Continuing using the geometry file "+position_file+".")
             return (0,1)

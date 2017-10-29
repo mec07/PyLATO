@@ -1,3 +1,6 @@
 numpy
 scipy
 commentjson
+
+# Puts the project on the Python path
+-e .

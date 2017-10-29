@@ -10,11 +10,13 @@ This is a simple exponential model for an sp system.
 """
 #
 # Import the modules that will be needed
-import os, sys
+import os
+import sys
 import numpy as np
 import math
 import commentjson
-from Verbosity import *
+from verbosity import *
+
 
 class MatrixElements:
 	"""Constructor for the tightbinding model
@@ -24,7 +26,7 @@ class MatrixElements:
 
 	MatrixElements always needs to have the named methods helements,
 	slements (for overlap), and pairpotentials (for forces and energy).
-	The TBH assumes the model to have a MatrixElements class with these
+	The Hamiltonian assumes the model to have a MatrixElements class with these
 	methods.
 
 	This model supports:

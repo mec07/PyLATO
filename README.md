@@ -31,13 +31,19 @@ To exit from the virtual environment just type in a terminal window:
 
 ```deactivate```
 
+
+# Tests
+Some tests have been added recently. To run the tests type in a terminal window:
+```pytest```
+
+
 # Running the code
 This is the main program for computing the eigenvalues and eigenfunctions for a noncollinear tight binding model chosen in the JobDef.json file. The input file can be given a different name, but it must be specified when running this programme. To run the programme from the commandline type:
 
-```./TB.py specificationfile.json```
+```pylato/pylato.py specificationfile.json```
 or
 
-```python TB.py specificationfile.json```
+```python pylato/pylato.py specificationfile.json```
 
 where "specificationfile.json" can be any name as long as it's a json file.
 
