@@ -345,16 +345,16 @@ class Electronic:
                 for a in range(norb_1):
                     for b in range(norb_2):
                         index_az = hamiltonian.map_atomic_to_index(site1,a,z,self.Job.NAtom, self.Job.NOrb)
-                        index_bz = hamiltonian.map_atomic_to_index(site1,b,z,self.Job.NAtom, self.Job.NOrb)
-                        index_bs = hamiltonian.map_atomic_to_index(site1,b,s,self.Job.NAtom, self.Job.NOrb)
+                        index_bz = hamiltonian.map_atomic_to_index(site2,b,z,self.Job.NAtom, self.Job.NOrb)
+                        index_bs = hamiltonian.map_atomic_to_index(site2,b,s,self.Job.NAtom, self.Job.NOrb)
                         index_as = hamiltonian.map_atomic_to_index(site1,a,s,self.Job.NAtom, self.Job.NOrb)
-                        # term 1: 2.0*rho_{aa}^{zs} rho_{bb}^{sz}
+                        # term 1: 2.0*rho_{1a1a}^{zs} rho_{2b2b}^{sz}
                         C_avg += 2.0*self.rho[index_az,index_as]*self.rho[index_bs,index_bz]
-                        # term 2: -2.0*rho_{ab}^{zz}rho_{ba}^{ss})
-                        C_avg -= 2.0*self.rho[index_az,index_bz]*self.rho[index_as,index_bs]
-                        # term 3: -rho_{aa}^{ss}rho_{bb}^{zz}
+                        # term 2: -2.0*rho_{1a2b}^{zz}rho_{2b1a}^{ss})
+                        C_avg -= 2.0*self.rho[index_az,index_bz]*self.rho[index_bs,index_as]
+                        # term 3: -rho_{1a1a}^{ss}rho_{2b2b}^{zz}
                         C_avg -= self.rho[index_as,index_as]*self.rho[index_bz,index_bz]
-                        # term 4: rho_{ab}^{sz}rho_{ba}^{zs}
+                        # term 4: rho_{1a2b}^{sz}rho_{1b2a}^{zs}
                         C_avg += self.rho[index_as,index_bz]*self.rho[index_bz,index_as]
 
 
