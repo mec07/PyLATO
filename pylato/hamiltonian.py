@@ -33,7 +33,7 @@ class Hamiltonian:
         # Allocate memory for the Hamiltonian matrices
         self.H0   = np.zeros((self.H0size,  self.H0size),  dtype='double')
         self.HSO  = np.zeros((self.HSOsize, self.HSOsize), dtype='complex')
-        self.Fock = np.zeros((self.HSOsize, self.HSOsize), dtype='complex')
+        self.fock = np.zeros((self.HSOsize, self.HSOsize), dtype='complex')
 
         # Allocate memeory for the charge and spin
         self.q = np.zeros(Job.NAtom, dtype='double')
