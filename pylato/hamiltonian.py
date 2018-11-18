@@ -137,28 +137,6 @@ class Hamiltonian:
                     self.fock[h0s+j,     j] +=              des[1, 0]  # down/up block
                     self.fock[h0s+j, h0s+j] += self.Wi[a] + des[1, 1]  # down/down block
 
-        elif Job.Def['Hamiltonian'] == "noncollinear":
-            norb = Job.NOrb
-            natom = Job.NAtom
-            rho = Job.Electron.rhotot
-            J_ph = 0.0
-
-            for a in range(natom):
-                # Get the atom type
-                atype = Job.AtomType[a]
-                J_S = Job.Model.atomic[atype]['I']
-                U = Job.Model.atomic[atype]['U']
-                for jj in range(self.Hindex[a], self.Hindex[a+1]):
-                    for ii in range(self.Hindex[a], self.Hindex[a+1]):
-                        # up/up block
-                        self.fock[    jj,     ii] += self.add_H_pcase(    jj,     ii, U, J_S, J_ph, natom, norb, rho)
-                        # up/down block
-                        self.fock[    jj, h0s+ii] += self.add_H_pcase(    jj, h0s+ii, U, J_S, J_ph, natom, norb, rho)
-                        # down/up block
-                        self.fock[h0s+jj,     ii] += self.add_H_pcase(h0s+jj,     ii, U, J_S, J_ph, natom, norb, rho)
-                        # down/down block
-                        self.fock[h0s+jj, h0s+ii] += self.add_H_pcase(h0s+jj, h0s+ii, U, J_S, J_ph, natom, norb, rho)
-
         elif Job.Def['Hamiltonian'] == "scase":
             norb = Job.NOrb
             natom = Job.NAtom

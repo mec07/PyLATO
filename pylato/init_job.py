@@ -32,6 +32,11 @@ class InitJob:
             modelname = self.Def['model']
         modelpath = os.path.join("models", modelname + ".py")
 
+        # set isNoncollinearHami flag
+        self.isNoncollinearHami = False
+        if self.Def['Hamiltonian'] in ('scase', 'pcase', 'dcase'):
+            self.isNoncollinearHami = True
+
         # Catch invalid model path
         if os.path.exists(modelpath) == False:
             print("ERROR: Unable to open tight binding model at %s. ")

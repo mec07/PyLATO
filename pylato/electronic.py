@@ -137,7 +137,7 @@ class Electronic:
         rho_n+1 = 3*rho_n^3 - 2*rho_n^2
 
         """
-        if self.Job.Def['Hamiltonian'] in ('scase','pcase','dcase','noncollinear'):
+        if self.Job.isNoncollinearHami:
             rho_temp = self.rhotot
         else:
             rho_temp = self.rho
@@ -150,7 +150,7 @@ class Electronic:
 
         flag, iterations, err, rho_temp = self.McWeeny_iterations(rho_temp)
         # if the flag is false it means that idempotency was reduced below the tolerance
-        if flag == False:
+        if flag is False:
             # if the iterations did not converge but the idempotency error has
             # gotten smaller then print a warning but treat as a success.
             if err < err_orig:
@@ -162,13 +162,11 @@ class Electronic:
                 self.Job.Def["McWeeny"] = 0
 
         # if this is going to be treated like a success then reassign rho_temp.
-        if flag == True:
-            if self.Job.Def['Hamiltonian'] in ('scase','pcase','dcase','noncollinear'):
+        if flag is True:
+            if self.Job.isNonCollinearHami:
                 self.rhotot = rho_temp
             else:
                 self.rho = rho_temp
-
-
 
     def McWeeny_iterations(self, rho):
         """

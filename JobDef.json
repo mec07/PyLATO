@@ -2,7 +2,7 @@
     // tight binding model
     "model": "TBcanonical",
 
-    // Hamiltonian, "collinear", "noncollinear", "scase", "pcase" or "dcase"
+    // Hamiltonian, "collinear", "scase", "pcase" or "dcase"
     "Hamiltonian": "pcase",
 
     // Periodic boundary conditions: 1 (on) or 0 (off)

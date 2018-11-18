@@ -17,13 +17,8 @@ def PerformSelfConsistency(Job):
     # flag to indicate if self-consistency has been obtained.
     SCFflag = False
 
-    # Check to see if a noncollinear Hamiltonian is being used and hence if the linear mixing is required
-    isNoncollinearHami = False
-    if Job.Def['Hamiltonian'] in ('scase', 'pcase', 'dcase', 'noncollinear'):
-        isNoncollinearHami = True
-
     # if it's a noncollinear Hamiltonian we need to initialise rhotot
-    if isNoncollinearHami:
+    if Job.isNoncollinearHami:
         Job.Electron.rhotot = Job.Electron.rho
 
     max_loops = Job.Def['scf_max_loops']
@@ -41,7 +36,7 @@ def PerformSelfConsistency(Job):
         # Build the density matrix
         Job.Electron.densitymatrix()
 
-        if isNoncollinearHami:
+        if Job.isNoncollinearHami:
             # Compare the difference between the new and the old on-site density matrix elements
             SCFerror = Job.Electron.SCFerror()
             verboseprint(Job.Def['verbose'], 'SCF loop = ', ii+1, '; SCF error = ', SCFerror)
