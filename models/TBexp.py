@@ -15,7 +15,7 @@ import sys
 import numpy as np
 import math
 import commentjson
-from verbosity import *
+from pylato.verbosity import *
 
 
 class MatrixElements:
