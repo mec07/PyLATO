@@ -56,13 +56,13 @@ class Hamiltonian:
                                      [complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0), 
                                       complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 0.0, 0.0)]])}
 
-        if Job.Def["Hamiltonian"]=="dcase":
-            self.quad_xi_mat = np.zeros((5,5,5,5), dtype = 'double')
+        if Job.Def["Hamiltonian"] == "dcase":
+            self.quad_xi_mat = np.zeros((5, 5, 5, 5), dtype='double')
             for alpha in range(5):
                 for beta in range(5):
                     for gamma in range(5):
                         for chi in range(5):
-                            self.quad_xi_mat[alpha,beta,gamma,chi] = xicontfour(alpha, beta, gamma, chi)
+                            self.quad_xi_mat[alpha, beta, gamma, chi] = xicontfour(alpha, beta, gamma, chi)
 
     def electrostatics(self, Job):
         def SCFGamma(self, Job, atom1, atom2):
@@ -317,7 +317,6 @@ class Hamiltonian:
         # Return the Hamiltonian block
         return block
 
-
     def buildH0(self, Job):
         """
         Build the hamiltonian one block at a time, with a block corresponding to
@@ -416,7 +415,6 @@ class Hamiltonian:
 
             return temp_mat
 
-
     def buildHSO(self, Job):
         """Build the Hamiltonian with spin orbit coupling."""
 
@@ -506,8 +504,6 @@ class Hamiltonian:
         # return the matrix element
         return F
 
-
-
     def add_H_pcase(self, ii, jj, U, J_S, J_ph, num_atoms, num_orbitals, rho):
         """
         Add the noncollinear Hamiltonian to the on-site contributions for
@@ -576,7 +572,6 @@ class Hamiltonian:
                     F += U*sum(rho[map_atomic_to_index(i, orb, sig, num_atoms, num_orbitals), map_atomic_to_index(i, orb, sig, num_atoms, num_orbitals)] for sig in range(2) for orb in range(num_orbitals[i]))
         # return the matrix element
         return F
-
 
     def add_H_dcase(self, ii, jj, U, J_S, J_ph, dJ, num_atoms, num_orbitals, rho):
         """
@@ -654,6 +649,10 @@ class Hamiltonian:
                     F += U*sum(rho[map_atomic_to_index(i, orb, sig, num_atoms, num_orbitals), map_atomic_to_index(i, orb, sig, num_atoms, num_orbitals)] for sig in range(2) for orb in range(num_orbitals[i]))
 
         return F
+
+#    def total_energy(self):
+#        corrected_fock = np.copy(self.fock)
+
 
 
 def Kd(a, b):
@@ -780,6 +779,7 @@ def map_atomic_to_index(atom, orbital, spin, num_atoms, num_orbitals):
 
     return index
 
+
 def xicontfour(alph,bet,gam,chi):
     """
     The fourth contraction of the xi matrix.
@@ -800,4 +800,3 @@ def xicontfour(alph,bet,gam,chi):
         [0.0,-0.5,0.0],
         [0.0,0.0,0.0]]]
     return sum(sum(sum(sum(xi[alph][s][t]*xi[bet][t][u]*xi[gam][u][v]*xi[chi][v][s] for s in range(3)) for t in range(3)) for u in range(3)) for v in range(3))
-

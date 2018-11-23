@@ -1,0 +1,47 @@
+# Python CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/language-python/ for more details
+#
+version: 2
+jobs:
+  build:
+    docker:
+      # specify the version you desire here
+      # use `-browsers` prefix for selenium tests, e.g. `3.6.1-browsers`
+      - image: circleci/python:2.7.15
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+          - v1-dependencies-{{ checksum "requirements.txt" }}-{{ checksum "requirements-test.txt" }}
+
+      - run:
+          name: install dependencies
+          command: |
+            python -m venv venv
+            . venv/bin/activate
+            pip install -r requirements-test.txt
+
+      - save_cache:
+          paths:
+            - ./venv
+          key: v1-dependencies-{{ checksum "requirements.txt" }}-{{ checksum "requirements-test.txt" }}
+
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            flake8 pylato
+            py.test tests --cov
+
+      - run:
+          name: Report Python code coverage
+          environment:
+            CODECOV_TOKEN: 0dca5543-76db-4462-b07f-dcc4c05f1afa
+          command: |
+            bash <(curl -s https://codecov.io/bash)
