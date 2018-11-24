@@ -68,7 +68,7 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
     SuccessFlag = True
     for U in U_array:
         for J in J_array:
-            print "U = ", U, "\t J = ", J
+            print("U = ", U, "\t J = ", J)
             for dJ in dJ_array:
                 # if J > U:
                 #     mag_corr[U, J, dJ] = 0.0

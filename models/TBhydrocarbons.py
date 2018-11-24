@@ -109,7 +109,7 @@ class MatrixElements:
 
         # Catch invalid model path
         if os.path.exists(modelpath) is False:
-            print "ERROR: Unable to open tight binding model file:", modelpath
+            print("ERROR: Unable to open tight binding model file:", modelpath)
             sys.exit()
 
         # Import the tight binding model parameters
@@ -263,13 +263,13 @@ if __name__ == "__main__":
 
     model = MatrixElements("TBhydrocarbons.json")
 
-    print model.pairpotential_grid
+    print(model.pairpotential_grid)
 
     xvals = np.arange(0.5, 2.6, 0.01)
     yvals = np.array([model.function_grid[0][0][0](x) for x in xvals])
 
     for i,j in enumerate(xvals):
-        print xvals[i]/0.5291, yvals[i]/13.6056
+        print(xvals[i]/0.5291, yvals[i]/13.6056)
 
 
 
