@@ -38,11 +38,11 @@ jobs:
             . venv/bin/activate
             # Do flake8 later
             #flake8 pylato
-            py.test tests --cov
+            py.test --cov=pylato tests
 
       - run:
           name: Report Python code coverage
           environment:
             CODECOV_TOKEN: 0dca5543-76db-4462-b07f-dcc4c05f1afa
           command: |
-            bash <(curl -s https://codecov.io/bash)
+            bash <(curl -s https://codecov.io/bash) -Z
