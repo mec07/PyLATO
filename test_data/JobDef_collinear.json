@@ -1,6 +1,6 @@
 {   
     // tight binding model
-    "model": "TBcanonical",
+    "model": "TBhydrocarbons",
 
     // Hamiltonian, "collinear", "scase", "pcase" or "dcase"
     "Hamiltonian": "collinear",

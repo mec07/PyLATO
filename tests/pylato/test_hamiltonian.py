@@ -15,7 +15,53 @@ def fake_helements(*args):
     return v, v_bgn, v_end
 
 
+def fake_electrostatics(self, Job):
+    self.Wi = [1 for i in range(Job.NAtom)]
+
+
 class TestHamiltonian:
+    def test_build_fock_collinear(self, monkeypatch):
+        # Fake
+        # Mock out the electrostatics method to just set Wi to be an array of
+        # ones.
+        monkeypatch.setattr('pylato.hamiltonian.Hamiltonian.electrostatics',
+                            fake_electrostatics)
+
+        # Setup
+        Job = InitJob("test_data/JobDef_collinear.json")
+
+        Job.Hamilton.buildHSO(Job)
+        Job.e, Job.psi = np.linalg.eigh(Job.Hamilton.HSO)
+        Job.Electron.occupy(
+            Job.e, Job.Def['el_kT'], Job.Def['mu_tol'], Job.Def['mu_max_loops']
+        )
+        Job.Electron.densitymatrix()
+
+        # we need rhotot to build the fock
+        Job.Electron.rhotot = Job.Electron.rho
+
+        # Fake the spins and stoner I:
+        for a in range(Job.NAtom):
+            atype = Job.AtomType[a]
+            Job.Model.atomic[atype]['I'] = 1
+            for b in range(3):
+                Job.Hamilton.s[b, a] = 1
+        # Fake HSO
+        Job.Hamilton.HSO = np.eye(4)
+
+        expected_fock = np.array([
+            [1.5, 0, -0.5, 0],
+            [0, 1.5, 0, -0.5],
+            [-0.5, 0, 2.5, 0],
+            [0, -0.5, 0, 2.5]
+        ])
+
+        # Action
+        Job.Hamilton.buildFock(Job)
+
+        # Result
+        assert np.array_equal(Job.Hamilton.fock, expected_fock)
+
     def test_total_energy_happy_path(self):
         """
         The expression for the total energy is:
