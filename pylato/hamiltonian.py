@@ -13,7 +13,7 @@ import numpy as np
 import math
 from scipy.special import erf
 
-from exceptions import UnimplementedModelError
+from pylato.exceptions import UnimplementedModelError
 
 
 class Hamiltonian:

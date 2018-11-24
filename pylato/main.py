@@ -22,20 +22,21 @@ Units used are:
 """
 #
 # Import the modules to be used here
-import pylato_IO
-import init_job
-from self_consistency import PerformSelfConsistency
-from verbosity import verboseprint
 import numpy as np
 import os
 import sys
+
+from pylato.init_job import InitJob
+from pylato.pylato_IO import WriteSimulationResults
+from pylato.self_consistency import PerformSelfConsistency
+from pylato.verbosity import verboseprint
 
 
 def initialisation():
     if len(sys.argv) > 1:
         jobpath = sys.argv[1]
         if os.path.exists(jobpath):
-            Job = init_job.InitJob(jobpath)
+            Job = InitJob(jobpath)
         else:
             print("ERROR: Unable to find job file:")
             print(jobpath)
@@ -43,7 +44,7 @@ def initialisation():
     else:
         if os.path.exists("JobDef.json"):
             print("No Job file specified. Proceeding with default JobDef.json.")
-            Job = init_job.InitJob("JobDef.json")
+            Job = InitJob("JobDef.json")
         else:
             print("ERROR: Unable to find default job file: JobDef.json")
             sys.exit()
@@ -92,7 +93,7 @@ def main():
     # Write out information about the simulation if it is specified in the job definition
     if success:
         print("\n\n\nSuccessfully completed calculation!")
-        pylato_IO.WriteSimulationResults(Job)
+        WriteSimulationResults(Job)
 
 
 if __name__ == "__main__":

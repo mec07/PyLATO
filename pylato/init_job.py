@@ -8,13 +8,15 @@ This module carries out the needed initialisation tasks
 #
 # Import modules
 import os, sys, importlib
-import hamiltonian
-import electronic
-import pylato_IO
 import commentjson
 import numpy as np
-import crystal
-from verbosity import *
+
+from pylato.crystal import Crystal
+from pylato.electronic import Electronic
+from pylato.hamiltonian import Hamiltonian
+from pylato.pylato_IO import ReadGeom, ReadUnitCell, WriteXYZ
+from pylato.verbosity import verboseprint
+
 
 class InitJob:
     """Set up the job, build the initial geometry, hamiltonian, and electronic structure."""
@@ -67,10 +69,10 @@ class InitJob:
         self.init_geom(self.Def['gy_file'], self.Def['uc_file'])
 
         # Initialise the Hamiltonian class
-        self.Hamilton = hamiltonian.Hamiltonian(self)
+        self.Hamilton = Hamiltonian(self)
 
         # Initialise the electron module
-        self.Electron = electronic.Electronic(self)
+        self.Electron = Electronic(self)
 
 
 
@@ -85,18 +87,18 @@ class InitJob:
             a, crys_err = self.calculate_crystal_sep()
             # if the calculation of the crystal separation a is successful:
             if crys_err == 0:
-                mycry = crystal.Crystal(a=a, lattice="cubic")
+                mycry = Crystal(a=a, lattice="cubic")
                 mycry.populateUnitCell(self.Def['crystal'], geom_filename=position_file, uc_filename=unitcell_file, nx=self.Def['nx'], ny=self.Def['ny'], nz=self.Def['nz'], PBCs=PBCs)
         # Read in the geometry from file
-        NAtom, Pos, AtomType = pylato_IO.ReadGeom(position_file)
+        NAtom, Pos, AtomType = ReadGeom(position_file)
         # If PBCs are turned on then read in the unit cell
         if PBCs:
-            a1, a2, a3 = pylato_IO.ReadUnitCell(unitcell_file)
+            a1, a2, a3 = ReadUnitCell(unitcell_file)
         else:
             a1, a2, a3 = np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0)), np.array((0.0, 0.0, 0.0))
 
         # Write out the geometry
-        pylato_IO.WriteXYZ(self, NAtom, '', AtomType, Pos)
+        WriteXYZ(self, NAtom, '', AtomType, Pos)
 
         # Transfer geometry to the JobClass
         self.NAtom    = NAtom
