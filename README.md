@@ -19,10 +19,10 @@ For a python virtual environment you will need to install the `virtualenv` packa
 
 ```pip install virtualenv```
 
-When you are inside the PyLATO folder you can start the virtual environment and install all the packages type in a terminal window:
+When you are inside the PyLATO folder you can start the virtual environment (using python3) and install all the packages type in a terminal window:
 
 ```
-virtualenv venv
+python -m venv venv
 pip install -r requirements.txt
 source venv/bin/activate
 ```
