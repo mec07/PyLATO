@@ -1,0 +1,7 @@
+-r requirements.txt
+-e .
+
+flake8
+numpy
+pytest
+pytest-cov

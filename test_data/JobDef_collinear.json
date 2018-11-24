@@ -3,7 +3,7 @@
     "model": "TBcanonical",
 
     // Hamiltonian, "collinear", "scase", "pcase" or "dcase"
-    "Hamiltonian": "pcase",
+    "Hamiltonian": "collinear",
 
     // Periodic boundary conditions: 1 (on) or 0 (off)
     "PBC": 0,
@@ -15,19 +15,19 @@
 
     // atomic geometry
     // Build cubic geometry: 1 (on) or 0 (off)
-    "build_geom":1,
+    "build_geom":0,
     // Crystal symmetry. Currently only have cubic, fcc and bcc implemented.
     "crystal":"bcc",
     // supercell. nx = 1, ny = 1 and nz = 1 corresponds to just the crystal basis
-    "nx":2,
-    "ny":2,
-    "nz":2,
+    "nx":1,
+    "ny":1,
+    "nz":1,
     // nearest neighbour separation in the cubic lattice
     "nearest_neighbour_sep":1.0,
     // geometry file name
-    "gy_file": "geom.csv",
+    "gy_file": "test_data/geom_2_atoms.csv",
     // unit cell file name
-    "uc_file": "UnitCell.csv",
+    "uc_file": "test_data/UnitCell.csv",
 
     // magnetic field
     "so_eB": [0.0, 0.0, 0.0],

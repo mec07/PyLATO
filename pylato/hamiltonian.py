@@ -10,8 +10,10 @@ It merges the old TBH0 and TBHSO modules
 #
 # Import the modules that will be needed
 import numpy as np
-from scipy.special import erf
 import math
+from scipy.special import erf
+
+from exceptions import UnimplementedModelError
 
 
 class Hamiltonian:
@@ -56,13 +58,13 @@ class Hamiltonian:
                                      [complex( 0.0,-1.0), complex( 0.0, 0.0), complex( 0.0, 0.0), 
                                       complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 0.0, 0.0)]])}
 
-        if Job.Def["Hamiltonian"]=="dcase":
-            self.quad_xi_mat = np.zeros((5,5,5,5), dtype = 'double')
+        if Job.Def["Hamiltonian"] == "dcase":
+            self.quad_xi_mat = np.zeros((5, 5, 5, 5), dtype='double')
             for alpha in range(5):
                 for beta in range(5):
                     for gamma in range(5):
                         for chi in range(5):
-                            self.quad_xi_mat[alpha,beta,gamma,chi] = xicontfour(alpha, beta, gamma, chi)
+                            self.quad_xi_mat[alpha, beta, gamma, chi] = xicontfour(alpha, beta, gamma, chi)
 
     def electrostatics(self, Job):
         def SCFGamma(self, Job, atom1, atom2):
@@ -110,6 +112,9 @@ class Hamiltonian:
         # Copy the Hamiltonian, complete with spin-orbit terms, to the Fock matrix
         self.fock = np.copy(self.HSO)
         h0s = self.H0size
+        norb = Job.NOrb
+        natom = Job.NAtom
+        rho = Job.Electron.rhotot
 
         if Job.Def["Hamiltonian"] == "collinear":
 
@@ -137,76 +142,23 @@ class Hamiltonian:
                     self.fock[h0s+j,     j] +=              des[1, 0]  # down/up block
                     self.fock[h0s+j, h0s+j] += self.Wi[a] + des[1, 1]  # down/down block
 
-        elif Job.Def['Hamiltonian'] == "scase":
-            norb = Job.NOrb
-            natom = Job.NAtom
-            rho = Job.Electron.rhotot
-
+        else:
             for a in range(natom):
                 # Get the atom type
                 atype = Job.AtomType[a]
-                U = Job.Model.atomic[atype]['U']
+                J  = Job.Model.atomic[atype].get('I')
+                U  = Job.Model.atomic[atype].get('U')
+                dJ = Job.Model.atomic[atype].get('dJ')
                 for jj in range(self.Hindex[a], self.Hindex[a+1]):
                     for ii in range(self.Hindex[a], self.Hindex[a+1]):
                         # up/up block
-                        self.fock[    jj,     ii] += self.add_H_scase(    jj,     ii, U, natom, norb, rho)
+                        self.fock[    jj,     ii] += self.add_Coulomb_term(    jj,     ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
                         # up/down block
-                        self.fock[    jj, h0s+ii] += self.add_H_scase(    jj, h0s+ii, U, natom, norb, rho)
+                        self.fock[    jj, h0s+ii] += self.add_Coulomb_term(    jj, h0s+ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
                         # down/up block
-                        self.fock[h0s+jj,     ii] += self.add_H_scase(h0s+jj,     ii, U, natom, norb, rho)
+                        self.fock[h0s+jj,     ii] += self.add_Coulomb_term(h0s+jj,     ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
                         # down/down block
-                        self.fock[h0s+jj, h0s+ii] += self.add_H_scase(h0s+jj, h0s+ii, U, natom, norb, rho)
-
-        elif Job.Def['Hamiltonian'] == "pcase":
-            norb = Job.NOrb
-            natom = Job.NAtom
-            rho = Job.Electron.rhotot
-
-            for a in range(natom):
-                # Get the atom type
-                atype = Job.AtomType[a]
-                J = Job.Model.atomic[atype]['I']
-                U = Job.Model.atomic[atype]['U']
-                for jj in range(self.Hindex[a], self.Hindex[a+1]):
-                    for ii in range(self.Hindex[a], self.Hindex[a+1]):
-                        # up/up block
-                        self.fock[    jj,     ii] += self.add_H_pcase(    jj,     ii, U, J, J, natom, norb, rho)
-                        # up/down block
-                        self.fock[    jj, h0s+ii] += self.add_H_pcase(    jj, h0s+ii, U, J, J, natom, norb, rho)
-                        # down/up block
-                        self.fock[h0s+jj,     ii] += self.add_H_pcase(h0s+jj,     ii, U, J, J, natom, norb, rho)
-                        # down/down block
-                        self.fock[h0s+jj, h0s+ii] += self.add_H_pcase(h0s+jj, h0s+ii, U, J, J, natom, norb, rho)
-
-        elif Job.Def['Hamiltonian'] == "dcase":
-            norb = Job.NOrb
-            natom = Job.NAtom
-            rho = Job.Electron.rhotot
-
-            for a in range(natom):
-                # Get the atom type
-                atype = Job.AtomType[a]
-                J  = Job.Model.atomic[atype]['I']
-                U  = Job.Model.atomic[atype]['U']
-                dJ = Job.Model.atomic[atype]['dJ']
-                for jj in range(self.Hindex[a], self.Hindex[a+1]):
-                    for ii in range(self.Hindex[a], self.Hindex[a+1]):
-                        # up/up block
-                        self.fock[    jj,     ii] += self.add_H_dcase(    jj,     ii, U, J, J, dJ, natom, norb, rho)
-                        # up/down block
-                        self.fock[    jj, h0s+ii] += self.add_H_dcase(    jj, h0s+ii, U, J, J, dJ, natom, norb, rho)
-                        # down/up block
-                        self.fock[h0s+jj,     ii] += self.add_H_dcase(h0s+jj,     ii, U, J, J, dJ, natom, norb, rho)
-                        # down/down block
-                        self.fock[h0s+jj, h0s+ii] += self.add_H_dcase(h0s+jj, h0s+ii, U, J, J, dJ, natom, norb, rho)
-
-        # for i in range(h0s):
-        #     for j in range(i, h0s):
-        #         if abs(self.fock[i,j] - self.fock[i,j]) > 0.000001:
-        #             verboseprint(Job.Def['extraverbose'], i, j,
-        #                          round(self.fock[i,j].real, 4), round(self.fock2[i,j].real, 4), "|",
-        #                          round(self.fock[i,j].imag, 4), round(self.fock2[i,j].imag, 4))
-        #print "fock:", self.fock
+                        self.fock[h0s+jj, h0s+ii] += self.add_Coulomb_term(h0s+jj, h0s+ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
 
     def slaterkoster(self, l1, l2, dr, v):
         """
@@ -317,7 +269,6 @@ class Hamiltonian:
         # Return the Hamiltonian block
         return block
 
-
     def buildH0(self, Job):
         """
         Build the hamiltonian one block at a time, with a block corresponding to
@@ -390,21 +341,21 @@ class Hamiltonian:
             temp_mat = np.zeros((norb1, norb2), dtype='double')
             # Compute the atomic displacement
             dr = Job.Pos[atom1] - (Job.Pos[atom2]
-                                        + jx*Job.UnitCell[0]
-                                        + jy*Job.UnitCell[1]
-                                        + jz*Job.UnitCell[2])
+                                   + jx*Job.UnitCell[0]
+                                   + jy*Job.UnitCell[1]
+                                   + jz*Job.UnitCell[2])
             distance = np.sqrt(dr.dot(dr))
 
             # Build the set of hopping integrals
             v, v_bgn, v_end = Job.Model.helements(distance, type1, type2)
 
             # Build the block one pair of shells at a time
-            k1 = 0 # Counter for orbital
+            k1 = 0  # Counter for orbital
 
             # Step through shells of atom 1
             for i1, l1 in enumerate(Job.Model.atomic[type1]['l']):
-                n1 = 2*l1+1  # Compute number of orbitals in the shell                       
-                k2 = 0  # Counter for orbital 
+                n1 = 2*l1+1  # Compute number of orbitals in the shell
+                k2 = 0  # Counter for orbital
 
                 # Step through shells of atom 2
                 for i2, l2 in enumerate(Job.Model.atomic[type2]['l']):
@@ -415,7 +366,6 @@ class Hamiltonian:
                 k1 += n1  # Advance to the start of the next set of orbitals
 
             return temp_mat
-
 
     def buildHSO(self, Job):
         """Build the Hamiltonian with spin orbit coupling."""
@@ -455,6 +405,21 @@ class Hamiltonian:
                     self.HSO[h0s+k:h0s+k+n, h0s+k:h0s+k+n] += Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][n+0:n+n, n+0:n+n]
                     k += n  # Advance to the start of the next set of orbitals
 
+    def add_Coulomb_term(self, ii, jj, U, J_S, J_ph, dJ, num_atoms,
+                         num_orbitals, rho, hamiltonian):
+        if hamiltonian == "scase":
+            return self.add_H_scase(ii, jj, U, num_atoms, num_orbitals, rho)
+        if hamiltonian == "pcase":
+            return self.add_H_pcase(ii, jj, U, J_S, J_ph, num_atoms,
+                                    num_orbitals, rho)
+        if hamiltonian == "dcase":
+            return self.add_H_dcase(ii, jj, U, J_S, J_ph, dJ, num_atoms,
+                                    num_orbitals, rho)
+        else:
+            raise UnimplementedModelError(
+                "Hamiltonian: '{}' is unrecognised".format(hamiltonian)
+            )
+
     def add_H_scase(self, ii, jj, U, num_atoms, num_orbitals, rho):
         """
         Add the noncollinear Hamiltonian to the on-site contributions for
@@ -462,11 +427,11 @@ class Hamiltonian:
 
         The tensorial form for this is:
 
-        F^{s,s'}_{i j} = Kd(i,j) (\sum_{s''}Kd(s,s') U rho^{s'',s''}_{i i} - U rho^{s,s'}_{i i} ),
+        F^{s,s'}_{i j} = Kd(i,j) U (\sum_{s''}Kd(s,s') rho^{s'',s''}_{i i} - rho^{s,s'}_{i i} ),
 
         where Kd is the Kronecker delta symbol; s, s' and s'' are spin indices; i
         and j are atom indices; rho is the density matrix; U is the Coulomb
-        integral. 
+        integral.
 
         INPUT                 DATA TYPE       DESCRIPTION
 
@@ -506,8 +471,6 @@ class Hamiltonian:
         # return the matrix element
         return F
 
-
-
     def add_H_pcase(self, ii, jj, U, J_S, J_ph, num_atoms, num_orbitals, rho):
         """
         Add the noncollinear Hamiltonian to the on-site contributions for
@@ -516,9 +479,9 @@ class Hamiltonian:
         The tensorial form for this is:
 
         F^{s,s'}_{i a j b} = Kd(i,j) (\sum_{s''}Kd(s,s')(\sum_{a'}U Kd(a,b)
-            rho^{s'',s''}_{i a i a} + J_S rho^{s'',s''}_{i a i b}
+            rho^{s'',s''}_{i a' i a'} + J_S rho^{s'',s''}_{i a i b}
             + J_{ph} rho^{s'',s''}_{i b i a} )
-            - (U rho^{s,s'}_{i a i b} + \sum_{a'} J_S Kd(a,b)rho^{s,s'}_{i a i a}
+            - (U rho^{s,s'}_{i a i b} + \sum_{a'} J_S Kd(a,b)rho^{s,s'}_{i a' i a'}
             + J_{ph} rho^{s,s'}_{i b i a}) ),
 
         where Kd is the Kronecker delta symbol; s, s' and s'' are spin indices; i
@@ -577,7 +540,6 @@ class Hamiltonian:
         # return the matrix element
         return F
 
-
     def add_H_dcase(self, ii, jj, U, J_S, J_ph, dJ, num_atoms, num_orbitals, rho):
         """
         Add the noncollinear Hamiltonian to the on-site contributions for the
@@ -585,16 +547,17 @@ class Hamiltonian:
 
         The tensorial form for this is:
 
-        F^{s,s'}_{i a j b} = Kd(i,j) (\sum_{s''}Kd(s,s')(\sum_{a'}U Kd(a,b) rho^{s'',s''}_{i a i a}
-            + J'_S rho^{s'',s''}_{i a i b} + J'_{ph} rho^{s'',s''}_{i b i a}
-            - 48 dJ \sum_{cd stuv} xi_{c st}xi_{a tu}xi_{b uv}xi_{d vs} rho^{})
-            - (U rho^{s,s'}_{i a i b} + \sum_{a'} J_S Kd(a,b)rho^{s,s'}_{i a i a}
-            + J_{ph} rho^{s,s'}_{i b i a}) ),
+        F^{s,s'}_{i a j b} = Kd(i,j) (\sum_{s''}Kd(s,s')(\sum_{a'}U Kd(a,b) rho^{s'',s''}_{i a' i a'}
+            + Jp_S rho^{s'',s''}_{i a i b} + Jp_{ph} rho^{s'',s''}_{i b i a}
+            - 48 dJ \sum_{cd stuv} xi_{c st}xi_{a tu}xi_{d uv}xi_{b vs} rho^{i d i c})
+            - (U rho^{s,s'}_{i a i b} + \sum_{a'} Jp_S Kd(a,b)rho^{s,s'}_{i a' i a'}
+            + Jp_{ph} rho^{s,s'}_{i b i a}
+            - 48 dJ \sum_{cd stuv} xi_{c st}xi_{a tu}xi_{b uv}xi_{d vs} rho^{i d i c})),
 
         where Kd is the Kronecker delta symbol; s, s' and s'' are spin indices; i
         and j are atom indices; a, a' and b are orbital indices; rho is the
         density matrix; U is the Hartree Coulomb integral and J_S and J_{ph} are
-        the exchange Coulomb integrals, J'_S = J_S + 5/2*dJ and the same for J'_{ph}.
+        the exchange Coulomb integrals, Jp_S = J_S + 5/2*dJ and the same for Jp_{ph}.
         Physically, J_S is equivalent to J_{ph}; however for the Stoner Hamiltonian J_S
         is the same as the Stoner I and J_{ph} is equal to zero.
 
@@ -654,6 +617,42 @@ class Hamiltonian:
                     F += U*sum(rho[map_atomic_to_index(i, orb, sig, num_atoms, num_orbitals), map_atomic_to_index(i, orb, sig, num_atoms, num_orbitals)] for sig in range(2) for orb in range(num_orbitals[i]))
 
         return F
+
+    def total_energy(self, Job):
+        """
+        The expression for the total energy is:
+            E = h_0 + \sum_{ij} (F_{ij} - 0.5*\tilde{F}_{ij})\rho_{ji}
+        where \tilde{F} is the Coulombic part of the Fock Matrix.
+
+        We first need to subtract the double counting correction and then we
+        can perform the trace of the dot product of the corrected Fock matrix
+        and the density matrix.
+        """
+        norb = Job.NOrb
+        natom = Job.NAtom
+        rho = Job.Electron.rhotot
+        h0s = self.H0size
+
+        corrected_fock = np.copy(self.fock)
+        for a in range(natom):
+            # Get the atom type
+            atype = Job.AtomType[a]
+            J  = Job.Model.atomic[atype].get('I')
+            U  = Job.Model.atomic[atype].get('U')
+            dJ = Job.Model.atomic[atype].get('dJ')
+            for jj in range(self.Hindex[a], self.Hindex[a+1]):
+                for ii in range(self.Hindex[a], self.Hindex[a+1]):
+                    # up/up block
+                    corrected_fock[    jj,     ii] -= 0.5*self.add_Coulomb_term(    jj,     ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
+                    # up/down block
+                    corrected_fock[    jj, h0s+ii] -= 0.5*self.add_Coulomb_term(    jj, h0s+ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
+                    # down/up block
+                    corrected_fock[h0s+jj,     ii] -= 0.5*self.add_Coulomb_term(h0s+jj,     ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
+                    # down/down block
+                    corrected_fock[h0s+jj, h0s+ii] -= 0.5*self.add_Coulomb_term(h0s+jj, h0s+ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
+
+        return np.trace(np.dot(corrected_fock, rho))
+
 
 
 def Kd(a, b):
@@ -780,6 +779,7 @@ def map_atomic_to_index(atom, orbital, spin, num_atoms, num_orbitals):
 
     return index
 
+
 def xicontfour(alph,bet,gam,chi):
     """
     The fourth contraction of the xi matrix.
@@ -800,4 +800,3 @@ def xicontfour(alph,bet,gam,chi):
         [0.0,-0.5,0.0],
         [0.0,0.0,0.0]]]
     return sum(sum(sum(sum(xi[alph][s][t]*xi[bet][t][u]*xi[gam][u][v]*xi[chi][v][s] for s in range(3)) for t in range(3)) for u in range(3)) for v in range(3))
-

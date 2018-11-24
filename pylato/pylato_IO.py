@@ -256,6 +256,16 @@ def WriteFockAsMatrix(JobClass, filename="fockMatrix.txt"):
                 f.write(line_info)
 
 
+def WriteTotalEnergy(Job, filename="energy.txt"):
+    """
+    Write out the Fock matrix as a matrix. Not recommended for large
+    Fock matrices...
+    """
+    if Job.Def['write_total_energy'] == 1:
+        with open(os.path.join(Job.results_dir, filename), 'w') as f:
+            f.write(str(Job.Hamilton.total_energy(Job)))
+
+
 def WriteSimulationResults(Job):
     WriteSpins(Job)
     WriteRho(Job)
@@ -265,3 +275,4 @@ def WriteSimulationResults(Job):
     WriteFockAsMatrix(Job)
     WriteOrbitalOccupations(Job)
     WriteMagneticCorrelation(Job, 0, 1)
+    WriteTotalEnergy(Job)
