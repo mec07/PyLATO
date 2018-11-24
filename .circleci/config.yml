@@ -36,7 +36,7 @@ jobs:
       - run:
           name: run tests
           environment:
-            CODECOV_TOKEN: 0dca5543-76db-4462-b07f-dcc4c05f1afa
+            CODECOV_TOKEN: 10d63108-372a-4fb7-a1dc-a9924077d022
           command: |
             . venv/bin/activate
             # Do flake8 later
