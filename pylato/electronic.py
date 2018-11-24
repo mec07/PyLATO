@@ -15,7 +15,7 @@ import sys
 import time
 import random
 
-from pylato.fermi import fermi_0, fermi_non0
+from pylato.Fermi import fermi_0, fermi_non0
 from pylato.hamiltonian import map_atomic_to_index
 from pylato.verbosity import verboseprint
 
