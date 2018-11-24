@@ -10,12 +10,14 @@ populated by electrons.
 # Import the modules that will be needed
 import numpy as np
 import math
-import hamiltonian
-import sys, os, importlib
+import os
+import sys
 import time
-import Fermi
-from verbosity import verboseprint
 import random
+
+from pylato.Fermi import fermi_0, fermi_non0
+from pylato.hamiltonian import map_atomic_to_index
+from pylato.verbosity import verboseprint
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -46,9 +48,9 @@ class Electronic:
         self.residue = np.zeros((self.Job.Def['num_rho'], self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
 
         if self.Job.Def['el_kT'] == 0.0:
-            self.fermi = Fermi.fermi_0
+            self.fermi = fermi_0
         else:
-            self.fermi = Fermi.fermi_non0
+            self.fermi = fermi_non0
 
         if self.Job.Def.get('optimisation_routine') == 1:
             self.optimisation_routine = self.optimisation_routine1
@@ -111,8 +113,8 @@ class Electronic:
 
         """
         return sum(abs(
-                self.rho[hamiltonian.map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb),hamiltonian.map_atomic_to_index(atom1, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)]
-           - self.rhotot[hamiltonian.map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb),hamiltonian.map_atomic_to_index(atom1, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)])
+                self.rho[map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb), map_atomic_to_index(atom1, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)]
+           - self.rhotot[map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb), map_atomic_to_index(atom1, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)])
                 for atom1 in range(self.Job.NAtom) for orbital1 in range(self.Job.NOrb[atom1]) for spin1 in range(2)
                 for orbital2 in range(orbital1, self.Job.NOrb[atom1]) for spin2 in range(spin1, 2)
                 )/(self.Job.Electron.NElectrons**2)
@@ -263,7 +265,7 @@ class Electronic:
 
     def electrons_site_orbital_spin(self,site,orbital,spin):
         """Compute the number of electrons with specified spin, orbital and site. """
-        index = hamiltonian.map_atomic_to_index(site, orbital, spin, self.Job.NAtom, self.Job.NOrb)
+        index = map_atomic_to_index(site, orbital, spin, self.Job.NAtom, self.Job.NOrb)
         return self.rho[index,index].real
 
     def electrons_orbital_occupation_vec(self):
@@ -342,10 +344,10 @@ class Electronic:
             for z in range(2):
                 for a in range(norb_1):
                     for b in range(norb_2):
-                        index_az = hamiltonian.map_atomic_to_index(site1,a,z,self.Job.NAtom, self.Job.NOrb)
-                        index_bz = hamiltonian.map_atomic_to_index(site2,b,z,self.Job.NAtom, self.Job.NOrb)
-                        index_bs = hamiltonian.map_atomic_to_index(site2,b,s,self.Job.NAtom, self.Job.NOrb)
-                        index_as = hamiltonian.map_atomic_to_index(site1,a,s,self.Job.NAtom, self.Job.NOrb)
+                        index_az = map_atomic_to_index(site1,a,z,self.Job.NAtom, self.Job.NOrb)
+                        index_bz = map_atomic_to_index(site2,b,z,self.Job.NAtom, self.Job.NOrb)
+                        index_bs = map_atomic_to_index(site2,b,s,self.Job.NAtom, self.Job.NOrb)
+                        index_as = map_atomic_to_index(site1,a,s,self.Job.NAtom, self.Job.NOrb)
                         # term 1: 2.0*rho_{1a1a}^{zs} rho_{2b2b}^{sz}
                         C_avg += 2.0*self.rho[index_az,index_as]*self.rho[index_bs,index_bz]
                         # term 2: -2.0*rho_{1a2b}^{zz}rho_{2b1a}^{ss})

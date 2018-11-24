@@ -15,7 +15,6 @@ import sys
 import numpy as np
 import math
 import commentjson
-from pylato.verbosity import *
 
 
 class MatrixElements:
@@ -52,7 +51,7 @@ class MatrixElements:
 
         # Catch invalid model path
         if os.path.exists(modelpath) == False:
-            print "ERROR: Unable to open tight binding model file:", modelpath
+            print("ERROR: Unable to open tight binding model file:", modelpath)
             sys.exit()
 
         # Import the tight binding model parameters

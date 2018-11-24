@@ -1,0 +1,48 @@
+codecov:
+  notify:
+    require_ci_to_pass: yes
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    # set commit status if relative change of whole project coverage
+    # exceeds threshold
+    project:
+      default:
+        target: auto
+        threshold: 0
+        set_pending: yes
+        if_no_uploads: error
+        if_not_found: error
+        if_ci_failed: error
+
+    # set commit status, if coverage of diff is below target threshold
+    patch:
+      default:
+        target: 90
+        set_pending: yes
+        base: auto
+        if_no_uploads: error
+        if_not_found: error
+        if_ci_failed: error
+
+    # not exactly sure in what cases this commit status is triggered..
+    changes:
+      default:
+        enabled: no
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+
+comment:
+  layout: "header, diff"
+  behavior: default
+  require_changes: no
