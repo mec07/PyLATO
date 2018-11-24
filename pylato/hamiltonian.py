@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 """
 Created on Thursday, April 16, 2015
 
@@ -14,6 +14,7 @@ import math
 from scipy.special import erf
 
 from pylato.exceptions import UnimplementedModelError
+from pylato.pauli_spin_matrices import sigma_x, sigma_y, sigma_z
 
 
 class Hamiltonian:
@@ -36,6 +37,7 @@ class Hamiltonian:
         self.H0   = np.zeros((self.H0size,  self.H0size),  dtype='double')
         self.HSO  = np.zeros((self.HSOsize, self.HSOsize), dtype='complex')
         self.fock = np.zeros((self.HSOsize, self.HSOsize), dtype='complex')
+        self.fock_has_been_built = False
 
         # Allocate memeory for the charge and spin
         self.q = np.zeros(Job.NAtom, dtype='double')
@@ -65,6 +67,36 @@ class Hamiltonian:
                     for gamma in range(5):
                         for chi in range(5):
                             self.quad_xi_mat[alpha, beta, gamma, chi] = xicontfour(alpha, beta, gamma, chi)
+
+#        for a in range(Job.NAtom):
+#            # Get the atom type
+#            atype = Job.AtomType[a]
+#            # Stoner onsite energy shifts are present for all four spin
+#            # combinations
+#            stoner_I = Job.Model.atomic[atype]['I']
+#            self.spin_onsite_energy_shift[a, 0, 0] = -0.5 * stoner_I * complex(
+#                self.s[2, a], 0.0
+#            )
+#            self.spin_onsite_energy_shift[a, 0, 1] = -0.5 * stoner_I * complex(
+#                self.s[0, a], -self.s[1, a]
+#            )
+#            self.spin_onsite_energy_shift[a, 1, 0] = -0.5 * stoner_I * complex(
+#                self.s[0, a], self.s[1, a]
+#            )
+#            self.spin_onsite_energy_shift[a, 1, 1] = -0.5 * stoner_I * complex(
+#                -self.s[2, a], 0.0
+#            )
+
+    def spin_onsite_energy_shift(self, Job, spin1, spin2, atom):
+        # Get the atom type
+        atype = Job.AtomType[atom]
+        # Stoner onsite energy shifts are present for all four spin
+        # combinations
+        stoner_I = Job.Model.atomic[atype]['I']
+        spin_part = (self.s[2, atom]*sigma_z[spin1, spin2] +
+                     self.s[0, atom]*sigma_x[spin1, spin2] +
+                     self.s[1, atom]*sigma_y[spin1, spin2])
+        return -0.5 * stoner_I * spin_part
 
     def electrostatics(self, Job):
         def SCFGamma(self, Job, atom1, atom2):
@@ -108,7 +140,9 @@ class Hamiltonian:
         self.Wi = Wi
 
     def buildFock(self, Job):
-        """Build the Fock matrix by adding charge and spin terms to the Hamiltonian."""
+        """
+        Build the Fock matrix by adding Coulomb terms to the Hamiltonian.
+        """
         # Copy the Hamiltonian, complete with spin-orbit terms, to the Fock matrix
         self.fock = np.copy(self.HSO)
         h0s = self.H0size
@@ -117,30 +151,30 @@ class Hamiltonian:
         rho = Job.Electron.rhotot
 
         if Job.Def["Hamiltonian"] == "collinear":
-
-            # Add in diagonal corrections for charge and spin
-            des = np.zeros((2, 2), dtype="complex")
-
             # Compute on-site and (if enabled) intersite electrostatic terms.
             self.electrostatics(Job)
 
             for a in range(Job.NAtom):
-                #
-                # Get the atom type
-                atype = Job.AtomType[a]
-                #
-                # Stoner onsite energy shifts are present for all four spins combinations
-                des[0, 0] = -0.5 * Job.Model.atomic[atype]['I'] * complex( self.s[2, a],           0.0)
-                des[0, 1] = -0.5 * Job.Model.atomic[atype]['I'] * complex( self.s[0, a], -self.s[1, a])
-                des[1, 0] = -0.5 * Job.Model.atomic[atype]['I'] * complex( self.s[0, a],  self.s[1, a])
-                des[1, 1] = -0.5 * Job.Model.atomic[atype]['I'] * complex(-self.s[2, a],           0.0)
-                #
                 # Step through each orbital on the atom
                 for j in range(self.Hindex[a], self.Hindex[a+1]):
-                    self.fock[    j,     j] += self.Wi[a] + des[0, 0]  # up/up block
-                    self.fock[    j, h0s+j] +=              des[0, 1]  # up/down block
-                    self.fock[h0s+j,     j] +=              des[1, 0]  # down/up block
-                    self.fock[h0s+j, h0s+j] += self.Wi[a] + des[1, 1]  # down/down block
+                    # up/up block
+                    self.fock[j, j] += (self.Wi[a] +
+                                        self.spin_onsite_energy_shift(
+                                            Job, 0, 0, a
+                                        ))
+                    # up/down block
+                    self.fock[j, h0s + j] += (
+                        self.spin_onsite_energy_shift(Job, 0, 1, a)
+                    )
+                    # down/up block
+                    self.fock[h0s + j, j] += (
+                        self.spin_onsite_energy_shift(Job, 1, 0, a)
+                    )
+                    # down/down block
+                    self.fock[h0s+j, h0s+j] += (self.Wi[a] +
+                                                self.spin_onsite_energy_shift(
+                                                    Job, 1, 1, a
+                                                ))
 
         else:
             for a in range(natom):
@@ -159,6 +193,8 @@ class Hamiltonian:
                         self.fock[h0s+jj,     ii] += self.add_Coulomb_term(h0s+jj,     ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
                         # down/down block
                         self.fock[h0s+jj, h0s+ii] += self.add_Coulomb_term(h0s+jj, h0s+ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
+
+        self.fock_has_been_built = True
 
     def slaterkoster(self, l1, l2, dr, v):
         """
@@ -628,6 +664,9 @@ class Hamiltonian:
         can perform the trace of the dot product of the corrected Fock matrix
         and the density matrix.
         """
+        if not self.fock_has_been_built:
+            self.buildFock(Job)
+
         norb = Job.NOrb
         natom = Job.NAtom
         rho = Job.Electron.rhotot
