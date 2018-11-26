@@ -10,7 +10,7 @@
 
     // Save results in following directory. This is optional. If this is not
     // included the results will be saved in the current directory.
-    "results_dir": "output_PyLATO/",
+    "results_dir": "/tmp/output_PyLATO/",
 
     // atomic geometry
     // Build cubic geometry: 1 (on) or 0 (off)
@@ -78,11 +78,16 @@
     "extraverbose": 1,
 
     // Output
-    "write_spin": 0,
+    "write_spins": 0,
+    "write_rho":0,
+    "write_rho_mat":0,
+    "write_rho_on_site":1,
     "write_density_matrix": 0,
-    "write_fock_matrix": 0,
+    "write_fock":0,
+    "write_fock_mat": 0,
     "write_orbital_occupations": 0,
     "write_magnetic_correlation": 0,
+    "write_total_energy": 1,
 
     // InterSiteElectrostatics is set when the 1/r terms are to be included in SCC-TB.
     "InterSiteElectrostatics": 0
