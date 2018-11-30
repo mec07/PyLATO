@@ -15,11 +15,11 @@ It is of course possible to run this programme from a Windows machine but you wi
 To clone this repository type in a terminal window:
 ```git clone git@github.com:mec07/PyLATO.git```
 
-For a python3 virtual environment you will need to install the `virtualenv` package. Type in a terminal window:
+For a python 3 virtual environment you will need to install the `virtualenv` package. Type in a terminal window:
 
-```pip install venv```
+```pip install virtualenv```
 
-(on some computers you will have to specify python 3 pip by using `pip3` instead of just `pip).
+(on some computers you will have to specify python 3 pip by using `pip3` instead of just `pip` --- you can check your pip version using: `pip --version`).
 When you are inside the PyLATO folder you can start the virtual environment and install all the packages type in a terminal window:
 
 ```
@@ -27,7 +27,7 @@ python -m venv venv
 pip install -r requirements.txt
 source venv/bin/activate
 ```
-(on some computers you will to specify python 3 by using `python3` instead of `python`).
+(on some computers you will to specify python 3 by using `python3` instead of `python` --- you can check your python version using: `python --version`).
 To exit from the virtual environment just type in a terminal window:
 
 ```deactivate```
