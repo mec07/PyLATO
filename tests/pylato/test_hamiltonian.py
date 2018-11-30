@@ -229,12 +229,38 @@ class TestHamiltonian:
 
     def test_buildH0_one_atom(self):
         """
-        A single atom without PBCs should have an H0 of: [[0]]; as there is no
-        possible hopping.
+        A single scase atom without PBCs should have an H0 of: [[e]],
+        where e is the onsite energy.
         """
         # Setup
         Job = InitJob("test_data/JobDef_single_atom.json")
+        expected_result = np.array(Job.Model.atomic[0]['e'])
 
+        # Action
         Job.Hamilton.buildH0(Job)
 
-        assert np.array_equal(Job.Hamilton.H0, np.array([[0]]))
+        # Result
+        assert np.array_equal(Job.Hamilton.H0, expected_result)
+
+    def test_buildH0_two_atoms(self):
+        """
+        Two scase atoms without PBCs should have an H0 of: [
+            [e, t],
+            [t, e]
+        ],
+        where e is the onsite energy and t is the value of the interatomic
+        hopping integral.
+        """
+        # Setup
+        Job = InitJob("test_data/JobDef_scase.json")
+        e = Job.Model.atomic[0]['e'][0][0]
+        expected_result = np.array([
+            [e, -1],
+            [-1, e]
+        ])
+
+        # Action
+        Job.Hamilton.buildH0(Job)
+
+        # Result
+        assert np.array_equal(Job.Hamilton.H0, expected_result)

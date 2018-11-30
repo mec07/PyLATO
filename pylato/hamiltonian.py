@@ -279,7 +279,7 @@ class Hamiltonian:
 
         # Step through all pairs of atoms
         for a1 in range(Job.NAtom):
-            for a2 in range(a1+1, Job.NAtom):
+            for a2 in range(a1, Job.NAtom):
                 self.H0[self.Hindex[a1]:self.Hindex[a1+1],
                     self.Hindex[a2]:self.Hindex[a2+1]] = self.hopping_block(Job, a1, a2)
                 # Now add the corresponding section with a1 and a2 swapped.
