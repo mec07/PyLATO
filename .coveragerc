@@ -1,0 +1,4 @@
+[run]
+include = service*
+branch  = True
+parallel = True
