@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*- 
+# -*- coding: utf-8 -*-
 """
 Created on Thursday, April 16, 2015
 
@@ -14,6 +14,7 @@ import math
 from scipy.special import erf
 
 from pylato.exceptions import UnimplementedModelError
+from pylato.pauli_spin_matrices import sigma_x, sigma_y, sigma_z
 
 
 class Hamiltonian:
@@ -66,6 +67,16 @@ class Hamiltonian:
                         for chi in range(5):
                             self.quad_xi_mat[alpha, beta, gamma, chi] = xicontfour(alpha, beta, gamma, chi)
 
+    def spin_onsite_energy_shift(self, Job, spin1, spin2, atom):
+        # Get the atom type
+        atype = Job.AtomType[atom]
+        # Stoner onsite energy shifts are present for all four spin
+        # combinations
+        spin_part = (self.s[0, atom]*sigma_x[spin1, spin2] +
+                     self.s[1, atom]*sigma_y[spin1, spin2] +
+                     self.s[2, atom]*sigma_z[spin1, spin2])
+        return -0.5 * Job.Model.atomic[atype]['I'] * spin_part
+
     def electrostatics(self, Job):
         def SCFGamma(self, Job, atom1, atom2):
 
@@ -108,57 +119,34 @@ class Hamiltonian:
         self.Wi = Wi
 
     def buildFock(self, Job):
-        """Build the Fock matrix by adding charge and spin terms to the Hamiltonian."""
+        """
+        Build the Fock matrix by adding Coulomb terms to the Hamiltonian.
+        """
         # Copy the Hamiltonian, complete with spin-orbit terms, to the Fock matrix
         self.fock = np.copy(self.HSO)
         h0s = self.H0size
-        norb = Job.NOrb
-        natom = Job.NAtom
         rho = Job.Electron.rhotot
 
         if Job.Def["Hamiltonian"] == "collinear":
-
-            # Add in diagonal corrections for charge and spin
-            des = np.zeros((2, 2), dtype="complex")
-
             # Compute on-site and (if enabled) intersite electrostatic terms.
             self.electrostatics(Job)
 
-            for a in range(Job.NAtom):
-                #
-                # Get the atom type
-                atype = Job.AtomType[a]
-                #
-                # Stoner onsite energy shifts are present for all four spins combinations
-                des[0, 0] = -0.5 * Job.Model.atomic[atype]['I'] * complex( self.s[2, a],           0.0)
-                des[0, 1] = -0.5 * Job.Model.atomic[atype]['I'] * complex( self.s[0, a], -self.s[1, a])
-                des[1, 0] = -0.5 * Job.Model.atomic[atype]['I'] * complex( self.s[0, a],  self.s[1, a])
-                des[1, 1] = -0.5 * Job.Model.atomic[atype]['I'] * complex(-self.s[2, a],           0.0)
-                #
-                # Step through each orbital on the atom
-                for j in range(self.Hindex[a], self.Hindex[a+1]):
-                    self.fock[    j,     j] += self.Wi[a] + des[0, 0]  # up/up block
-                    self.fock[    j, h0s+j] +=              des[0, 1]  # up/down block
-                    self.fock[h0s+j,     j] +=              des[1, 0]  # down/up block
-                    self.fock[h0s+j, h0s+j] += self.Wi[a] + des[1, 1]  # down/down block
-
-        else:
-            for a in range(natom):
-                # Get the atom type
-                atype = Job.AtomType[a]
-                J  = Job.Model.atomic[atype].get('I')
-                U  = Job.Model.atomic[atype].get('U')
-                dJ = Job.Model.atomic[atype].get('dJ')
-                for jj in range(self.Hindex[a], self.Hindex[a+1]):
-                    for ii in range(self.Hindex[a], self.Hindex[a+1]):
-                        # up/up block
-                        self.fock[    jj,     ii] += self.add_Coulomb_term(    jj,     ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
-                        # up/down block
-                        self.fock[    jj, h0s+ii] += self.add_Coulomb_term(    jj, h0s+ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
-                        # down/up block
-                        self.fock[h0s+jj,     ii] += self.add_Coulomb_term(h0s+jj,     ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
-                        # down/down block
-                        self.fock[h0s+jj, h0s+ii] += self.add_Coulomb_term(h0s+jj, h0s+ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
+        for a in range(Job.NAtom):
+            # Get the atom type
+            atype = Job.AtomType[a]
+            J = Job.Model.atomic[atype].get('I')
+            U = Job.Model.atomic[atype].get('U')
+            dJ = Job.Model.atomic[atype].get('dJ')
+            for jj in range(self.Hindex[a], self.Hindex[a+1]):
+                for ii in range(self.Hindex[a], self.Hindex[a+1]):
+                    # up/up block
+                    self.fock[    jj,     ii] += self.add_Coulomb_term(Job,     jj,     ii, U, J, J, dJ, rho)
+                    # up/down block
+                    self.fock[    jj, h0s+ii] += self.add_Coulomb_term(Job,     jj, h0s+ii, U, J, J, dJ, rho)
+                    # down/up block
+                    self.fock[h0s+jj,     ii] += self.add_Coulomb_term(Job, h0s+jj,     ii, U, J, J, dJ, rho)
+                    # down/down block
+                    self.fock[h0s+jj, h0s+ii] += self.add_Coulomb_term(Job, h0s+jj, h0s+ii, U, J, J, dJ, rho)
 
     def slaterkoster(self, l1, l2, dr, v):
         """
@@ -376,8 +364,8 @@ class Hamiltonian:
         self.HSO.fill(0.0)
 
         # Build the basic Hamiltonian. This is independent of spin and appears in the
-        # up-up and down-down blocks of the full spin dependent Hamiltonian
         self.buildH0(Job)
+        # up-up and down-down blocks of the full spin dependent Hamiltonian
 
         # Copy H0 into the two diagonal blocks
         self.HSO[0           :h0s,            0:h0s] = np.copy(self.H0)
@@ -405,20 +393,44 @@ class Hamiltonian:
                     self.HSO[h0s+k:h0s+k+n, h0s+k:h0s+k+n] += Job.Model.atomic[atype]['so'][i]*self.SOmatrix[l][n+0:n+n, n+0:n+n]
                     k += n  # Advance to the start of the next set of orbitals
 
-    def add_Coulomb_term(self, ii, jj, U, J_S, J_ph, dJ, num_atoms,
-                         num_orbitals, rho, hamiltonian):
-        if hamiltonian == "scase":
-            return self.add_H_scase(ii, jj, U, num_atoms, num_orbitals, rho)
-        if hamiltonian == "pcase":
-            return self.add_H_pcase(ii, jj, U, J_S, J_ph, num_atoms,
-                                    num_orbitals, rho)
-        if hamiltonian == "dcase":
-            return self.add_H_dcase(ii, jj, U, J_S, J_ph, dJ, num_atoms,
-                                    num_orbitals, rho)
+    def add_Coulomb_term(self, Job, ii, jj, U, J_S, J_ph, dJ, rho):
+        hami = Job.Def['Hamiltonian']
+        if hami == "scase":
+            return self.add_H_scase(ii, jj, U, Job.NAtom, Job.NOrb, rho)
+        if hami == "pcase":
+            return self.add_H_pcase(ii, jj, U, J_S, J_ph, Job.NAtom, Job.NOrb,
+                                    rho)
+        if hami == "dcase":
+            return self.add_H_dcase(ii, jj, U, J_S, J_ph, dJ, Job.NAtom,
+                                    Job.NOrb, rho)
+        if hami == "collinear":
+            return self.add_H_collinear(Job, ii, jj)
         else:
             raise UnimplementedModelError(
-                "Hamiltonian: '{}' is unrecognised".format(hamiltonian)
+                "Hamiltonian: '{}' is unrecognised".format(hami)
             )
+
+    def add_H_collinear(self, Job, ii, jj):
+        """
+        For the collinear case we add the spin onsite energy shift and the
+        electrostatic term.
+
+        The spin onsite energy shift only gets added to diagonal onsite
+        elements, i.e. i == j and a == b. The electrostatic term only gets
+        added along the diagonal of the Fock matrix i.e. ii == jj, or i == j,
+        a == b and s == sp.
+        """
+        i, a, s = map_index_to_atomic(ii, Job.NAtom, Job.NOrb)
+        j, b, sp = map_index_to_atomic(jj, Job.NAtom, Job.NOrb)
+
+        F = 0.0
+        # Check for same atom and orbital
+        if i == j and a == b:
+            F += self.spin_onsite_energy_shift(Job, s, sp, a)
+            if s == sp:
+                # Add electrostatic term if spins are the same
+                F += self.Wi[a]
+        return F
 
     def add_H_scase(self, ii, jj, U, num_atoms, num_orbitals, rho):
         """
@@ -457,7 +469,7 @@ class Hamiltonian:
 
         """
         # atom, spatial orbital and spin for index 1
-        i, a, s  = map_index_to_atomic(ii, num_atoms, num_orbitals)
+        i, a, s = map_index_to_atomic(ii, num_atoms, num_orbitals)
         # atom, spatial orbital and spin for index 2
         j, b, sp = map_index_to_atomic(jj, num_atoms, num_orbitals)
         F = 0.0
@@ -628,28 +640,29 @@ class Hamiltonian:
         can perform the trace of the dot product of the corrected Fock matrix
         and the density matrix.
         """
-        norb = Job.NOrb
-        natom = Job.NAtom
-        rho = Job.Electron.rhotot
         h0s = self.H0size
+        if Job.isNoncollinearHami:
+            rho = Job.Electron.rhotot
+        else:
+            rho = Job.Electron.rho
 
         corrected_fock = np.copy(self.fock)
-        for a in range(natom):
+        for a in range(Job.NAtom):
             # Get the atom type
             atype = Job.AtomType[a]
-            J  = Job.Model.atomic[atype].get('I')
-            U  = Job.Model.atomic[atype].get('U')
+            J = Job.Model.atomic[atype].get('I')
+            U = Job.Model.atomic[atype].get('U')
             dJ = Job.Model.atomic[atype].get('dJ')
             for jj in range(self.Hindex[a], self.Hindex[a+1]):
                 for ii in range(self.Hindex[a], self.Hindex[a+1]):
                     # up/up block
-                    corrected_fock[    jj,     ii] -= 0.5*self.add_Coulomb_term(    jj,     ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
+                    corrected_fock[    jj,     ii] -= 0.5*self.add_Coulomb_term(Job,     jj,     ii, U, J, J, dJ, rho)
                     # up/down block
-                    corrected_fock[    jj, h0s+ii] -= 0.5*self.add_Coulomb_term(    jj, h0s+ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
+                    corrected_fock[    jj, h0s+ii] -= 0.5*self.add_Coulomb_term(Job,     jj, h0s+ii, U, J, J, dJ, rho)
                     # down/up block
-                    corrected_fock[h0s+jj,     ii] -= 0.5*self.add_Coulomb_term(h0s+jj,     ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
+                    corrected_fock[h0s+jj,     ii] -= 0.5*self.add_Coulomb_term(Job, h0s+jj,     ii, U, J, J, dJ, rho)
                     # down/down block
-                    corrected_fock[h0s+jj, h0s+ii] -= 0.5*self.add_Coulomb_term(h0s+jj, h0s+ii, U, J, J, dJ, natom, norb, rho, Job.Def['Hamiltonian'])
+                    corrected_fock[h0s+jj, h0s+ii] -= 0.5*self.add_Coulomb_term(Job, h0s+jj, h0s+ii, U, J, J, dJ, rho)
 
         return np.trace(np.dot(corrected_fock, rho))
 

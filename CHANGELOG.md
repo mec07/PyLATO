@@ -5,6 +5,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.1] - 2018-11-30
+### Changed
+- Updated Readme
+- Added behave tests
+
 ## [2.0.0] - 2018-11-24
 ### Changed
 - Updated to python3

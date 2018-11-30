@@ -14,12 +14,11 @@ import matplotlib
 matplotlib.use('Agg')
 from matplotlib import cm
 import matplotlib.pyplot as plt
-from verbosity import verboseprint
 import shutil, os, sys
 import numpy as np
-import pylato
 import commentjson
 
+from pylato.main import main
 
 
 def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_modelfile, orb_type, number_decimals):
@@ -68,7 +67,7 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
     SuccessFlag = True
     for U in U_array:
         for J in J_array:
-            print "U = ", U, "\t J = ", J
+            print("U = ", U, "\t J = ", J)
             for dJ in dJ_array:
                 # if J > U:
                 #     mag_corr[U, J, dJ] = 0.0
@@ -84,7 +83,7 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                 with open(temp_modelfile, 'w') as f:
                     commentjson.dump(model, f, sort_keys=True, indent=4, separators=(',', ': '))
                 try:
-                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = pylato.main()
+                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = main()
                 # if we end up with a linear algebra error then we can re-run with a different optimisation scheme.
                 except numpy.linalg.linalg.LinAlgError:
                     # store original optimisation routine choice
@@ -100,7 +99,7 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                         commentjson.dump(jobdef, f, sort_keys=True, indent=4, separators=(',', ': '))
                     # and run again
                     print("SCF did not converge. Re-running simulation with different optimisation routine. ")
-                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = pylato.main()
+                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = main()
                     # reset optimisation routine
                     jobdef['optimisation_routine'] = old_routine
                     # write jobdef back to file
@@ -122,7 +121,7 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                         commentjson.dump(jobdef, f, sort_keys=True, indent=4, separators=(',', ': '))
                     # and run again
                     print("SCF did not converge. Re-running simulation with smaller mixing value. ")
-                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = pylato.main()
+                    SCFflag, mag_corr[round(U, number_decimals), round(J, number_decimals), round(dJ, number_decimals)] = main()
                     
                     # Re-set the jobdef variables:
                     jobdef["A"] = jobdef["A"]*10.0
@@ -132,8 +131,8 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
                     # If that still hasn't worked, exit gracefully...
                     if SCFflag == False:
                         SuccessFlag = False
-                        print "SCF did not converge for U = ", round(U, number_decimals), "; J = ", round(J, number_decimals), "; dJ = ", round(dJ, number_decimals)
-                        print "Exiting."
+                        print("SCF did not converge for U = ", round(U, number_decimals), "; J = ", round(J, number_decimals), "; dJ = ", round(dJ, number_decimals))
+                        print("Exiting.")
                         return SuccessFlag, mag_corr
 
     return SuccessFlag, mag_corr
@@ -141,7 +140,7 @@ def mag_corr_loop(U_array, J_array, dJ_array, jobdef, jobdef_file, model, temp_m
 
 
 
-def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps, Jmin, Jstep, Jnumsteps, dJmin, dJstep, dJnumsteps, op_sq_name, number_decimals):
+def Plot_OpSq_U_J(op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps, Jmin, Jstep, Jnumsteps, dJmin, dJstep, dJnumsteps, op_sq_name, number_decimals):
     """
     The function Plot_OpSq_U_J plots the values of an operator squared
     against U and J. This is done for the groundstate eigenvector and will look
@@ -149,8 +148,6 @@ def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps
     diagram to illustrate the correlation.
     
     INPUTS            TYPE        DESCRIPTION
-    
-    Verbose           int         0 for low verbosity and 1 for high verbosity.
     
     op_sq_dict        dict        A python dictionary containing the operator
                                   squared values for each value of U, J and dJ.
@@ -198,9 +195,9 @@ def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps
             plt.ylabel("$"+op_sq_name+"$", fontsize=16)
             plt.xlabel(r"$U/|t|$", fontsize=16)
             Name = plotname+".pdf"
-            verboseprint(Verbose, "Starting on "+str(Name))
+            print("Starting on "+str(Name))
         #     for i in range(NumOpSq):
-        #         verboseprint(Verbose,"Eigenvalue: "+str(i+1))
+        #         print("Eigenvalue: "+str(i+1))
             Urange = [Umin+j*Ustep for j in range(Unumsteps+1)]
             Values = [op_sq_dict[round(U, number_decimals), round(Jmin, number_decimals), round(dJmin, number_decimals)] for U in Urange]
         #         #CurveDict[i+1] = plt.plot(Urange,Values,marker=PlotSymbols[len(PlotSymbols)%(i+1)],linestyle=LineStyle[(i+1)%len(LineStyle)],color=PlotColour[(1+i)%len(PlotColour)])
@@ -217,11 +214,11 @@ def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps
         # Make a colourmap of the magmom_corr of the GS in U/|t| and J/|t| space.
         # -----------------------------------------------------------------------
             # Urange=np.array([[Umin+j*Ustep for i in range(Jnumsteps+1)] for j in range(Unumsteps+1)])
-            # print "U\n"
-            # print Urange
+            # print("U\n")
+            # print(Urange)
             # Jrange=np.array([[Jmin+i*Jstep for i in range(Jnumsteps+1)] for j in range(Unumsteps+1)])
-            # print "J\n"
-            # print Jrange
+            # print("J\n")
+            # print(Jrange)
             Umax = (Unumsteps)*Ustep+Umin
             Jmax = (Jnumsteps)*Jstep+Jmin
             Urange,Jrange = np.mgrid[slice(Umin,Umax+Ustep,Ustep),slice(Jmin,Jmax+Jstep,Jstep)]
@@ -244,8 +241,8 @@ def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps
             # for jj in GS_dict['states']:
             #     mid_x = (GS_dict[jj,"Umin",dJmin]+GS_dict[jj,"Umax",dJmin])*0.5
             #     mid_y = (GS_dict[jj,"Jmin",dJmin]+GS_dict[jj,"Jmax",dJmin])*0.5
-            #     print "State "+str(jj)+" has min J value at "+str(GS_dict[jj,"Jmin",dJmin])+" and max J value at "+str(GS_dict[jj,"Jmax",dJmin])
-            #     print "State "+str(jj)+" is located at ("+str(mid_x)+", "+str(mid_y)+")"
+            #     print("State "+str(jj)+" has min J value at "+str(GS_dict[jj,"Jmin",dJmin])+" and max J value at "+str(GS_dict[jj,"Jmax",dJmin]))
+            #     print("State "+str(jj)+" is located at ("+str(mid_x)+", "+str(mid_y)+")")
             #     S = jj[1]
             #     L_z = jj[2]
             #     ug = jj[3]
@@ -254,7 +251,7 @@ def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps
             #         symbol = "$^"+str(int(2*S+1))+Lz_symbol[int(L_z)]+"_"+ug+"^"+pm+"$"
             #     else:
             #         symbol = "$^"+str(int(2*S+1))+Lz_symbol[int(L_z)]+"_"+ug+"$"
-            #         print "L_z = "+str(L_z)
+            #         print("L_z = "+str(L_z))
             #     Scheck = checkint(S,0.0000001)
             #     Lzcheck = checkint(L_z,0.0000001)
             #     if not Scheck:
@@ -337,7 +334,7 @@ def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps
                 #             symbol = "$^"+str(int(2*S+1))+Lz_symbol[int(L_z)]+"_"+ug+"^"+pm+"$"
                 #         else:
                 #             symbol = "$^"+str(int(2*S+1))+Lz_symbol[int(L_z)]+"_"+ug+"$"
-                #             print "L_z = "+str(L_z)
+                #             print("L_z = "+str(L_z))
                 #         # removed label for paper
                 #         # plt.text(mid_x,mid_y,symbol,fontsize=20)
                 #         Scheck = checkint(S,0.0000001)
@@ -366,7 +363,7 @@ def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps
         # No videos required for paper
             # currentdir=os.getcwd()
             # dirlist=plotname.split("/")[:-1]
-            # print dirlist
+            # print(dirlist)
             # moviedir = ""
             # for ii in range(1,len(dirlist)):
             #     moviedir+="/"+dirlist[ii]
@@ -379,7 +376,6 @@ def Plot_OpSq_U_J(Verbose, op_sq_dict, orbtype, plotname, Umin, Ustep, Unumsteps
 
 
 def make_magmomcorr_graphs(numeperatom):
-    Verbose = 1
     number_decimals = 6
     orb_type = "p"
     plotname = "../output_PyLATO/Mag_Corr_"+orb_type+"_"+str(numeperatom)
@@ -469,7 +465,7 @@ def make_magmomcorr_graphs(numeperatom):
 
     # Make the plot if the mag_corr_loop was successful
     if magFlag == True:
-        Plot_OpSq_U_J(Verbose,mag_corr,orb_type,plotname,U_min,U_step,U_num_steps,J_min,J_step,J_num_steps,dJ_min,dJ_step,dJ_num_steps,op_sq_name, number_decimals)
+        Plot_OpSq_U_J(mag_corr,orb_type,plotname,U_min,U_step,U_num_steps,J_min,J_step,J_num_steps,dJ_min,dJ_step,dJ_num_steps,op_sq_name, number_decimals)
     else:
         print("Simulation failed.")
 

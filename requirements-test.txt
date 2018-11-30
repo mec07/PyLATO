@@ -1,6 +1,7 @@
 -r requirements.txt
 -e .
 
+behave
 flake8
 numpy
 pytest

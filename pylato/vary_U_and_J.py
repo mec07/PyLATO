@@ -18,9 +18,10 @@ To vary U and J I have to mess with the model.
 """
 import numpy as np
 import commentjson
-import graphs
-from verbosity import verboseprint
 import pdb
+
+from pylato.graphs import make_magmomcorr_graphs
+from pylato.verbosity import verboseprint
 
 # The steps:
 #   * Loop over U and J
@@ -28,4 +29,4 @@ import pdb
 #       * Run the code and store the mag corr value.
 #   * Make the plot of the magnetic correlation phase diagram.
 for ii in range(3):
-    graphs.make_magmomcorr_graphs(ii)
+    make_magmomcorr_graphs(ii)

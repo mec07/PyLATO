@@ -262,7 +262,8 @@ def WriteTotalEnergy(Job, filename="energy.txt"):
     """
     if Job.Def['write_total_energy'] == 1:
         with open(os.path.join(Job.results_dir, filename), 'w') as f:
-            f.write(str(Job.Hamilton.total_energy(Job)))
+            # Make it real rather than complex
+            f.write(str(float(Job.Hamilton.total_energy(Job))))
 
 
 def WriteSimulationResults(Job):
