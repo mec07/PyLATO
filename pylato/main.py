@@ -39,7 +39,6 @@ def initialisation():
             Job = InitJob(jobpath)
         else:
             print("ERROR: Unable to find job file:")
-            print(jobpath)
             sys.exit()
     else:
         if os.path.exists("JobDef.json"):
@@ -94,6 +93,9 @@ def main():
     if success:
         print("\n\n\nSuccessfully completed calculation!")
         WriteSimulationResults(Job)
+        return True
+
+    return False
 
 
 if __name__ == "__main__":

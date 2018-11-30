@@ -1,8 +1,12 @@
 import os
 
+from unittest.mock import patch
+from pylato.main import main
 
-@when(u'PyLATO is run using the single hydrogen job definition file')
-def step_impl(context):
-    context.job_def_file = "features/support/single_hydrogen_job_def.json"
-    exit_status = os.system("python pylato/main.py {}".format(context.job_def_file))
-    assert exit_status == 0
+
+@when(u'PyLATO is run using the job definition file: "{file_name}"')
+def step_impl(context, file_name):
+    context.job_def_file = "features/support/{}".format(file_name)
+    runtime_arguments = ["pylato/main.py", context.job_def_file]
+    with patch("sys.argv", runtime_arguments):
+        assert main()

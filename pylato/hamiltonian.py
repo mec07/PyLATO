@@ -664,11 +664,6 @@ class Hamiltonian:
                     # down/down block
                     corrected_fock[h0s+jj, h0s+ii] -= 0.5*self.add_Coulomb_term(Job, h0s+jj, h0s+ii, U, J, J, dJ, rho)
 
-        print("##################################3")
-        print("corrected fock = ", corrected_fock)
-        print("rho = ", rho)
-        print("##################################3")
-
         return np.trace(np.dot(corrected_fock, rho))
 
 
