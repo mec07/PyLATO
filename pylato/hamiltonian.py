@@ -394,19 +394,20 @@ class Hamiltonian:
                     k += n  # Advance to the start of the next set of orbitals
 
     def add_Coulomb_term(self, Job, ii, jj, U, J_S, J_ph, dJ, rho):
-        if Job.Def["Hamiltonian"] == "scase":
+        hami = Job.Def['Hamiltonian']
+        if hami == "scase":
             return self.add_H_scase(ii, jj, U, Job.NAtom, Job.NOrb, rho)
-        if Job.Def["Hamiltonian"] == "pcase":
+        if hami == "pcase":
             return self.add_H_pcase(ii, jj, U, J_S, J_ph, Job.NAtom, Job.NOrb,
                                     rho)
-        if Job.Def["Hamiltonian"] == "dcase":
+        if hami == "dcase":
             return self.add_H_dcase(ii, jj, U, J_S, J_ph, dJ, Job.NAtom,
                                     Job.NOrb, rho)
-        if Job.Def["Hamiltonian"] == "collinear":
+        if hami == "collinear":
             return self.add_H_collinear(Job, ii, jj)
         else:
             raise UnimplementedModelError(
-                f"Hamiltonian: '{Job.Def['Hamiltonian']}' is unrecognised"
+                "Hamiltonian: '{}' is unrecognised".format(hami)
             )
 
     def add_H_collinear(self, Job, ii, jj):
