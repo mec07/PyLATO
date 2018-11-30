@@ -11,6 +11,7 @@ populated by electrons.
 import numpy as np
 import math
 import os
+import json
 import sys
 import time
 import random
@@ -24,11 +25,11 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 
 class Electronic:
     """Initialise and build the density matrix."""
-    def __init__(self, JobClass):
+    def __init__(self, Job):
         """Compute the total number of electrons in the system, allocate space for occupancies"""
 
         # Save job reference as an attribute for internal use.
-        self.Job = JobClass
+        self.Job = Job
 
         # Set up the core charges, and count the number of electrons
         self.zcore = np.zeros(self.Job.NAtom, dtype='double')
@@ -42,6 +43,21 @@ class Electronic:
         self.occ = np.zeros( self.Job.Hamilton.HSOsize, dtype='double')
         self.rho = np.matrix(np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex'))
         self.rhotot = np.matrix(np.zeros((self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex'))
+
+        # Check for an input starting density matrix
+        input_rho_file = self.Job.Def.get('input_rho')
+        if input_rho_file and os.path.isfile(input_rho_file):
+            with open(input_rho_file, 'r') as file_handle:
+                input_rho = np.matrix(json.load(file_handle), dtype='complex')
+
+            if input_rho.shape == self.rho.shape:
+                self.rho = input_rho
+                self.rhotot = input_rho
+            else:
+                print("WARNING: Unable to use input rho from file: {}".format(
+                    input_rho_file
+                ))
+
         # setup for the Pulay mixing
         self.inputrho = np.zeros((self.Job.Def['num_rho'], self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
         self.outputrho = np.zeros((self.Job.Def['num_rho'], self.Job.Hamilton.HSOsize, self.Job.Hamilton.HSOsize), dtype='complex')
