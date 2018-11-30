@@ -5,4 +5,4 @@ Feature: Find the groundstate energy
 
     Scenario: find the groundstate energy of a single hydrogen atom
         When PyLATO is run using the job definition file: "single_hydrogen_job_def.json"
-        Then the total energy in the output file is the onsite energy for a single hydrogen atom
+        Then the total energy in the output file is equivalent to the onsite energy
