@@ -24,8 +24,8 @@ When you are inside the PyLATO folder you can start the virtual environment and 
 
 ```
 python -m venv venv
-pip install -r requirements.txt
 source venv/bin/activate
+pip install -r requirements-test.txt
 ```
 (on some computers you will to specify python 3 by using `python3` instead of `python` --- you can check your python version using: `python --version`).
 To exit from the virtual environment just type in a terminal window:
@@ -43,22 +43,25 @@ To run the behave test suite, type the following into the terminal:
 ```behave```
 
 You should see the tests get executed and see that all of the tests have passed.
+You can also run them both using the make command:
+
+```make test```
 
 
 # Running the code
-This is the main program for computing the eigenvalues and eigenfunctions for a noncollinear tight binding model chosen in the JobDef.json file. The input file can be given a different name, but it must be specified when running this programme. To run the programme from the commandline type:
+The default job definition file that PyLATO uses is `JobDef.json`, so if you just run 
+
+```pylato/main.py```
+that is what it will look for.
+You can specify an input file by including it in the command to run PyLATO on the commandline:
 
 ```pylato/main.py specificationfile.json```
-or
-
-```python pylato/main.py specificationfile.json```
-
 where "specificationfile.json" can be any name as long as it's a json file.
 
 
 # Set up a simulation
 To alter the system being simulated you can do one of the following:
-  * Alter settings in the specification file. See the example, JobDef.json.
+  * Alter settings in the specification file. See the example, `JobDef.json`.
   * Alter the parameters of the canonical, exponential or hydrocarbon tight binding model: change the corresponding json file in the models folder.
   * Change the tight binding model being used: Add a json and a py file to the models folder, following the example of the files currently present.
 
