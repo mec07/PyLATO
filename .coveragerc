@@ -1,4 +1,4 @@
 [run]
-include = pylato*
+include = pylato*,models*
 branch  = True
 parallel = True
