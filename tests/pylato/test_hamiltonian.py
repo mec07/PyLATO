@@ -226,3 +226,15 @@ class TestHamiltonian:
 
         # Result
         assert result == expected_value
+
+    def test_buildH0_one_atom(self):
+        """
+        A single atom without PBCs should have an H0 of: [[0]]; as there is no
+        possible hopping.
+        """
+        # Setup
+        Job = InitJob("test_data/JobDef_single_atom.json")
+
+        Job.Hamilton.buildH0(Job)
+
+        assert np.array_equal(Job.Hamilton.H0, np.array([[0]]))
