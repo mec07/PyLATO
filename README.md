@@ -5,7 +5,7 @@ Created on Sunday April 12, 2015
 
 @author: Andrew Horsfield, Marc Coury and Max Boleininger
 
-Currently this programme works with Python 2.7.5.
+Currently this programme works with Python 3.
 
 # Setup
 First you will want to clone this repository from github and then you will want to create a python virtual environment (to find out more about virtual environments please refer to: http://docs.python-guide.org/en/latest/dev/virtualenvs/).
@@ -15,18 +15,19 @@ It is of course possible to run this programme from a Windows machine but you wi
 To clone this repository type in a terminal window:
 ```git clone git@github.com:mec07/PyLATO.git```
 
-For a python virtual environment you will need to install the `virtualenv` package. Type in a terminal window:
+For a python3 virtual environment you will need to install the `virtualenv` package. Type in a terminal window:
 
-```pip install virtualenv```
+```pip install venv```
 
-When you are inside the PyLATO folder you can start the virtual environment (using python3) and install all the packages type in a terminal window:
+(on some computers you will have to specify python 3 pip by using `pip3` instead of just `pip).
+When you are inside the PyLATO folder you can start the virtual environment and install all the packages type in a terminal window:
 
 ```
 python -m venv venv
 pip install -r requirements.txt
 source venv/bin/activate
 ```
-
+(on some computers you will to specify python 3 by using `python3` instead of `python`).
 To exit from the virtual environment just type in a terminal window:
 
 ```deactivate```
@@ -47,10 +48,10 @@ You should see the tests get executed and see that all of the tests have passed.
 # Running the code
 This is the main program for computing the eigenvalues and eigenfunctions for a noncollinear tight binding model chosen in the JobDef.json file. The input file can be given a different name, but it must be specified when running this programme. To run the programme from the commandline type:
 
-```pylato/pylato.py specificationfile.json```
+```pylato/main.py specificationfile.json```
 or
 
-```python pylato/pylato.py specificationfile.json```
+```python pylato/main.py specificationfile.json```
 
 where "specificationfile.json" can be any name as long as it's a json file.
 
