@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.1] - 2018-12-1
+### Added
+- Added scripts for generating total energies and magnetic correlations
+
 ## [2.1.0] - 2018-12-1
 ### Added
 - You can now start the simulation with an input density matrix (config file parameter: `input_rho`)
