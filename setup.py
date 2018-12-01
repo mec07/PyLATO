@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='pylato',
-    version='2.0.1',
+    version='2.1.0',
     author='Marc Coury',
     author_email='marc.coury@gmail.com',
     description="PyLATO: Noncollinear Magnetic Tight Binding code",

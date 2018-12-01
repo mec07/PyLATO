@@ -59,14 +59,17 @@ def main():
     # Build the non-self-consistent Hamiltonian (incl hopping and spin-orbit)
     Job.Hamilton.buildHSO(Job)
     #
+    # Build the fock matrix
+    Job.Hamilton.buildFock(Job)
+    #
     # Allocate memory for the eigenvalues and eigenvectors
     Job.e   = np.zeros( Job.Hamilton.HSOsize, dtype='double')
     Job.psi = np.zeros((Job.Hamilton.HSOsize, Job.Hamilton.HSOsize), dtype='complex')
 
     # Initial step to solve H0 and initialise the Mulliken chareges
 
-    # Diagonalise the HSO matrix
-    Job.e, Job.psi = np.linalg.eigh(Job.Hamilton.HSO)
+    # Diagonalise the fock matrix
+    Job.e, Job.psi = np.linalg.eigh(Job.Hamilton.fock)
     # Occupy the orbitals according to the Fermi distribution
     Job.Electron.occupy(Job.e, Job.Def['el_kT'], Job.Def['mu_tol'], Job.Def['mu_max_loops'])
     #

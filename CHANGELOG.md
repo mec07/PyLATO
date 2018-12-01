@@ -5,6 +5,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.0] - 2018-12-1
+### Added
+- You can now start the simulation with an input density matrix (config file parameter: `input_rho`)
+
 ## [2.0.1] - 2018-11-30
 ### Changed
 - Updated Readme
