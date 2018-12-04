@@ -119,8 +119,10 @@ def save_1D_raw_data(x_vals, y_vals, x_col_name, y_col_name, filename):
         print("{},{}".format(x_col_name, y_col_name))
 
         for index, val in enumerate(x_vals):
-            writer.writerow({x_col_name: val, y_col_name: y_vals[index]})
-            print("{},{}".format(val, y_vals[index]))
+            value = y_vals[index]
+            if value is not None:
+                writer.writerow({x_col_name: val, y_col_name: value})
+                print("{},{}".format(val, value))
 
 
 def save_2D_raw_data(x_vals, y_vals, results, x_col_name, y_col_name, values_col_name, filename):
@@ -134,11 +136,12 @@ def save_2D_raw_data(x_vals, y_vals, results, x_col_name, y_col_name, values_col
         print(fieldnames)
 
         for x_index, x_val in enumerate(x_vals):
-            for y_index, y_val in enumerate(x_vals):
-                writer.writerow({
-                    x_col_name: x_val,
-                    y_col_name: y_val,
-                    values_col_name: results[(x_index, y_index)],
-                })
-                print("{},{},{}".format(
-                    x_val, y_val, results[(x_index, y_index)]))
+            for y_index, y_val in enumerate(y_vals):
+                value = results[(x_index, y_index)]
+                if value is not None:
+                    writer.writerow({
+                        x_col_name: x_val,
+                        y_col_name: y_val,
+                        values_col_name: value,
+                    })
+                    print("{},{},{}".format(x_val, y_val, value))

@@ -1,4 +1,3 @@
-import commentjson
 import numpy as np
 import os
 
@@ -82,13 +81,16 @@ def generate_mag_mom_corr_pcase():
         mag_corr_result_filename = os.path.join(results_dir, "mag_mom_corr_pcase.csv")
         execution_args = ['pylato/main.py', jobdef_file]
 
-        U_array = np.linspace(0.005, 10, num=10)
-        J_array = np.linspace(0.005, 5, num=10)
+        U_array = np.linspace(0.005, 10, num=20)
+        J_array = np.linspace(0.005, 2.5, num=20)
         mag_corr_result = {}
         for U_index, U in enumerate(U_array):
             for J_index, J in enumerate(J_array):
-                mag_corr_result[(U_index, J_index)] = calculate_mag_corr_result(
-                    U, J, 0, model, mag_corr_file, execution_args)
+                if U >= J:
+                    mag_corr_result[(U_index, J_index)] = calculate_mag_corr_result(
+                        U, J, 0, model, mag_corr_file, execution_args)
+                else:
+                    mag_corr_result[(U_index, J_index)] = None
 
     x_label = "U/|t|"
     y_label = "J/|t|"
@@ -115,16 +117,20 @@ def generate_mag_mom_corr_dcase():
             results_dir, "mag_mom_corr_dcase_dJ_{}.csv".format(dJ_val2))
         execution_args = ['pylato/main.py', jobdef_file]
 
-        U_array = np.linspace(0.005, 10, num=5)
-        J_array = np.linspace(0.005, 5, num=5)
+        U_array = np.linspace(0.005, 10, num=10)
+        J_array = np.linspace(0.005, 2.5, num=10)
         mag_corr_result_1 = {}
         mag_corr_result_2 = {}
         for U_index, U in enumerate(U_array):
             for J_index, J in enumerate(J_array):
-                mag_corr_result_1[(U_index, J_index)] = calculate_mag_corr_result(
-                    U, J, dJ_val1, model, mag_corr_file, execution_args)
-                mag_corr_result_2[(U_index, J_index)] = calculate_mag_corr_result(
-                    U, J, dJ_val2, model, mag_corr_file, execution_args)
+                if U >= J:
+                    mag_corr_result_1[(U_index, J_index)] = calculate_mag_corr_result(
+                        U, J, dJ_val1, model, mag_corr_file, execution_args)
+                    mag_corr_result_2[(U_index, J_index)] = calculate_mag_corr_result(
+                        U, J, dJ_val2, model, mag_corr_file, execution_args)
+                else:
+                    mag_corr_result_1[(U_index, J_index)] = None
+                    mag_corr_result_2[(U_index, J_index)] = None
 
     x_label = "U/|t|"
     y_label = "J/|t|"
@@ -157,7 +163,7 @@ def get_mag_corr(filename):
 
 
 if __name__ == "__main__":
-    generate_mag_mom_corr_scase_local_minimum()
-    generate_mag_mom_corr_scase_global_minimum()
-    generate_mag_mom_corr_pcase()
+    # generate_mag_mom_corr_scase_local_minimum()
+    # generate_mag_mom_corr_scase_global_minimum()
+    # generate_mag_mom_corr_pcase()
     generate_mag_mom_corr_dcase()
