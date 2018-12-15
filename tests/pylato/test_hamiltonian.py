@@ -126,6 +126,8 @@ class TestHamiltonian:
             ("scase", 1, 0, 0, [1], 1),
             ("pcase", 1, 1, 0, [3], 5),
             ("dcase", 1, 1, 1, [5], 18),
+            ("vector_stoner", 1, 1, 0, [3], 4),
+            ("vector_stoner", 1, 1, 1, [5], 6),
         ]
 
     )
