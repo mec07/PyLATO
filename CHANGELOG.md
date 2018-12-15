@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 ## [2.1.1] - 2018-12-1
 ### Added
 - Added scripts for generating total energies and magnetic correlations
+- Added the vector Stoner Hamiltonian
 
 ## [2.1.0] - 2018-12-1
 ### Added
