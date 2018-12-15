@@ -33,9 +33,9 @@ def generate_mag_mom_corr_scase_local_minimum():
             mag_corr_array.append(calculate_mag_corr_result(
                 U, 0, 0, model, mag_corr_file, execution_args))
 
-    x_label = "U/|t|"
-    y_label = "C_avg"
-    save_1D_raw_data(U_array, mag_corr_array, x_label, y_label, mag_corr_array_filename)
+        x_label = "U/|t|"
+        y_label = "C_avg"
+        save_1D_raw_data(U_array, mag_corr_array, x_label, y_label, mag_corr_array_filename)
 
 
 def generate_mag_mom_corr_scase_global_minimum():
@@ -62,9 +62,9 @@ def generate_mag_mom_corr_scase_global_minimum():
             mag_corr_array.append(calculate_mag_corr_result(
                 U, 0, 0, model, mag_corr_file, execution_args))
 
-    x_label = "U/|t|"
-    y_label = "C_avg"
-    save_1D_raw_data(U_array, mag_corr_array, x_label, y_label, mag_corr_array_filename)
+        x_label = "U/|t|"
+        y_label = "C_avg"
+        save_1D_raw_data(U_array, mag_corr_array, x_label, y_label, mag_corr_array_filename)
 
 
 def generate_mag_mom_corr_pcase():
@@ -74,28 +74,33 @@ def generate_mag_mom_corr_pcase():
     model = Model(modelfile)
 
     with BackupFiles(jobdef_file, modelfile):
-        jobdef.update_hamiltonian("pcase")
+        for num_electrons in range(1, 6):
+            jobdef.update_hamiltonian("pcase")
+            model.update_num_electrons(num_electrons)
 
-        results_dir = jobdef['results_dir']
-        mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
-        mag_corr_result_filename = os.path.join(results_dir, "mag_mom_corr_pcase.csv")
-        execution_args = ['pylato/main.py', jobdef_file]
+            results_dir = jobdef['results_dir']
+            mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
+            mag_corr_result_filename = os.path.join(
+                results_dir,
+                "mag_mom_corr_pcase_{}_electrons_per_atom.csv".format(
+                    num_electrons))
+            execution_args = ['pylato/main.py', jobdef_file]
 
-        U_array = np.linspace(0.005, 10, num=20)
-        J_array = np.linspace(0.005, 2.5, num=20)
-        mag_corr_result = {}
-        for U_index, U in enumerate(U_array):
-            for J_index, J in enumerate(J_array):
-                if U >= J:
-                    mag_corr_result[(U_index, J_index)] = calculate_mag_corr_result(
-                        U, J, 0, model, mag_corr_file, execution_args)
-                else:
-                    mag_corr_result[(U_index, J_index)] = None
+            U_array = np.linspace(0.005, 10, num=20)
+            J_array = np.linspace(0.005, 2.5, num=20)
+            mag_corr_result = {}
+            for U_index, U in enumerate(U_array):
+                for J_index, J in enumerate(J_array):
+                    if U >= J:
+                        mag_corr_result[(U_index, J_index)] = calculate_mag_corr_result(
+                            U, J, 0, model, mag_corr_file, execution_args)
+                    else:
+                        mag_corr_result[(U_index, J_index)] = None
 
-    x_label = "U/|t|"
-    y_label = "J/|t|"
-    values_label = "C_avg"
-    save_2D_raw_data(U_array, J_array, mag_corr_result, x_label, y_label, values_label, mag_corr_result_filename)
+            x_label = "U/|t|"
+            y_label = "J/|t|"
+            values_label = "C_avg"
+            save_2D_raw_data(U_array, J_array, mag_corr_result, x_label, y_label, values_label, mag_corr_result_filename)
 
 
 def generate_mag_mom_corr_dcase():
@@ -104,39 +109,43 @@ def generate_mag_mom_corr_dcase():
     modelfile = "models/TBcanonical_d.json"
     model = Model(modelfile)
 
+    electrons_of_interest = [4, 6]
     with BackupFiles(jobdef_file, modelfile):
-        jobdef.update_hamiltonian("dcase")
+        for num_electrons in electrons_of_interest:
+            jobdef.update_hamiltonian("dcase")
+            model.update_num_electrons(num_electrons)
 
-        results_dir = jobdef['results_dir']
-        mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
-        dJ_val1 = 0.0
-        dJ_val2 = 0.1
-        mag_corr_result_filename_1 = os.path.join(
-            results_dir, "mag_mom_corr_dcase_dJ_{}.csv".format(dJ_val1))
-        mag_corr_result_filename_2 = os.path.join(
-            results_dir, "mag_mom_corr_dcase_dJ_{}.csv".format(dJ_val2))
-        execution_args = ['pylato/main.py', jobdef_file]
+            results_dir = jobdef['results_dir']
+            mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
+            dJ_val1 = 0.0
+            dJ_val2 = 0.1
+            filename = "mag_mom_corr_dcase_{}_electrons_per_atom_dJ_{}.csv"
+            mag_corr_result_filename_1 = os.path.join(
+                results_dir, filename.format(num_electrons, dJ_val1))
+            mag_corr_result_filename_2 = os.path.join(
+                results_dir, filename.format(num_electrons, dJ_val2))
+            execution_args = ['pylato/main.py', jobdef_file]
 
-        U_array = np.linspace(0.005, 10, num=10)
-        J_array = np.linspace(0.005, 2.5, num=10)
-        mag_corr_result_1 = {}
-        mag_corr_result_2 = {}
-        for U_index, U in enumerate(U_array):
-            for J_index, J in enumerate(J_array):
-                if U >= J:
-                    mag_corr_result_1[(U_index, J_index)] = calculate_mag_corr_result(
-                        U, J, dJ_val1, model, mag_corr_file, execution_args)
-                    mag_corr_result_2[(U_index, J_index)] = calculate_mag_corr_result(
-                        U, J, dJ_val2, model, mag_corr_file, execution_args)
-                else:
-                    mag_corr_result_1[(U_index, J_index)] = None
-                    mag_corr_result_2[(U_index, J_index)] = None
+            U_array = np.linspace(0.005, 10, num=20)
+            J_array = np.linspace(0.005, 2.5, num=20)
+            mag_corr_result_1 = {}
+            mag_corr_result_2 = {}
+            for U_index, U in enumerate(U_array):
+                for J_index, J in enumerate(J_array):
+                    if U >= J:
+                        mag_corr_result_1[(U_index, J_index)] = calculate_mag_corr_result(
+                            U, J, dJ_val1, model, mag_corr_file, execution_args)
+                        mag_corr_result_2[(U_index, J_index)] = calculate_mag_corr_result(
+                            U, J, dJ_val2, model, mag_corr_file, execution_args)
+                    else:
+                        mag_corr_result_1[(U_index, J_index)] = None
+                        mag_corr_result_2[(U_index, J_index)] = None
 
-    x_label = "U/|t|"
-    y_label = "J/|t|"
-    values_label = "C_avg"
-    save_2D_raw_data(U_array, J_array, mag_corr_result_1, x_label, y_label, values_label, mag_corr_result_filename_1)
-    save_2D_raw_data(U_array, J_array, mag_corr_result_2, x_label, y_label, values_label, mag_corr_result_filename_2)
+            x_label = "U/|t|"
+            y_label = "J/|t|"
+            values_label = "C_avg"
+            save_2D_raw_data(U_array, J_array, mag_corr_result_1, x_label, y_label, values_label, mag_corr_result_filename_1)
+            save_2D_raw_data(U_array, J_array, mag_corr_result_2, x_label, y_label, values_label, mag_corr_result_filename_2)
 
 
 def calculate_mag_corr_result(U, J, dJ, model, mag_corr_file, execution_args):
@@ -149,8 +158,10 @@ def calculate_mag_corr_result(U, J, dJ, model, mag_corr_file, execution_args):
 
     with patch('sys.argv', execution_args):
         try:
-            assert main()
-            return get_mag_corr(mag_corr_file)
+            if main():
+                return get_mag_corr(mag_corr_file)
+            else:
+                return None
         except np.linalg.linalg.LinAlgError:
             return None
 

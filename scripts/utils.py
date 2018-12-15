@@ -109,6 +109,9 @@ class Model(CommentJsonInteractor):
         self.data["species"][0]["dJ"] = dJ
         self.update_file()
 
+    def update_num_electrons(self, num_electrons):
+        self.data["species"][0]["NElectrons"] = num_electrons
+        self.update_file()
 
 def save_1D_raw_data(x_vals, y_vals, x_col_name, y_col_name, filename):
     assert len(x_vals) == len(y_vals)
@@ -123,6 +126,8 @@ def save_1D_raw_data(x_vals, y_vals, x_col_name, y_col_name, filename):
             if value is not None:
                 writer.writerow({x_col_name: val, y_col_name: value})
                 print("{},{}".format(val, value))
+
+    print("Saved {} by {} to {}".format(y_col_name, x_col_name, filename))
 
 
 def save_2D_raw_data(x_vals, y_vals, results, x_col_name, y_col_name, values_col_name, filename):
@@ -145,3 +150,5 @@ def save_2D_raw_data(x_vals, y_vals, results, x_col_name, y_col_name, values_col
                         values_col_name: value,
                     })
                     print("{},{},{}".format(x_val, y_val, value))
+
+    print("Saved {}, {}, {} to {}".format(y_col_name, x_col_name, values_col_name, filename))
