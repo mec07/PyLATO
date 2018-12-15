@@ -23,6 +23,7 @@ def generate_energy_data_local_minimum():
 
     with BackupFiles(jobdef_file, modelfile):
         jobdef.update_hamiltonian("scase")
+        jobdef.update_model("TBcanonical_s")
 
         results_dir = jobdef['results_dir']
         energy_file = os.path.join(results_dir, "energy.txt")
@@ -50,6 +51,7 @@ def generate_energy_data_global_minimum():
 
     with BackupFiles(input_density_file, jobdef_file, modelfile):
         jobdef.update_hamiltonian("scase")
+        jobdef.update_model("TBcanonical_s")
         jobdef.update_input_rho(input_density_file)
 
         results_dir = jobdef['results_dir']
@@ -78,6 +80,7 @@ def generate_energy_data_pcase():
     with BackupFiles(jobdef_file, modelfile):
         for num_electrons in range(1, 6):
             jobdef.update_hamiltonian("pcase")
+            jobdef.update_model("TBcanonical_p")
             model.update_num_electrons(num_electrons)
 
             results_dir = jobdef['results_dir']
@@ -113,6 +116,7 @@ def generate_energy_data_dcase():
     with BackupFiles(jobdef_file, modelfile):
         for num_electrons in electrons_of_interest:
             jobdef.update_hamiltonian("dcase")
+            jobdef.update_model("TBcanonical_d")
             model.update_num_electrons(num_electrons)
 
             results_dir = jobdef['results_dir']
@@ -176,7 +180,7 @@ def get_energy(energy_file):
 
 
 if __name__ == "__main__":
-    #generate_energy_data_local_minimum()
+    generate_energy_data_local_minimum()
     #generate_energy_data_global_minimum()
     #generate_energy_data_pcase()
-    generate_energy_data_dcase()
+    #generate_energy_data_dcase()

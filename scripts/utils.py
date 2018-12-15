@@ -91,6 +91,10 @@ class JobDef(CommentJsonInteractor):
         self.data['Hamiltonian'] = hami
         self.update_file()
 
+    def update_model(self, model):
+        self.data['model'] = model
+        self.update_file()
+
     def update_input_rho(self, input_rho_file):
         self.data['input_rho'] = input_rho_file
         self.update_file()

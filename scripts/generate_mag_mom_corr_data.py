@@ -22,6 +22,7 @@ def generate_mag_mom_corr_scase_local_minimum():
 
     with BackupFiles(jobdef_file, modelfile):
         jobdef.update_hamiltonian("scase")
+        jobdef.update_model("TBcanonical_s")
         results_dir = jobdef['results_dir']
         mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
         mag_corr_array_filename = os.path.join(results_dir, "mag_mom_corr_scase_local_minimum.csv")
@@ -48,6 +49,7 @@ def generate_mag_mom_corr_scase_global_minimum():
 
     with BackupFiles(input_density_file, jobdef_file, modelfile):
         jobdef.update_hamiltonian("scase")
+        jobdef.update_model("TBcanonical_s")
         jobdef.update_input_rho(input_density_file)
 
         results_dir = jobdef['results_dir']
@@ -76,6 +78,7 @@ def generate_mag_mom_corr_pcase():
     with BackupFiles(jobdef_file, modelfile):
         for num_electrons in range(1, 6):
             jobdef.update_hamiltonian("pcase")
+            jobdef.update_model("TBcanonical_p")
             model.update_num_electrons(num_electrons)
 
             results_dir = jobdef['results_dir']
@@ -113,6 +116,7 @@ def generate_mag_mom_corr_dcase():
     with BackupFiles(jobdef_file, modelfile):
         for num_electrons in electrons_of_interest:
             jobdef.update_hamiltonian("dcase")
+            jobdef.update_model("TBcanonical_d")
             model.update_num_electrons(num_electrons)
 
             results_dir = jobdef['results_dir']
@@ -148,6 +152,80 @@ def generate_mag_mom_corr_dcase():
             save_2D_raw_data(U_array, J_array, mag_corr_result_2, x_label, y_label, values_label, mag_corr_result_filename_2)
 
 
+def generate_mag_mom_corr_vector_stoner_pcase():
+    jobdef_file = "scripts/JobDef.json"
+    jobdef = JobDef(jobdef_file)
+    modelfile = "models/TBcanonical_p.json"
+    model = Model(modelfile)
+    results_file = "mag_mom_corr_vector_stoner_pcase_{}_electrons_per_atom.csv"
+
+    with BackupFiles(jobdef_file, modelfile):
+        for num_electrons in range(1, 6):
+            jobdef.update_hamiltonian("vector_stoner")
+            jobdef.update_model("TBcanonical_p")
+            model.update_num_electrons(num_electrons)
+
+            results_dir = jobdef['results_dir']
+            mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
+            mag_corr_result_filename = os.path.join(
+                results_dir, results_file.format(num_electrons)
+            )
+            execution_args = ['pylato/main.py', jobdef_file]
+
+            U_array = np.linspace(0.005, 10, num=20)
+            J_array = np.linspace(0.005, 2.5, num=20)
+            mag_corr_result = {}
+            for U_index, U in enumerate(U_array):
+                for J_index, J in enumerate(J_array):
+                    if U >= J:
+                        mag_corr_result[(U_index, J_index)] = calculate_mag_corr_result(
+                            U, J, 0, model, mag_corr_file, execution_args)
+                    else:
+                        mag_corr_result[(U_index, J_index)] = None
+
+            x_label = "U/|t|"
+            y_label = "J/|t|"
+            values_label = "C_avg"
+            save_2D_raw_data(U_array, J_array, mag_corr_result, x_label, y_label, values_label, mag_corr_result_filename)
+
+
+def generate_mag_mom_corr_vector_stoner_dcase():
+    jobdef_file = "scripts/JobDef.json"
+    jobdef = JobDef(jobdef_file)
+    modelfile = "models/TBcanonical_d.json"
+    model = Model(modelfile)
+    filename = "mag_mom_corr_vector_stoner_dcase_{}_electrons_per_atom.csv"
+
+    electrons_of_interest = [4, 6]
+    with BackupFiles(jobdef_file, modelfile):
+        for num_electrons in electrons_of_interest:
+            jobdef.update_hamiltonian("vector_stoner")
+            jobdef.update_model("TBcanonical_d")
+            model.update_num_electrons(num_electrons)
+
+            results_dir = jobdef['results_dir']
+            mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
+            mag_corr_result_filename = os.path.join(
+                results_dir, filename.format(num_electrons))
+            execution_args = ['pylato/main.py', jobdef_file]
+
+            U_array = np.linspace(0.005, 10, num=20)
+            J_array = np.linspace(0.005, 2.5, num=20)
+            mag_corr_result = {}
+            for U_index, U in enumerate(U_array):
+                for J_index, J in enumerate(J_array):
+                    if U >= J:
+                        mag_corr_result[(U_index, J_index)] = calculate_mag_corr_result(
+                            U, J, 0, model, mag_corr_file, execution_args)
+                    else:
+                        mag_corr_result[(U_index, J_index)] = None
+
+            x_label = "U/|t|"
+            y_label = "J/|t|"
+            values_label = "C_avg"
+            save_2D_raw_data(U_array, J_array, mag_corr_result, x_label, y_label, values_label, mag_corr_result_filename)
+
+
 def calculate_mag_corr_result(U, J, dJ, model, mag_corr_file, execution_args):
     print("U = ", U)
     print("J = ", J)
@@ -177,4 +255,6 @@ if __name__ == "__main__":
     # generate_mag_mom_corr_scase_local_minimum()
     # generate_mag_mom_corr_scase_global_minimum()
     # generate_mag_mom_corr_pcase()
-    generate_mag_mom_corr_dcase()
+    # generate_mag_mom_corr_dcase()
+    # generate_mag_mom_corr_vector_stoner_pcase()
+    generate_mag_mom_corr_vector_stoner_dcase()
