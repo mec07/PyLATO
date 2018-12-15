@@ -405,6 +405,9 @@ class Hamiltonian:
                                     Job.NOrb, rho)
         if hami == "collinear":
             return self.add_H_collinear(Job, ii, jj)
+        if hami == "vector_stoner":
+            return self.add_H_pcase(ii, jj, U, J_S, 0, Job.NAtom, Job.NOrb,
+                                    rho)
         else:
             raise UnimplementedModelError(
                 "Hamiltonian: '{}' is unrecognised".format(hami)
