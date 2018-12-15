@@ -36,11 +36,12 @@ class InitJob:
 
         # set isNoncollinearHami flag
         self.isNoncollinearHami = False
-        if self.Def['Hamiltonian'] in ('scase', 'pcase', 'dcase'):
+        if self.Def['Hamiltonian'] in ('scase', 'pcase', 'dcase',
+                                       'vector_stoner'):
             self.isNoncollinearHami = True
 
         # Catch invalid model path
-        if os.path.exists(modelpath) == False:
+        if os.path.exists(modelpath) is False:
             print("ERROR: Unable to open tight binding model at %s. ")
             print(modelpath)
             sys.exit()
@@ -48,7 +49,7 @@ class InitJob:
         # Has a directory for results been specified?
         if "results_dir" in self.Def.keys():
             # check to make sure that it has the final "/"
-            if self.Def['results_dir'][-1]=="/":
+            if self.Def['results_dir'][-1] == "/":
                 self.results_dir = self.Def['results_dir']
             else:
                 self.results_dir = self.Def['results_dir']+"/"
