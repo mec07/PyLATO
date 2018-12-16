@@ -1,4 +1,4 @@
-{   
+{
     // tight binding model
     "model": "TBcanonical_s",
 
@@ -49,20 +49,20 @@
     // Pulay mixing A
     "A": 0.1,
     // Optimisation routines:
-    // 1: the default that we implemented
+    // 1: GR Pulay mixing scheme
     // 2: the DIIS, pretty much equivalent results to 1
     "optimisation_routine":1,
     // Number of density matrices to mix. Reduces to linear mixing when num_rho = 1. Note that 5 seems to be the optimal value.
     "num_rho":5,
     // McWeeny transformation: enforce idempotency in the density matrix, 1 (on), 0 (off).
-    "McWeeny":0,
+    "McWeeny":1,
     "McWeeny_tol":1.0e-8,
     "McWeeny_max_loops":100,
 
     // Genetic algorithm parameters
     //     -- this is an alternative to self-consistency, so self-consistency must
     //        be off for this to work.
-    "genetic_on": 1,
+    "genetic_on": 0,
     "population_size": 50,
     "max_num_evolutions": 50,
     "genetic_tol": 1.0e-8,
@@ -81,7 +81,7 @@
     // on, 0 is off. Will be called "rho.txt".
     "write_rho":0,
     // write density matrix as a matrix (not recommended for large systems).
-    "write_rho_mat":0,
+    "write_rho_mat":1,
     // write the on-site density matrices
     "write_rho_on_site":0,
     // write fock matrix in "i    j    val" format, with j >= i to file, 1 is

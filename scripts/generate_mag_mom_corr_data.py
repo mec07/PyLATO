@@ -255,6 +255,6 @@ if __name__ == "__main__":
     # generate_mag_mom_corr_scase_local_minimum()
     # generate_mag_mom_corr_scase_global_minimum()
     # generate_mag_mom_corr_pcase()
-    # generate_mag_mom_corr_dcase()
+    generate_mag_mom_corr_dcase()
     # generate_mag_mom_corr_vector_stoner_pcase()
     generate_mag_mom_corr_vector_stoner_dcase()
