@@ -1,9 +1,11 @@
 import numpy as np
 import os
+import shutil
 
 from unittest.mock import patch
 
 from pylato.main import main
+from pylato.exceptions import ChemicalPotentialError
 from scripts.utils import (
     BackupFiles, InputDensity, JobDef, Model, save_1D_raw_data, save_2D_raw_data
 )
@@ -112,7 +114,7 @@ def generate_mag_mom_corr_dcase():
     modelfile = "models/TBcanonical_d.json"
     model = Model(modelfile)
 
-    electrons_of_interest = [4, 6]
+    electrons_of_interest = [6]
     with BackupFiles(jobdef_file, modelfile):
         for num_electrons in electrons_of_interest:
             jobdef.update_hamiltonian("dcase")
@@ -128,6 +130,11 @@ def generate_mag_mom_corr_dcase():
                 results_dir, filename.format(num_electrons, dJ_val1))
             mag_corr_result_filename_2 = os.path.join(
                 results_dir, filename.format(num_electrons, dJ_val2))
+            orig_rho_mat = os.path.join(results_dir, "rhoMatrix.txt")
+            rho_mat_dir = os.path.join(results_dir, "rho")
+            os.makedirs(rho_mat_dir, exist_ok=True)
+            rho_mat_basename = "rho_mat_dcase_U_{}_J_{}_dJ_{}.txt"
+
             execution_args = ['pylato/main.py', jobdef_file]
 
             U_array = np.linspace(0.005, 10, num=20)
@@ -141,6 +148,17 @@ def generate_mag_mom_corr_dcase():
                             U, J, dJ_val1, model, mag_corr_file, execution_args)
                         mag_corr_result_2[(U_index, J_index)] = calculate_mag_corr_result(
                             U, J, dJ_val2, model, mag_corr_file, execution_args)
+                        if mag_corr_result_1[(U_index, J_index)] is not None:
+                            save_rho_mat(orig_rho_mat, os.path.join(
+                                rho_mat_dir,
+                                rho_mat_basename.format(U, J, dJ_val1)
+                            ))
+                        if mag_corr_result_2[(U_index, J_index)] is not None:
+                            save_rho_mat(orig_rho_mat, os.path.join(
+                                rho_mat_dir,
+                                rho_mat_basename.format(U, J, dJ_val2)
+                            ))
+
                     else:
                         mag_corr_result_1[(U_index, J_index)] = None
                         mag_corr_result_2[(U_index, J_index)] = None
@@ -207,6 +225,11 @@ def generate_mag_mom_corr_vector_stoner_dcase():
             mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
             mag_corr_result_filename = os.path.join(
                 results_dir, filename.format(num_electrons))
+            orig_rho_mat = os.path.join(results_dir, "rhoMatrix.txt")
+            rho_mat_dir = os.path.join(results_dir, "rho")
+            os.makedirs(rho_mat_dir, exist_ok=True)
+            rho_mat_basename = "rho_mat_vector_stoner_dcase_U_{}_J_{}.txt"
+
             execution_args = ['pylato/main.py', jobdef_file]
 
             U_array = np.linspace(0.005, 10, num=20)
@@ -217,6 +240,9 @@ def generate_mag_mom_corr_vector_stoner_dcase():
                     if U >= J:
                         mag_corr_result[(U_index, J_index)] = calculate_mag_corr_result(
                             U, J, 0, model, mag_corr_file, execution_args)
+                        if mag_corr_result[(U_index, J_index)] is not None:
+                            save_rho_mat(orig_rho_mat, os.path.join(
+                                rho_mat_dir, rho_mat_basename.format(U, J)))
                     else:
                         mag_corr_result[(U_index, J_index)] = None
 
@@ -242,6 +268,8 @@ def calculate_mag_corr_result(U, J, dJ, model, mag_corr_file, execution_args):
                 return None
         except np.linalg.linalg.LinAlgError:
             return None
+        except ChemicalPotentialError:
+            return None
 
 
 def get_mag_corr(filename):
@@ -249,6 +277,10 @@ def get_mag_corr(filename):
         mag_corr = file_handle.read()
 
     return float(mag_corr)
+
+
+def save_rho_mat(original_name, new_name):
+    shutil.copyfile(original_name, new_name)
 
 
 if __name__ == "__main__":

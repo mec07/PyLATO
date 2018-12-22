@@ -16,6 +16,7 @@ import sys
 import time
 import random
 
+from pylato.exceptions import ChemicalPotentialError
 from pylato.Fermi import fermi_0, fermi_non0
 from pylato.hamiltonian import map_atomic_to_index
 from pylato.verbosity import verboseprint
@@ -97,8 +98,7 @@ class Electronic:
         while math.fabs(self.NElectrons-n) > n_tol*self.NElectrons:
             count+=1
             if count>max_loops:
-                print("ERROR: The chemical potential could not be found. The error became "+str(math.fabs(self.NElectrons-n)))
-                sys.exit()
+                raise ChemicalPotentialError("ERROR: The chemical potential could not be found. The error became "+str(math.fabs(self.NElectrons-n)))
             if n > self.NElectrons:
                 mu_u = mu
             elif n < self.NElectrons:
@@ -181,7 +181,7 @@ class Electronic:
 
         # if this is going to be treated like a success then reassign rho_temp.
         if flag is True:
-            if self.Job.isNonCollinearHami:
+            if self.Job.isNoncollinearHami:
                 self.rhotot = rho_temp
             else:
                 self.rho = rho_temp

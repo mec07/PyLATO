@@ -57,7 +57,7 @@
     // McWeeny transformation: enforce idempotency in the density matrix, 1 (on), 0 (off).
     "McWeeny":1,
     "McWeeny_tol":1.0e-8,
-    "McWeeny_max_loops":100,
+    "McWeeny_max_loops":200,
 
     // Genetic algorithm parameters
     //     -- this is an alternative to self-consistency, so self-consistency must
