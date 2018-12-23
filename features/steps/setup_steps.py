@@ -1,5 +1,7 @@
 import commentjson
 
+from behave import given
+
 
 @given(u'the TBcanonical_s model is set to have U/|t| = {ratio}')
 def step_given_the_tbcanonical_s_model_is_set_to_have_U_t(context, ratio):

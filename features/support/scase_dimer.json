@@ -95,6 +95,9 @@
     "write_magnetic_correlation": 0,
     // write the total energy
     "write_total_energy": 1,
+    // write the spin quantum number
+    "write_quantum_number_S": 1,
+
 
     // number of bins for the density of states
     "dos_nbin": 20,

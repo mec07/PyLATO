@@ -388,9 +388,16 @@ class Electronic:
             C = sum_{IJ} <:m^I.m^J:> + 3*n_e
         and n_e is the number of electrons. We can calculate <:m^I.m^J:> from
         3.0*self.magnetic_correlation(I, J).
+
+        If there is only 1 electron then we can't exactly do a two electron
+        calculation. For just 1 electron, the answer is 0.5, so we just return
+        that.
         """
-        C = sum(self.magnetic_correlation(I, J) for I in range(self.Job.NAtom)
-                for J in range(self.Job.NAtom))*3.0 + 3.0*self.NElectrons
+        if self.NElectrons == 1:
+            return 0.5
+
+        C = sum(self.magnetic_correlation(I, J) for I in range(Job.NAtom)
+                for J in range(Job.NAtom))*3.0 + 3.0*self.NElectrons
         return 0.5*(-1 + math.sqrt(1 + C))
 
     def optimisation_routine1(self, num_rho):

@@ -266,6 +266,15 @@ def WriteTotalEnergy(Job, filename="energy.txt"):
             f.write(str(Job.Hamilton.total_energy(Job)))
 
 
+def WriteQuantumNumberS(Job, filename="quantum_number_S.txt"):
+    """
+    Write out the spin quantum number.
+    """
+    if Job.Def.get('write_quantum_number_S') == 1:
+        with open(os.path.join(Job.results_dir, filename), 'w') as f:
+            f.write(str(Job.Electron.quantum_number_S(Job)))
+
+
 def WriteSimulationResults(Job):
     WriteSpins(Job)
     WriteRho(Job)
@@ -276,3 +285,4 @@ def WriteSimulationResults(Job):
     WriteOrbitalOccupations(Job)
     WriteMagneticCorrelation(Job, 0, 1)
     WriteTotalEnergy(Job)
+    WriteQuantumNumberS(Job)

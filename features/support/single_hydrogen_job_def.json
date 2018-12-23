@@ -88,6 +88,7 @@
     "write_orbital_occupations": 0,
     "write_magnetic_correlation": 0,
     "write_total_energy": 1,
+    "write_quantum_number_S": 1,
 
     // InterSiteElectrostatics is set when the 1/r terms are to be included in SCC-TB.
     "InterSiteElectrostatics": 0
