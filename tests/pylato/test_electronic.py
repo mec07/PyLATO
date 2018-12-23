@@ -68,8 +68,7 @@ class TestElectronic:
         electronic.rho = np.matrix(rho)
 
         # Action
-        with capsys.disabled():
-            S = electronic.quantum_number_S(Job)
+        S = electronic.quantum_number_S(Job)
 
         # Result
         assert S == expected_S

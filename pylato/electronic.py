@@ -379,7 +379,7 @@ class Electronic:
 
         return C_avg
 
-    def quantum_number_S(self):
+    def quantum_number_S(self, Job):
         """
         The quantum number S can be calculated from the density matrix. The
         formula for it is:
