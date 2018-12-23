@@ -5,7 +5,7 @@ import shutil
 from unittest.mock import patch
 
 from pylato.main import main
-from pylato.exceptions import ChemicalPotentialError
+from pylato.exceptions import ChemicalPotentialError, SelfConsistencyError
 from scripts.utils import (
     BackupFiles, InputDensity, JobDef, Model, save_1D_raw_data, save_2D_raw_data
 )
@@ -262,13 +262,13 @@ def calculate_mag_corr_result(U, J, dJ, model, mag_corr_file, execution_args):
 
     with patch('sys.argv', execution_args):
         try:
-            if main():
-                return get_mag_corr(mag_corr_file)
-            else:
-                return None
+            main()
+            return get_mag_corr(mag_corr_file)
         except np.linalg.linalg.LinAlgError:
             return None
         except ChemicalPotentialError:
+            return None
+        except SelfConsistencyError:
             return None
 
 

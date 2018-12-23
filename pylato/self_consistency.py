@@ -6,6 +6,7 @@ Created on Thursday, October 12, 2017
 This module performs the self consistency iterations.
 """
 
+from pylato.exceptions import SelfConsistencyError
 from pylato.verbosity import verboseprint
 import numpy as np
 import math
@@ -89,8 +90,11 @@ def PerformSelfConsistency(Job):
 
     # Print out number of SCF loops taken
     verboseprint(Job.Def['verbose'], "Number of SCF loops: ", ii+1)
-    # if self-consistency is not ofbtained the throw an error and exit.
+    # if self-consistency is not obtained then raise an error and exit.
     if SCFflag is False:
-        print("ERROR: Self-consistency not obtained within maximum number of cycles: {}".format(max_loops))
+        raise SelfConsistencyError(
+            ("ERROR: Self-consistency not obtained within maximum number of "
+             "cycles: {}".format(max_loops))
+        )
 
     return SCFflag

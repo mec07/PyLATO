@@ -1,5 +1,6 @@
 import json
 import numpy as np
+import pytest
 
 from pylato.electronic import Electronic
 from pylato.init_job import InitJob
@@ -14,11 +15,11 @@ class TestElectronic:
             input_rho = np.matrix(json.load(file_handle))
 
         # Action
-        electron = Electronic(Job)
+        electronic = Electronic(Job)
 
         # Result
-        assert np.array_equal(electron.rho, input_rho)
-        assert np.array_equal(electron.rhotot, input_rho)
+        assert np.array_equal(electronic.rho, input_rho)
+        assert np.array_equal(electronic.rhotot, input_rho)
 
     def test_init_incorrect_input_density_matrix_dimensions(self):
         # Setup
@@ -30,8 +31,45 @@ class TestElectronic:
             (Job.Hamilton.HSOsize, Job.Hamilton.HSOsize), dtype='complex'))
 
         # Action
-        electron = Electronic(Job)
+        electronic = Electronic(Job)
 
         # Result
-        assert np.array_equal(electron.rho, expected_rho)
-        assert np.array_equal(electron.rhotot, expected_rho)
+        assert np.array_equal(electronic.rho, expected_rho)
+        assert np.array_equal(electronic.rhotot, expected_rho)
+
+    @pytest.mark.parametrize(
+        ("name", "rho", "expected_S"),
+        [
+            ("singlet", [
+                [0.5, 0.5, 0.0, 0.0],
+                [0.5, 0.5, 0.0, 0.0],
+                [0.0, 0.0, 0.5, 0.5],
+                [0.0, 0.0, 0.5, 0.5],
+            ], 0),
+            ("triplet up", [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0]
+            ], 1),
+            ("triplet down", [
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0]
+            ], 1),
+        ]
+    )
+    def test_quantum_number_S(self, name, rho, expected_S, capsys):
+        # Setup
+        Job = InitJob("test_data/JobDef_scase.json")
+        electronic = Electronic(Job)
+        # Spin 0 density matrix
+        electronic.rho = np.matrix(rho)
+
+        # Action
+        with capsys.disabled():
+            S = electronic.quantum_number_S()
+
+        # Result
+        assert S == expected_S

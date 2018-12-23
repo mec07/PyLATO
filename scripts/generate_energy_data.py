@@ -5,7 +5,7 @@ import os
 from unittest.mock import patch
 
 from pylato.main import main
-from pylato.exceptions import ChemicalPotentialError
+from pylato.exceptions import ChemicalPotentialError, SelfConsistencyError
 from scripts.utils import (
     BackupFiles, InputDensity, JobDef, Model, save_1D_raw_data, save_2D_raw_data
 )
@@ -167,11 +167,13 @@ def calculate_energy_result(U, J, dJ, model, energy_file, execution_args):
 
     with patch('sys.argv', execution_args):
         try:
-            assert main()
+            main()
             return get_energy(energy_file)
         except np.linalg.linalg.LinAlgError:
             return None
         except ChemicalPotentialError:
+            return None
+        except SelfConsistencyError:
             return None
 
 

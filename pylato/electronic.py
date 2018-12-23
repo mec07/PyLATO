@@ -379,6 +379,20 @@ class Electronic:
 
         return C_avg
 
+    def quantum_number_S(self):
+        """
+        The quantum number S can be calculated from the density matrix. The
+        formula for it is:
+            S = 0.5*(-1 + sqrt(1 + C))
+        where
+            C = sum_{IJ} <:m^I.m^J:> + 3*n_e
+        and n_e is the number of electrons. We can calculate <:m^I.m^J:> from
+        3.0*self.magnetic_correlation(I, J).
+        """
+        C = sum(self.magnetic_correlation(I, J) for I in range(self.Job.NAtom)
+                for J in range(self.Job.NAtom))*3.0 + 3.0*self.NElectrons
+        return 0.5*(-1 + math.sqrt(1 + C))
+
     def optimisation_routine1(self, num_rho):
         """
         Optimisation routine where we try to solve for the norm squared of the

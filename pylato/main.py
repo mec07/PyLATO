@@ -82,9 +82,9 @@ def main():
     # Compute the net spin on each site
     Job.Hamilton.s = Job.Electron.spinpersite()
 
-    success = True
     if Job.Def["scf_on"] == 1:
-        success = PerformSelfConsistency(Job)
+        # This raises a SelfConsistencyError if selfconsistency is not obtained
+        PerformSelfConsistency(Job)
 
     verboseprint(Job.Def['verbose'], "Energy eigenvalues: ")
     verboseprint(Job.Def['verbose'], Job.e)
@@ -93,12 +93,8 @@ def main():
         verboseprint(Job.Def['extraverbose'], (Job.Hamilton.s).T)
 
     # Write out information about the simulation if it is specified in the job definition
-    if success:
-        print("\n\n\nSuccessfully completed calculation!")
-        WriteSimulationResults(Job)
-        return True
-
-    return False
+    print("\n\n\nSuccessfully completed calculation!")
+    WriteSimulationResults(Job)
 
 
 if __name__ == "__main__":
