@@ -16,9 +16,9 @@ import sys
 import time
 import random
 
-from pylato.exceptions import ChemicalPotentialError
+from pylato.exceptions import ChemicalPotentialError, UnimplementedMethodError
 from pylato.Fermi import fermi_0, fermi_non0
-from pylato.hamiltonian import map_atomic_to_index
+from pylato.hamiltonian import map_atomic_to_index, Kd, xi
 from pylato.verbosity import verboseprint
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -399,6 +399,155 @@ class Electronic:
         C = sum(self.magnetic_correlation(I, J) for I in range(Job.NAtom)
                 for J in range(Job.NAtom))*3.0 + 3.0*self.NElectrons
         return 0.5*(-1 + math.sqrt(1 + C))
+
+    def quantum_number_L_z(self, Job):
+        """
+        The quantum number L_z can be calculated from the density matrix. We
+        want to know it in order to classify dimer wavefunctions.
+
+        The formula varies, depending on whether we're simulating s, p or d
+        orbitals. The formula is quite complex because we are using cubic
+        harmonics instead of spherical harmonics.
+
+        For s orbitals L_z is clearly 0.
+
+        The way this has been calculated, it only works for multiple electrons
+        so if there is only 1 electron, exit early with 0 (because we're using
+        cubic harmonics).
+        """
+        print("quantum number L_z calc")
+        # only 1 electron
+        if self.NElectrons == 1:
+            print("only 1 electron")
+            return 0
+
+        # s orbital atoms
+        if all([norb == 1 for norb in Job.NOrb]):
+            print("s orbitals")
+            return 0
+
+        # p orbital atoms
+        if all([norb == 3 for norb in Job.NOrb]):
+            print("Calculate L_z for p orbitals!")
+            return self.quantum_number_L_z_p_orb(Job)
+
+        # d orbital atoms
+        if all([norb == 5 for norb in Job.NOrb]):
+            return self.quantum_number_L_z_d_orb(Job)
+
+        # other
+        message = ("Quantum Number L_z methods have only been implemented for "
+                   "simulations consisting of solely s, p or d orbital atoms")
+        raise UnimplementedMethodError(message)
+
+    def quantum_number_L_z_p_orb(self, Job):
+        """
+        The quantum number L_z can be calculated from the density matrix.
+
+        For p orbitals L_z:
+            L_z = sqrt(
+                sum_{IJ}sum_{ab}sum_{st}(1-delta_{az})(1-delta_{bz})*(
+                    rho^{ss}_{IbIa}rho^{tt}_{JaJb} - rho^{ts}_{JaIa}rho^{st}_{IbJb}
+                    - (rho^{ss}_{IbIa}rho^{tt}_{JbJa} - rho^{ts}_{JbIa}rho^{st}_{IbJa})
+                )
+                + sum_{Is}(rho^{ss}_{IxIx}+rho^{ss}_{IyIy})
+            )
+        where x, y and z are all Cartesian directions; s and t are spins; a and
+        b are spatial orbitals; and I and J are sites.
+        """
+        L_z_part_1 = sum(
+            self.L_z_p_orb_part_1(Job, a, b, s, t, I, J)
+            for s in range(2) for t in range(2) for a in range(3)
+            for b in range(3) for I in range(Job.NAtom)
+            for J in range(Job.NAtom)
+        )
+        L_z_part_2 = sum(self.L_z_p_orb_part_2(Job, s, I)
+                         for s in range(2) for I in range(Job.NAtom))
+
+        return math.sqrt(L_z_part_1 + L_z_part_2)
+
+    def L_z_p_orb_part_1(self, Job, a, b, s, t, I, J):
+        """
+        This is just the first part of the calculation for L_z for p orbitals:
+            (1-delta_{az})(1-delta_{bz})*(
+                rho^{ss}_{IbIa}rho^{tt}_{JaJb} - rho^{ts}_{JaIa}rho^{st}_{IbJb}
+                - (rho^{ss}_{IbIa}rho^{tt}_{JbJa} - rho^{ts}_{JbIa}rho^{st}_{IbJa})
+            )
+        """
+        # Take care of the Kronecker deltas
+        if a == 2 or b == 2:
+            return 0
+
+        Ias = map_atomic_to_index(I, a, s, Job.NAtom, Job.NOrb)
+        Ibs = map_atomic_to_index(I, b, s, Job.NAtom, Job.NOrb)
+        Jat = map_atomic_to_index(J, a, t, Job.NAtom, Job.NOrb)
+        Jbt = map_atomic_to_index(J, b, t, Job.NAtom, Job.NOrb)
+
+        return (self.rho[Ibs, Ias]*self.rho[Jat, Jbt]
+                - self.rho[Jat, Ias]*self.rho[Ibs, Jbt]
+                - (self.rho[Ibs, Ias]*self.rho[Jbt, Jat]
+                   - self.rho[Jbt, Ias]*self.rho[Ibs, Jat]))
+
+    def L_z_p_orb_part_2(self, Job, s, I):
+        """
+        This is just the second part of the calculation for L_z for p orbitals:
+            rho^{ss}_{IxIx} + rho^{ss}_{IyIy}
+        """
+        Ixs = map_atomic_to_index(I, 0, s, Job.NAtom, Job.NOrb)
+        Iys = map_atomic_to_index(I, 1, s, Job.NAtom, Job.NOrb)
+
+        return self.rho[Ixs, Ixs] + self.rho[Iys, Iys]
+
+    def quantum_number_L_z_d_orb(self, Job):
+        """
+        For d orbitals L_z:
+            L_z = 4*sqrt(
+                sum_{IJ}sum_{abcd}sum_{st}sum_{uvwn}(1-delta_{zw})(1-delta_{zu})*(
+                    xi_{auv}xi_{bvw}xi_{dwn}xi_{cnu} - xi_{auv}xi_{bvw}xi_{cwn}xi_{dnu}
+                )*(
+                    rho^{ss}_{IbIa}rho^{tt}_{JcJd} - rho^{ts}_{JcIa}rho^{st}_{IbJd}
+                    + delta_{IJ}delta_{bd}delta_{st}rho^{ts}_{JcIa}
+                )
+            )
+        where z is a Cartesian direction; s and t are spins, a, b, c and d are
+        spatial orbitals; I and J are sites; and u, v, w and n range over 3.
+        """
+        return 4*math.sqrt(sum(
+            self.L_z_d_orb(Job, u, v, w, n, a, b, c, d, s, t, I, J)
+            for s in range(2) for t in range(2) for a in range(5)
+            for b in range(5) for c in range(5) for d in range(5)
+            for u in range(3) for v in range(3) for w in range(3)
+            for n in range(3) for I in range(Job.NAtom)
+            for J in range(Job.NAtom)
+        ))
+
+    def L_z_d_orb(self, Job, u, v, w, n, a, b, c, d, s, t, I, J):
+        """
+        Calculate the L_z for d orbitals:
+            (1-delta_{zw})(1-delta_{zu})*(
+                xi_{auv}xi_{bvw}xi_{dwn}xi_{cnu} - xi_{auv}xi_{bvw}xi_{cwn}xi_{dnu}
+            )*(
+                rho^{ss}_{IbIa}rho^{tt}_{JcJd} - rho^{ts}_{JcIa}rho^{st}_{IbJd}
+                + delta_{IJ}delta_{bd}delta_{st}rho^{ts}_{JcIa}
+            )
+        """
+        # Take care of the Kronecker deltas
+        if w == 2 or u == 2:
+            return 0
+
+        Ias = map_atomic_to_index(I, a, s, Job.NAtom, Job.NOrb)
+        Ibs = map_atomic_to_index(I, b, s, Job.NAtom, Job.NOrb)
+        Jct = map_atomic_to_index(J, c, t, Job.NAtom, Job.NOrb)
+        Jdt = map_atomic_to_index(J, d, t, Job.NAtom, Job.NOrb)
+
+        return (
+            xi[a][u][v]*xi[b][v][w]*xi[d][w][n]*xi[c][n][u]
+            - xi[a][u][v]*xi[b][v][w]*xi[c][w][n]*xi[d][n][u]
+        )*(
+            self.rho[Ibs, Ias]*self.rho[Jct, Jdt]
+            - self.rho[Jct, Ias]*self.rho[Ibs, Jdt]
+            + Kd(I, J)*Kd(b, d)*Kd(s, t)*self.rho[Jct, Ias]
+        )
 
     def optimisation_routine1(self, num_rho):
         """

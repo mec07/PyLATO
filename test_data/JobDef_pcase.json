@@ -1,9 +1,9 @@
-{   
+{
     // tight binding model, "TBexp", "TBhydrcarbons", "TBcanonical_s", "TBcanonical_p" or "TBcanonical_d"
-    "model": "TBcanonical_d",
+    "model": "TBcanonical_p",
 
     // Hamiltonian, "collinear", "scase", "pcase", "dcase" or "vector_stoner"
-    "Hamiltonian": "dcase",
+    "Hamiltonian": "pcase",
 
     // Periodic boundary conditions: 1 (on) or 0 (off)
     "PBC": 0,
