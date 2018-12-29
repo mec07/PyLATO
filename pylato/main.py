@@ -32,29 +32,25 @@ from pylato.self_consistency import PerformSelfConsistency
 from pylato.verbosity import verboseprint
 
 
-def initialisation():
-    if len(sys.argv) > 1:
-        jobpath = sys.argv[1]
-        if os.path.exists(jobpath):
-            Job = InitJob(jobpath)
-        else:
-            print("ERROR: Unable to find job file:")
-            sys.exit()
-    else:
-        if os.path.exists("JobDef.json"):
-            print("No Job file specified. Proceeding with default JobDef.json.")
-            Job = InitJob("JobDef.json")
-        else:
-            print("ERROR: Unable to find default job file: JobDef.json")
-            sys.exit()
-
-    return Job
-
-
 def main():
     """Initialise the program."""
-    Job = initialisation()
+    Job = InitJob(get_job_file())
+    Job = execute_job(Job)
 
+    print_results(Job)
+
+
+def get_job_file():
+    # Default job file
+    jobpath = "JobDef.json"
+
+    if len(sys.argv) > 1:
+        jobpath = sys.argv[1]
+
+    return jobpath
+
+
+def execute_job(Job):
     #
     # Build the non-self-consistent Hamiltonian (incl hopping and spin-orbit)
     Job.Hamilton.buildHSO(Job)
@@ -63,10 +59,10 @@ def main():
     Job.Hamilton.buildFock(Job)
     #
     # Allocate memory for the eigenvalues and eigenvectors
-    Job.e   = np.zeros( Job.Hamilton.HSOsize, dtype='double')
+    Job.e = np.zeros(Job.Hamilton.HSOsize, dtype='double')
     Job.psi = np.zeros((Job.Hamilton.HSOsize, Job.Hamilton.HSOsize), dtype='complex')
 
-    # Initial step to solve H0 and initialise the Mulliken chareges
+    # Initial step to solve Fock and initialise the Mulliken chareges
 
     # Diagonalise the fock matrix
     Job.e, Job.psi = np.linalg.eigh(Job.Hamilton.fock)
@@ -83,9 +79,13 @@ def main():
     Job.Hamilton.s = Job.Electron.spinpersite()
 
     if Job.Def["scf_on"] == 1:
-        # This raises a SelfConsistencyError if selfconsistency is not obtained
+        # This raises SelfConsistencyError if self-consistency is not obtained
         PerformSelfConsistency(Job)
 
+    return Job
+
+
+def print_results(Job):
     verboseprint(Job.Def['verbose'], "Energy eigenvalues: ")
     verboseprint(Job.Def['verbose'], Job.e)
     if Job.Def['Hamiltonian'] == "collinear":

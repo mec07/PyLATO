@@ -13,6 +13,7 @@ import numpy as np
 
 from pylato.crystal import Crystal
 from pylato.electronic import Electronic
+from pylato.exceptions import FileNotFoundError
 from pylato.hamiltonian import Hamiltonian
 from pylato.pylato_IO import ReadGeom, ReadUnitCell, WriteXYZ
 from pylato.verbosity import verboseprint
@@ -22,6 +23,8 @@ class InitJob:
     """Set up the job, build the initial geometry, hamiltonian, and electronic structure."""
     def __init__(self, jobfile):
         """Initialise the job."""
+        if not os.path.exists(jobfile):
+            raise FileNotFoundError("Unable to find job file: ", jobfile)
 
         # Set up variables that define the job in a dictionary
         with open(jobfile, 'r') as inputfile:
