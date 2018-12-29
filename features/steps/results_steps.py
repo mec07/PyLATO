@@ -35,6 +35,13 @@ def then_the_quantum_number_S_is(context, expected_S):
     assert_floats_equal(float(expected_S), float(outputted_S))
 
 
+@then(u'the quantum number L_z is {expected_L_z}')
+def then_the_quantum_number_L_z_is(context, expected_L_z):
+    outputted_L_z = get_outputted_quantum_number_L_z(context)
+
+    assert_floats_equal(float(expected_L_z), float(outputted_L_z))
+
+
 def load_json_file(json_file):
     with open(json_file, 'r') as file_handle:
         loaded_file = commentjson.load(file_handle)
@@ -47,6 +54,10 @@ def get_outputted_total_energy(context):
 
 def get_outputted_quantum_number_S(context):
     return get_value_from_file(context, 'quantum_number_S.txt')
+
+
+def get_outputted_quantum_number_L_z(context):
+    return get_value_from_file(context, 'quantum_number_L_z.txt')
 
 
 def get_value_from_file(context, filename):

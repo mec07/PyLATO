@@ -1,9 +1,9 @@
 {
     // tight binding model, "TBexp", "TBhydrcarbons", "TBcanonical_s", "TBcanonical_p" or "TBcanonical_d"
-    "model": "TBcanonical_s",
+    "model": "TBcanonical_p",
 
     // Hamiltonian, "collinear", "scase", "pcase", "dcase" or "vector_stoner"
-    "Hamiltonian": "scase",
+    "Hamiltonian": "pcase",
 
     // Periodic boundary conditions: 1 (on) or 0 (off)
     "PBC": 0,
@@ -63,16 +63,16 @@
     "write_spins": 0,
     // write density matrix in "i    j    val" format, with j >= i to file, 1 is
     // on, 0 is off. Will be called "rho.txt".
-    "write_rho": 0,
+    "write_rho":0,
     // write density matrix as a matrix (not recommended for large systems).
-    "write_rho_mat": 0,
+    "write_rho_mat":0,
     // write the on-site density matrices
-    "write_rho_on_site": 0,
+    "write_rho_on_site":0,
     // write fock matrix in "i    j    val" format, with j >= i to file, 1 is
     // on, 0 is off. Will be called "fock.txt".
-    "write_fock": 0,
+    "write_fock":0,
     // write fock matrix as a matrix (not recommended for large systems).
-    "write_fock_mat": 0,
+    "write_fock_mat":0,
     // write the orbital occupations
     "write_orbital_occupations": 0,
     // write the magnetic correlation

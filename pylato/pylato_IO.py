@@ -275,6 +275,15 @@ def WriteQuantumNumberS(Job, filename="quantum_number_S.txt"):
             f.write(str(Job.Electron.quantum_number_S(Job)))
 
 
+def WriteQuantumNumberLz(Job, filename="quantum_number_L_z.txt"):
+    """
+    Write out the L_z quantum number.
+    """
+    if Job.Def.get('write_quantum_number_L_z') == 1:
+        with open(os.path.join(Job.results_dir, filename), 'w') as f:
+            f.write(str(Job.Electron.quantum_number_L_z(Job)))
+
+
 def WriteSimulationResults(Job):
     WriteSpins(Job)
     WriteRho(Job)
@@ -286,3 +295,4 @@ def WriteSimulationResults(Job):
     WriteMagneticCorrelation(Job, 0, 1)
     WriteTotalEnergy(Job)
     WriteQuantumNumberS(Job)
+    WriteQuantumNumberLz(Job)

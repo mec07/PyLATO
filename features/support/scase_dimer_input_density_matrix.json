@@ -11,7 +11,7 @@
     // Save results in following directory. This is optional. If this is not
     // included the results will be saved in the current directory.
     //"results_dir": "/workspace/mec07/Development/output_PyLATO/",
-    "results_dir": "../output_PyLATO",
+    "results_dir": "/tmp/output_PyLATO",
 
     // atomic geometry
     // Build cubic geometry: 1 (on) or 0 (off)

@@ -493,7 +493,7 @@ class Electronic:
         return (self.rho[Ibs, Ias]*self.rho[Jat, Jbt]
                 - self.rho[Jat, Ias]*self.rho[Ibs, Jbt]
                 - (self.rho[Ibs, Ias]*self.rho[Jbt, Jat]
-                   - self.rho[Jbt, Ias]*self.rho[Ibs, Jat]))
+                   - self.rho[Jbt, Ias]*self.rho[Ibs, Jat])).real
 
     def L_z_p_orb_part_2(self, Job, s, I):
         """
@@ -503,7 +503,7 @@ class Electronic:
         Ixs = map_atomic_to_index(I, 0, s, Job.NAtom, Job.NOrb)
         Iys = map_atomic_to_index(I, 1, s, Job.NAtom, Job.NOrb)
 
-        return self.rho[Ixs, Ixs] + self.rho[Iys, Iys]
+        return (self.rho[Ixs, Ixs] + self.rho[Iys, Iys]).real
 
     def quantum_number_L_z_d_orb(self, Job):
         """
@@ -554,7 +554,7 @@ class Electronic:
             self.rho[Ibs, Ias]*self.rho[Jct, Jdt]
             - self.rho[Jct, Ias]*self.rho[Ibs, Jdt]
             + Kd(I, J)*Kd(b, d)*Kd(s, t)*self.rho[Jct, Ias]
-        )
+        ).real
 
     def optimisation_routine1(self, num_rho):
         """
