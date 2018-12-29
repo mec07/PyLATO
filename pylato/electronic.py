@@ -133,7 +133,7 @@ class Electronic:
            - self.rhotot[map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb), map_atomic_to_index(atom1, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)])
                 for atom1 in range(self.Job.NAtom) for orbital1 in range(self.Job.NOrb[atom1]) for spin1 in range(2)
                 for orbital2 in range(orbital1, self.Job.NOrb[atom1]) for spin2 in range(spin1, 2)
-                )/(self.Job.Electron.NElectrons**2)
+                )/(self.NElectrons**2)
 
     def idempotency_error(self, rho):
         """
@@ -167,8 +167,15 @@ class Electronic:
             return
 
         flag, iterations, err, rho_temp = self.McWeeny_iterations(rho_temp)
+        # Check that the number of electrons hasn't changed
+        num_electrons = sum(rho_temp[i, i] for i in range(len(rho_temp)))
+        if abs(num_electrons - self.NElectrons) > self.Job.Def['McWeeny_tol']:
+            print("McWeeny transformation changed the number of electrons, "
+                  "difference = ", num_electrons - self.NElectrons)
+            return
+
         # if the flag is false it means that idempotency was reduced below the tolerance
-        if flag is False:
+        if not flag:
             # if the iterations did not converge but the idempotency error has
             # gotten smaller then print a warning but treat as a success.
             if err < err_orig:
@@ -180,7 +187,7 @@ class Electronic:
                 self.Job.Def["McWeeny"] = 0
 
         # if this is going to be treated like a success then reassign rho_temp.
-        if flag is True:
+        if flag:
             if self.Job.isNoncollinearHami:
                 self.rhotot = rho_temp
             else:

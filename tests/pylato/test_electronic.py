@@ -137,6 +137,9 @@ class TestElectronic:
             ("test_data/JobDef_scase.json", "test_data/rho_scase.json", 0),
             ("test_data/JobDef_pcase.json", "test_data/rho_pcase_2.json", 1),
             ("test_data/JobDef_dcase.json", "test_data/rho_dcase.json", 0),
+            # Not too sure about this last test case, rho_dcase_2 was
+            # arbitrarily constructed to get this result...
+            ("test_data/JobDef_dcase.json", "test_data/rho_dcase_2.json", 1),
         ]
     )
     def test_quantum_number_L_z_dimers(self, job_file, rho_file, expected_L_z):
