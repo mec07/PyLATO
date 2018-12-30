@@ -18,7 +18,7 @@ import random
 
 from pylato.exceptions import ChemicalPotentialError, UnimplementedMethodError
 from pylato.Fermi import fermi_0, fermi_non0
-from pylato.hamiltonian import map_atomic_to_index, Kd, xi
+from pylato.hamiltonian import map_atomic_to_index, map_index_to_atomic, Kd, xi
 from pylato.verbosity import verboseprint
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -33,11 +33,9 @@ class Electronic:
         self.Job = Job
 
         # Set up the core charges, and count the number of electrons
-        self.zcore = np.zeros(self.Job.NAtom, dtype='double')
-
-        for a in range(0, self.Job.NAtom):
-            self.zcore[a] = self.Job.Model.atomic[self.Job.AtomType[a]]['NElectrons']
-        self.NElectrons = np.sum(self.zcore)
+        self.zcore = [Job.Model.atomic[Job.AtomType[a]]['NElectrons']
+                      for a in range(Job.NAtom)]
+        self.NElectrons = sum(zcore for zcore in self.zcore)
 
         #
         # Allocate memory for the level occupancies and density matrix
@@ -422,20 +420,16 @@ class Electronic:
         so if there is only 1 electron, exit early with 0 (because we're using
         cubic harmonics).
         """
-        print("quantum number L_z calc")
         # only 1 electron
         if self.NElectrons == 1:
-            print("only 1 electron")
             return 0
 
         # s orbital atoms
         if all([norb == 1 for norb in Job.NOrb]):
-            print("s orbitals")
             return 0
 
         # p orbital atoms
         if all([norb == 3 for norb in Job.NOrb]):
-            print("Calculate L_z for p orbitals!")
             return self.quantum_number_L_z_p_orb(Job)
 
         # d orbital atoms
@@ -556,6 +550,167 @@ class Electronic:
             + Kd(I, J)*Kd(b, d)*Kd(s, t)*self.rho[Jct, Ias]
         ).real
 
+    def gerade(self, Job):
+        """
+        Gerade means even in German. For dimers we want to know if inversion
+        through the midpoint changes the sign of the Slater determinant or not.
+
+        For simplicity, we assume that the Slater determinant is filled by
+        occupied wavefunctions, i.e. the NElectrons lowest energy eigenvectors,
+        rather than by the Fermi function above.
+
+        This symmetry operation causes occupations of orbitals to move to the
+        opposite atom (and multiply by minus 1 if they are p orbitals). We then
+        add up the minus signs from wavefunctions turning into each other and
+        wavefunctions gaining minus signs, as swapping columns of a determinant
+        is equivalent to multiplying by minus 1.
+
+        If the result is even, then the Slater determinant is gerade, and this
+        function will return 'g', if the result is odd then the Slater
+        determinant is ungerade and this function will return 'u'.
+        """
+        if not (Job.NAtom == 2) or not self.all_atoms_same_num_orbitals(Job):
+            raise UnimplementedMethodError(
+                "Calculating gerade/ungerade has only been implemented for "
+                "homonuclear dimers"
+            )
+
+        old_eigenvectors = [Job.psi[:, i] for i in range(self.NElectrons)]
+
+        # apply the changes to the eigenvectors
+        new_eigenvectors = self.perform_inversion(Job, old_eigenvectors)
+
+        # compare the new and the old eigenvectors
+        result = self.symmetry_operation_result(Job, new_eigenvectors,
+                                                old_eigenvectors)
+        if result == 1:
+            return 'g'
+        elif result == -1:
+            return 'u'
+
+    def all_atoms_same_num_orbitals(self, Job):
+        norb0 = Job.NOrb[0]
+        return all([norb == norb0 for norb in Job.NOrb])
+
+    def perform_inversion(self, Job, eigenvectors):
+        """
+        Assumptions:
+            * The system being simulated is a homonuclear dimer
+        """
+        # create new list of empty eigenvectors
+        new_eigenvectors = [np.zeros(len(eigenvectors[0]), dtype='complex')
+                            for j in range(self.NElectrons)]
+        for (vec_index, vector) in enumerate(eigenvectors):
+            for (val_index, value) in enumerate(vector):
+                i, a, s = map_index_to_atomic(val_index, Job.NAtom, Job.NOrb)
+                new_index = map_atomic_to_index((i + 1) % 2, a, s, Job.NAtom,
+                                                Job.NOrb)
+                new_eigenvectors[vec_index][new_index] = self.inverted_val(
+                    Job, i, value)
+
+        return new_eigenvectors
+
+    def inverted_val(self, Job, atom_index, val):
+        """
+        Assumptions:
+            * only dealing with s, p or d orbitals
+        """
+        # p orbitals get a minus sign
+        if Job.NOrb[atom_index] == 3:
+            return -1.0*val
+
+        return val
+
+    def symmetry_operation_result(self, Job, new_eigenvectors, old_eigenvectors):
+        """
+        Assumption:
+            * new_eigenvectors and old_eigenvectors are lists of numpy arrays
+        """
+        tol = Job.Def['scf_tol']
+        sign_changes = 0
+        new_order = []
+
+        # match up the eigenvectors
+        for (new_index, new_vec) in enumerate(new_eigenvectors):
+            for (old_index, old_vec) in enumerate(old_eigenvectors):
+                # Check for same vectors
+                if np.allclose(old_vec, new_vec, atol=tol):
+                    new_order.append(old_index)
+                    continue
+
+                # Check for same, but negative, vectors
+                if np.allclose(old_vec, (-1)*new_vec, atol=tol):
+                    # Add 1 to the count of sign changes for the change in sign
+                    sign_changes += 1
+                    new_order.append(old_index)
+                    continue
+
+        # If we have failed to match up the eigenvectors then return None
+        if len(new_order) != len(new_eigenvectors):
+            return None
+
+        sign_changes += num_swaps_to_sort(new_order)
+
+        return (-1)**sign_changes
+
+    def plus_minus(self, Job):
+        """
+        For dimers with L_z = 0, we need to know if reflection through a plane
+        that lies in the in axis of the dimer, e.g. xz or yz planes, will
+        cause a sign change or not.
+
+        The orbitals that would gain minus signs when considering the xz and yz
+        planes are the following.
+
+        xz plane:
+            p_y, d_{yz} and d_{xy} all gain minus signs
+
+        yz plane:
+            p_x, d_{xy} and d_{xz} all gain minus signs
+
+        We then add up the minus signs from wavefunctions either becoming
+        negative themselves or getting transformed into other wavefunctions (as
+        swapping columns of a determinant is equivalent to multiplying by -1).
+        """
+        old_eigenvectors = [Job.psi[:, i] for i in range(self.NElectrons)]
+
+        # apply the changes to the eigenvectors
+        new_eigenvectors = self.perform_reflection(Job, old_eigenvectors)
+
+        # compare the new and the old eigenvectors
+        result = self.symmetry_operation_result(Job, new_eigenvectors,
+                                                old_eigenvectors)
+        if result == 1:
+            return '+'
+        elif result == -1:
+            return '-'
+
+    def perform_reflection(self, Job, eigenvectors):
+        # create new list of empty eigenvectors
+        new_eigenvectors = [np.zeros(len(eigenvectors[0]), dtype='complex')
+                            for j in range(self.NElectrons)]
+        for (vec_index, vector) in enumerate(eigenvectors):
+            for (val_index, value) in enumerate(vector):
+                i, a, s = map_index_to_atomic(val_index, Job.NAtom, Job.NOrb)
+                reflected_value = self.get_reflected_value(Job, value, i, a)
+                new_eigenvectors[vec_index][val_index] = reflected_value
+
+        return new_eigenvectors
+
+    def get_reflected_value(self, Job, value, atom, orbital):
+        sign_change = 0
+        # p shell
+        if Job.NOrb[atom] == 3:
+            if orbital == 1:
+                sign_change = 1
+
+        # d shell
+        if Job.NOrb[atom] == 5:
+            if orbital in [2, 3]:
+                sign_change = 1
+
+        return value*(-1)**sign_change
+
     def optimisation_routine1(self, num_rho):
         """
         Optimisation routine where we try to solve for the norm squared of the
@@ -662,3 +817,18 @@ class Electronic:
             return alpha, 1
         # if successful then return result and no error code.
         return alpha, 0
+
+
+def num_swaps_to_sort(an_array):
+    """
+    Basic implementation of a buble sort in order to calculate the number of
+    swaps required to sort an array.
+    """
+    num_swaps = 0
+    temp = an_array[:]
+    for i in range(len(temp)):
+        for j in range(len(temp) - i - 1):
+            if temp[j] > temp[j+1]:
+                temp[j], temp[j+1] = temp[j+1], temp[j]
+                num_swaps += 1
+    return num_swaps
