@@ -6,7 +6,7 @@ Feature: Find the quantum number L_z
         When PyLATO is run using the job definition file: "scase_dimer.json"
         Then the quantum number L_z is 0
 
-    @fixture.backup.TBcanonical_d.json
+    @fixture.backup.TBcanonical_p.json
     Scenario: find the quantum number L_z of a pcase dimer with U/|t| = 2
         Given the TBcanonical_p model is set to have U/|t| = 2
         And the TBcanonical_p model is set to have 3 electrons

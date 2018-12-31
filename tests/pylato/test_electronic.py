@@ -86,12 +86,11 @@ class TestElectronic:
     def test_quantum_number_S(self, name, rho, expected_S):
         # Setup
         Job = InitJob("test_data/JobDef_scase.json")
-        electronic = Electronic(Job)
         # Spin 0 density matrix
-        electronic.rho = np.matrix(rho)
+        Job.Electron.rho = np.matrix(rho)
 
         # Action
-        S = electronic.quantum_number_S(Job)
+        S = Job.Electron.quantum_number_S(Job)
 
         # Result
         assert S == expected_S
@@ -141,12 +140,11 @@ class TestElectronic:
         # Fake
         Job.NAtom = 1
         Job.NOrb = [len(rho)/2]
-        electronic = Electronic(Job)
-        electronic.NElectrons = sum(rho[ii][ii] for ii in range(len(rho)))
-        electronic.rho = np.matrix(rho, dtype='complex')
+        Job.Electron.NElectrons = sum(rho[ii][ii] for ii in range(len(rho)))
+        Job.Electron.rho = np.matrix(rho, dtype='complex')
 
         # Action
-        L_z = electronic.quantum_number_L_z(Job)
+        L_z = Job.Electron.quantum_number_L_z(Job)
 
         # Result
         assert L_z == expected_L_z
@@ -165,15 +163,13 @@ class TestElectronic:
     def test_quantum_number_L_z_dimers(self, job_file, rho_file, expected_L_z):
         # Setup
         Job = InitJob(job_file)
-        electronic = Electronic(Job)
-        electronic = Electronic(Job)
 
         # Fake
         rho = load_json_file(rho_file)
-        electronic.rho = np.matrix(rho, dtype='complex')
+        Job.Electron.rho = np.matrix(rho, dtype='complex')
 
         # Action
-        L_z = electronic.quantum_number_L_z(Job)
+        L_z = Job.Electron.quantum_number_L_z(Job)
 
         # Result
         assert L_z == expected_L_z
@@ -182,7 +178,6 @@ class TestElectronic:
         # Setup
         Job = InitJob("test_data/JobDef_scase.json")
         Job.NOrb = [1, 3]
-        electronic = Electronic(Job)
         expected_message = (
             "Quantum Number L_z methods have only been implemented for "
             "simulations consisting of solely s, p or d orbital atoms"
@@ -190,16 +185,15 @@ class TestElectronic:
 
         # Action
         with pytest.raises(UnimplementedMethodError, message=expected_message):
-            print(electronic.quantum_number_L_z(Job))
+            print(Job.Electron.quantum_number_L_z(Job))
 
     def test_quantum_number_L_z_1_electron(self):
         # Setup
         Job = InitJob("test_data/JobDef_scase.json")
-        electronic = Electronic(Job)
-        electronic.NElectrons = 1
+        Job.Electron.NElectrons = 1
 
         # Action
-        L_z = electronic.quantum_number_L_z(Job)
+        L_z = Job.Electron.quantum_number_L_z(Job)
 
         # Result
         assert L_z == 0
@@ -216,13 +210,12 @@ class TestElectronic:
     def test_all_atoms_same_num_orbitals(self, norb, expected_result):
         # Setup
         Job = InitJob("test_data/JobDef_scase.json")
-        electronic = Electronic(Job)
 
         # Fake
         Job.NOrb = norb
 
         # Action
-        result = electronic.all_atoms_same_num_orbitals(Job)
+        result = Job.Electron.all_atoms_same_num_orbitals(Job)
 
         # Result
         assert result is expected_result
@@ -254,10 +247,9 @@ class TestElectronic:
                                expected_eigenvectors):
         # Setup
         Job = InitJob(job_file)
-        electronic = Electronic(Job)
 
         # Action
-        new_eigenvectors = electronic.perform_inversion(Job, old_eigenvectors)
+        new_eigenvectors = Job.Electron.perform_inversion(Job, old_eigenvectors)
 
         # Result
         assert all(np.array_equal(new_eigenvectors[i], expected_eigenvectors[i])
@@ -311,6 +303,18 @@ class TestElectronic:
                 1
             ),
             (
+                "minus signs",
+                [
+                    np.array([-0.1, -0.2, -0.3, -0.4]),
+                    np.array([0.2, 0.1, 0.4, 0.3]),
+                ],
+                [
+                    np.array([0.1, 0.2, 0.3, 0.4]),
+                    np.array([0.2, 0.1, 0.4, 0.3]),
+                ],
+                -1
+            ),
+            (
                 "swap with minus signs",
                 [
                     np.array([0.1, -0.2, 0.3, -0.4]),
@@ -344,11 +348,10 @@ class TestElectronic:
                                        old_eigenvectors, expected_result):
         # Setup
         Job = InitJob("test_data/JobDef_scase.json")
-        electronic = Electronic(Job)
 
         # Action
-        result = electronic.symmetry_operation_result(Job, new_eigenvectors,
-                                                      old_eigenvectors)
+        result = Job.Electron.symmetry_operation_result(Job, new_eigenvectors,
+                                                        old_eigenvectors)
 
         # Result
         assert result == expected_result
@@ -356,14 +359,13 @@ class TestElectronic:
     def test_gerade_not_dimer_error(self):
         # Setup
         Job = InitJob("test_data/JobDef_scase.json")
-        electronic = Electronic(Job)
 
         # Fake
         Job.NAtom = 1
 
         # Action
         with pytest.raises(UnimplementedMethodError):
-            electronic.gerade(Job)
+            Job.Electron.gerade(Job)
 
     @pytest.mark.parametrize(
         ("job_file", "expected_gerade"),
@@ -402,31 +404,64 @@ class TestElectronic:
                                  expected_reflected_value):
         # Setup
         Job = InitJob(job_file)
-        electronic = Electronic(Job)
         atom = 0
 
         # Action
-        reflected_value = electronic.get_reflected_value(Job, initial_value,
-                                                         atom, orbital)
+        reflected_value = Job.Electron.get_reflected_value(Job, initial_value,
+                                                           atom, orbital)
 
         # Result
         assert reflected_value == expected_reflected_value
 
-    def test_perform_reflection(self):
-        pass
-
     @pytest.mark.parametrize(
-        ("job_file", "expected_plus_minus"),
+        ("job_file", "old_eigenvectors", "expected_eigenvectors"),
         [
-            ("test_data/JobDef_scase.json", '+'),
-            ("test_data/JobDef_pcase.json", '+'),
-            ("test_data/JobDef_dcase.json", '+'),
+            (
+                "test_data/JobDef_scase.json", [
+                    np.array([0.5, 0.7, 0.3, 0.2]),
+                    np.array([0.1, 0.6, 0.8, 0.9]),
+                ], [
+                    np.array([0.5, 0.7, 0.3, 0.2]),
+                    np.array([0.1, 0.6, 0.8, 0.9]),
+                ]
+            ),
+            (
+                "test_data/JobDef_pcase.json", [
+                    np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2]),
+                    np.array([1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]),
+                ], [
+                    np.array([0.1, -0.2, 0.3, 0.4, -0.5, 0.6, 0.7, -0.8, 0.9, 1.0, -1.1, 1.2]),
+                    np.array([1.2, -1.1, 1.0, 0.9, -0.8, 0.7, 0.6, -0.5, 0.4, 0.3, -0.2, 0.1]),
+                ]
+            ),
         ]
     )
-    def test_plus_minus(self, job_file, expected_plus_minus):
+    def test_perform_reflection(self, job_file, old_eigenvectors,
+                                expected_eigenvectors):
         # Setup
         Job = InitJob(job_file)
-        Job = execute_job(Job)
+
+        # Action
+        new_eigenvectors = Job.Electron.perform_reflection(Job, old_eigenvectors)
+
+        # Result
+        assert all(np.array_equal(new_eigenvectors[i], expected_eigenvectors[i])
+                   for i in range(len(expected_eigenvectors)))
+
+    @pytest.mark.parametrize(
+        ("job_file", "eigenvectors_file", "expected_plus_minus"),
+        [
+            ("test_data/JobDef_scase.json", "test_data/eigenvectors_s.json", '+'),
+            ("test_data/JobDef_pcase.json", "test_data/eigenvectors_p.json", '+'),
+            ("test_data/JobDef_pcase.json", "test_data/eigenvectors_p_2.json", '-'),
+            ("test_data/JobDef_dcase.json", "test_data/eigenvectors_d.json", '+'),
+        ]
+    )
+    def test_plus_minus(self, job_file, eigenvectors_file, expected_plus_minus, capsys):
+        # Setup
+        Job = InitJob(job_file)
+        with open(eigenvectors_file, 'r') as fh:
+            Job.psi = np.array(json.load(fh))
 
         # Action
         plus_minus = Job.Electron.plus_minus(Job)
