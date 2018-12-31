@@ -12,9 +12,6 @@ import numpy as np
 import math
 import os
 import json
-import sys
-import time
-import random
 
 from pylato.exceptions import ChemicalPotentialError, UnimplementedMethodError
 from pylato.Fermi import fermi_0, fermi_non0
@@ -33,7 +30,7 @@ class Electronic:
         self.Job = Job
 
         # Set up the core charges, and count the number of electrons
-        self.zcore = [Job.Model.atomic[Job.AtomType[a]]['NElectrons']
+        self.zcore = [int(Job.Model.atomic[Job.AtomType[a]]['NElectrons'])
                       for a in range(Job.NAtom)]
         self.NElectrons = sum(zcore for zcore in self.zcore)
 
