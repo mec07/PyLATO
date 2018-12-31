@@ -42,6 +42,13 @@ def then_the_quantum_number_L_z_is(context, expected_L_z):
     assert_floats_equal(float(expected_L_z), float(outputted_L_z))
 
 
+@then(u'the groundstate classification is "{expected_classification}"')
+def then_the_groundstate_classification_is(context, expected_classification):
+    outputted_classification = get_outputted_classification(context)
+
+    assert expected_classification, outputted_classification
+
+
 def load_json_file(json_file):
     with open(json_file, 'r') as file_handle:
         loaded_file = commentjson.load(file_handle)
@@ -58,6 +65,10 @@ def get_outputted_quantum_number_S(context):
 
 def get_outputted_quantum_number_L_z(context):
     return get_value_from_file(context, 'quantum_number_L_z.txt')
+
+
+def get_outputted_classification(context):
+    return get_value_from_file(context, 'classification.txt')
 
 
 def get_value_from_file(context, filename):
