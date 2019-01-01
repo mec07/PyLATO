@@ -99,6 +99,18 @@ class JobDef(CommentJsonInteractor):
         self.data['input_rho'] = input_rho_file
         self.update_file()
 
+    def write_magnetic_correlation(self):
+        self.data['write_magnetic_correlation'] = 1
+        self.update_file()
+
+    def write_total_energy(self):
+        self.data['write_total_energy'] = 1
+        self.update_file()
+
+    def write_groundstate_classification(self):
+        self.data['write_groundstate_classification'] = 1
+        self.update_file()
+
 
 class Model(CommentJsonInteractor):
     def update_U(self, U):

@@ -165,8 +165,12 @@ class Electronic:
         # Check that the number of electrons hasn't changed
         num_electrons = sum(rho_temp[i, i] for i in range(len(rho_temp)))
         if abs(num_electrons - self.NElectrons) > self.Job.Def['McWeeny_tol']:
-            print("McWeeny transformation changed the number of electrons, "
-                  "difference = ", num_electrons - self.NElectrons)
+            verboseprint(
+                self.Job.Def['verbose'],
+                "McWeeny transformation changed the number of electrons, "
+                "difference = ", num_electrons - self.NElectrons)
+            # Turn off using the McWeeny transformation as once it doesn't work it seems to not work again.
+            self.Job.Def["McWeeny"] = 0
             return
 
         # if the flag is false it means that idempotency was reduced below the tolerance
@@ -174,10 +178,10 @@ class Electronic:
             # if the iterations did not converge but the idempotency error has
             # gotten smaller then print a warning but treat as a success.
             if err < err_orig:
-                print("Max iterations, {} reached. Idempotency error = {}".format(iterations, err))
+                verboseprint(self.Job.Def['verbose'], "Max iterations, {} reached. Idempotency error = {}".format(iterations, err))
                 flag = True
             else:
-                print("McWeeny transformation unsuccessful. Proceeding using input density matrix.")
+                verboseprint(self.Job.Def['verbose'], "McWeeny transformation unsuccessful. Proceeding using input density matrix.")
                 # Turn off using the McWeeny transformation as once it doesn't work it seems to not work again.
                 self.Job.Def["McWeeny"] = 0
 
@@ -398,7 +402,7 @@ class Electronic:
         if self.NElectrons == 1:
             return 0.5
 
-        C = sum(self.magnetic_correlation(I, J) for I in range(Job.NAtom)
+        C = sum(self.magnetic_correlation(I, J).real for I in range(Job.NAtom)
                 for J in range(Job.NAtom))*3.0 + 3.0*self.NElectrons
         return 0.5*(-1 + math.sqrt(1 + C))
 

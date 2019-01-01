@@ -23,6 +23,7 @@ def generate_mag_mom_corr_scase_local_minimum():
     model = Model(modelfile)
 
     with BackupFiles(jobdef_file, modelfile):
+        jobdef.write_magnetic_correlation()
         jobdef.update_hamiltonian("scase")
         jobdef.update_model("TBcanonical_s")
         results_dir = jobdef['results_dir']
@@ -50,6 +51,7 @@ def generate_mag_mom_corr_scase_global_minimum():
     input_density = InputDensity(input_density_file)
 
     with BackupFiles(input_density_file, jobdef_file, modelfile):
+        jobdef.write_magnetic_correlation()
         jobdef.update_hamiltonian("scase")
         jobdef.update_model("TBcanonical_s")
         jobdef.update_input_rho(input_density_file)
@@ -78,6 +80,7 @@ def generate_mag_mom_corr_pcase():
     model = Model(modelfile)
 
     with BackupFiles(jobdef_file, modelfile):
+        jobdef.write_magnetic_correlation()
         for num_electrons in range(1, 6):
             jobdef.update_hamiltonian("pcase")
             jobdef.update_model("TBcanonical_p")
@@ -116,6 +119,7 @@ def generate_mag_mom_corr_dcase():
 
     electrons_of_interest = [6]
     with BackupFiles(jobdef_file, modelfile):
+        jobdef.write_magnetic_correlation()
         for num_electrons in electrons_of_interest:
             jobdef.update_hamiltonian("dcase")
             jobdef.update_model("TBcanonical_d")
@@ -130,10 +134,6 @@ def generate_mag_mom_corr_dcase():
                 results_dir, filename.format(num_electrons, dJ_val1))
             mag_corr_result_filename_2 = os.path.join(
                 results_dir, filename.format(num_electrons, dJ_val2))
-            orig_rho_mat = os.path.join(results_dir, "rhoMatrix.txt")
-            rho_mat_dir = os.path.join(results_dir, "rho")
-            os.makedirs(rho_mat_dir, exist_ok=True)
-            rho_mat_basename = "rho_mat_dcase_U_{}_J_{}_dJ_{}.txt"
 
             execution_args = ['pylato/main.py', jobdef_file]
 
@@ -148,17 +148,6 @@ def generate_mag_mom_corr_dcase():
                             U, J, dJ_val1, model, mag_corr_file, execution_args)
                         mag_corr_result_2[(U_index, J_index)] = calculate_mag_corr_result(
                             U, J, dJ_val2, model, mag_corr_file, execution_args)
-                        if mag_corr_result_1[(U_index, J_index)] is not None:
-                            save_rho_mat(orig_rho_mat, os.path.join(
-                                rho_mat_dir,
-                                rho_mat_basename.format(U, J, dJ_val1)
-                            ))
-                        if mag_corr_result_2[(U_index, J_index)] is not None:
-                            save_rho_mat(orig_rho_mat, os.path.join(
-                                rho_mat_dir,
-                                rho_mat_basename.format(U, J, dJ_val2)
-                            ))
-
                     else:
                         mag_corr_result_1[(U_index, J_index)] = None
                         mag_corr_result_2[(U_index, J_index)] = None
@@ -178,6 +167,7 @@ def generate_mag_mom_corr_vector_stoner_pcase():
     results_file = "mag_mom_corr_vector_stoner_pcase_{}_electrons_per_atom.csv"
 
     with BackupFiles(jobdef_file, modelfile):
+        jobdef.write_magnetic_correlation()
         for num_electrons in range(1, 6):
             jobdef.update_hamiltonian("vector_stoner")
             jobdef.update_model("TBcanonical_p")
@@ -216,6 +206,7 @@ def generate_mag_mom_corr_vector_stoner_dcase():
 
     electrons_of_interest = [4, 6]
     with BackupFiles(jobdef_file, modelfile):
+        jobdef.write_magnetic_correlation()
         for num_electrons in electrons_of_interest:
             jobdef.update_hamiltonian("vector_stoner")
             jobdef.update_model("TBcanonical_d")
@@ -225,10 +216,6 @@ def generate_mag_mom_corr_vector_stoner_dcase():
             mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
             mag_corr_result_filename = os.path.join(
                 results_dir, filename.format(num_electrons))
-            orig_rho_mat = os.path.join(results_dir, "rhoMatrix.txt")
-            rho_mat_dir = os.path.join(results_dir, "rho")
-            os.makedirs(rho_mat_dir, exist_ok=True)
-            rho_mat_basename = "rho_mat_vector_stoner_dcase_U_{}_J_{}.txt"
 
             execution_args = ['pylato/main.py', jobdef_file]
 
@@ -240,9 +227,6 @@ def generate_mag_mom_corr_vector_stoner_dcase():
                     if U >= J:
                         mag_corr_result[(U_index, J_index)] = calculate_mag_corr_result(
                             U, J, 0, model, mag_corr_file, execution_args)
-                        if mag_corr_result[(U_index, J_index)] is not None:
-                            save_rho_mat(orig_rho_mat, os.path.join(
-                                rho_mat_dir, rho_mat_basename.format(U, J)))
                     else:
                         mag_corr_result[(U_index, J_index)] = None
 
