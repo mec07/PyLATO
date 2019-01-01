@@ -7,14 +7,16 @@ Feature: Find the wavefunction classification
         When PyLATO is run using the job definition file: "scase_dimer.json"
         Then the groundstate classification is "{}^1\Sigma^{+}_{g}"
 
-    @fixture.backup.TBcanonical_p.json
-    Scenario: find the groundstate classification of a pcase dimer
-        Given the TBcanonical_p model is set to have U/|t| = 4
-        When PyLATO is run using the job definition file: "pcase_dimer.json"
-        Then the groundstate classification is "{}^1\Sigma^{+}_{g}"
+    #    @fixture.backup.TBcanonical_p.json
+    #    Scenario: find the groundstate classification of a pcase dimer
+    #        Given the TBcanonical_p model is set to have U/|t| = 8
+    #        And the TBcanonical_p model is set to have 1 electrons
+    #        When PyLATO is run using the job definition file: "pcase_dimer.json"
+    #        Then the groundstate classification is "{}^1\Delta^{+}_{g}"
 
     @fixture.backup.TBcanonical_d.json
     Scenario: find the groundstate classification of a dcase dimer
-        Given the TBcanonical_d model is set to have U/|t| = 2
+        Given the TBcanonical_d model is set to have U/|t| = 6
+        And the TBcanonical_d model is set to have 2 electrons
         When PyLATO is run using the job definition file: "dcase_dimer.json"
-        Then the groundstate classification is "{}^1\Sigma^{+}_{g}"
+        Then the groundstate classification is "{}^1\Pi_{g}"

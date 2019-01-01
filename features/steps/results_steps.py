@@ -46,7 +46,7 @@ def then_the_quantum_number_L_z_is(context, expected_L_z):
 def then_the_groundstate_classification_is(context, expected_classification):
     outputted_classification = get_outputted_classification(context)
 
-    assert expected_classification, outputted_classification
+    assert expected_classification == outputted_classification, "expected output: '{}' to be {}".format(outputted_classification, expected_classification)
 
 
 def load_json_file(json_file):

@@ -298,13 +298,14 @@ def WriteGroundstateClassification(Job, filename="classification.txt"):
 
 
 def classify_groundstate(Job):
-    if Job.NAtom != 2:
-        return ""
+    if Job.NAtom == 2:
+        spin_part = get_spin_part_of_symbol(Job)
+        angular_part = get_angular_part_of_symbol(Job)
+        gerade_part = get_gerade_part_of_symbol(Job)
+        if spin_part and angular_part and gerade_part:
+            return spin_part + angular_part + gerade_part
 
-    spin_part = get_spin_part_of_symbol(Job)
-    angular_part = get_angular_part_of_symbol(Job)
-    gerade_part = get_gerade_part_of_symbol(Job)
-    return spin_part + angular_part + gerade_part
+    return ""
 
 
 def get_spin_part_of_symbol(Job):
