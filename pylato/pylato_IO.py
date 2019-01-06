@@ -274,7 +274,10 @@ def WriteQuantumNumberS(Job, filename="quantum_number_S.txt"):
     """
     if Job.Def.get('write_quantum_number_S') == 1:
         with open(os.path.join(Job.results_dir, filename), 'w') as f:
-            f.write(str(Job.Electron.quantum_number_S(Job)))
+            S = Job.Electron.quantum_number_S(Job)
+            if S is None:
+                S = ""
+            f.write(str(S))
 
 
 def WriteQuantumNumberLz(Job, filename="quantum_number_L_z.txt"):
@@ -283,7 +286,10 @@ def WriteQuantumNumberLz(Job, filename="quantum_number_L_z.txt"):
     """
     if Job.Def.get('write_quantum_number_L_z') == 1:
         with open(os.path.join(Job.results_dir, filename), 'w') as f:
-            f.write(str(Job.Electron.quantum_number_L_z(Job)))
+            L_z = Job.Electron.quantum_number_L_z(Job)
+            if L_z is None:
+                L_z = ""
+            f.write(str(L_z))
 
 
 def WriteGroundstateClassification(Job, filename="classification.txt"):
@@ -310,22 +316,22 @@ def classify_groundstate(Job):
 
 def get_spin_part_of_symbol(Job):
     S = Job.Electron.quantum_number_S(Job)
-    if not_an_integer(S) and not_an_integer(S-0.5):
+    if S is None or (not_an_integer(S) and not_an_integer(S-0.5)):
         return ""
-    return "{{}}^{}".format(int(2*S + 1))
+    return "{{}}^{}".format(round(2*S + 1))
 
 
 def get_angular_part_of_symbol(Job):
     L_z_classification_symbols = ['\\Sigma', '\\Pi', '\\Delta', '\\Phi', '\\Gamma']
     L_z = Job.Electron.quantum_number_L_z(Job)
-    if not_an_integer(L_z):
+    if L_z is None or not_an_integer(L_z):
         return ""
-    if int(L_z) == 0:
+    if round(L_z) == 0:
         plus_minus = Job.Electron.plus_minus(Job)
         if plus_minus:
             return "{}^{{{}}}".format(L_z_classification_symbols[int(L_z)], plus_minus)
         return ""
-    return L_z_classification_symbols[int(L_z)]
+    return L_z_classification_symbols[round(L_z)]
 
 
 def get_gerade_part_of_symbol(Job):
@@ -336,7 +342,7 @@ def get_gerade_part_of_symbol(Job):
 
 
 def not_an_integer(val, tol=1e-8):
-    return abs(val - int(val)) > tol
+    return abs(val - round(val)) > tol
 
 
 def WriteSimulationResults(Job):

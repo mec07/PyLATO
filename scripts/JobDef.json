@@ -10,7 +10,6 @@
 
     // Save results in following directory. This is optional. If this is not
     // included the results will be saved in the current directory.
-    //"results_dir": "/workspace/mec07/Development/output_PyLATO/",
     "results_dir": "../output_PyLATO",
 
     // atomic geometry
@@ -57,7 +56,7 @@
     // McWeeny transformation: enforce idempotency in the density matrix, 1 (on), 0 (off).
     "McWeeny":1,
     "McWeeny_tol":1.0e-8,
-    "McWeeny_max_loops":200,
+    "McWeeny_max_loops":100,
 
     // Genetic algorithm parameters
     //     -- this is an alternative to self-consistency, so self-consistency must
@@ -81,7 +80,7 @@
     // on, 0 is off. Will be called "rho.txt".
     "write_rho":0,
     // write density matrix as a matrix (not recommended for large systems).
-    "write_rho_mat":1,
+    "write_rho_mat":0,
     // write the on-site density matrices
     "write_rho_on_site":0,
     // write fock matrix in "i    j    val" format, with j >= i to file, 1 is
@@ -92,9 +91,11 @@
     // write the orbital occupations
     "write_orbital_occupations": 0,
     // write the magnetic correlation
-    "write_magnetic_correlation": 1,
+    "write_magnetic_correlation": 0,
     // write the total energy
-    "write_total_energy": 1,
+    "write_total_energy": 0,
+    // write the groundstate wavefunction classification (only implemented for dimers)
+    "write_groundstate_classification": 0,
 
     // number of bins for the density of states
     "dos_nbin": 20,

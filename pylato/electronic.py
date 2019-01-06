@@ -398,12 +398,16 @@ class Electronic:
         If there is only 1 electron then we can't exactly do a two electron
         calculation. For just 1 electron, the answer is 0.5, so we just return
         that.
+
+        Return None if unable to calculate S.
         """
         if self.NElectrons == 1:
             return 0.5
 
         C = sum(self.magnetic_correlation(I, J).real for I in range(Job.NAtom)
                 for J in range(Job.NAtom))*3.0 + 3.0*self.NElectrons
+        if (1 + C) < 0:
+            return None
         return 0.5*(-1 + math.sqrt(1 + C))
 
     def quantum_number_L_z(self, Job):
@@ -456,6 +460,8 @@ class Electronic:
             )
         where x, y and z are all Cartesian directions; s and t are spins; a and
         b are spatial orbitals; and I and J are sites.
+
+        Return None if unable to calculate L_z.
         """
         L_z_part_1 = sum(
             self.L_z_p_orb_part_1(Job, a, b, s, t, I, J)
@@ -466,7 +472,10 @@ class Electronic:
         L_z_part_2 = sum(self.L_z_p_orb_part_2(Job, s, I)
                          for s in range(2) for I in range(Job.NAtom))
 
-        return math.sqrt(L_z_part_1 + L_z_part_2)
+        L_z_precursor = L_z_part_1 + L_z_part_2
+        if L_z_precursor < 0:
+            return None
+        return math.sqrt(L_z_precursor)
 
     def L_z_p_orb_part_1(self, Job, a, b, s, t, I, J):
         """
@@ -513,15 +522,20 @@ class Electronic:
             )
         where z is a Cartesian direction; s and t are spins, a, b, c and d are
         spatial orbitals; I and J are sites; and u, v, w and n range over 3.
+
+        Return None if unable to calculate L_z.
         """
-        return 4*math.sqrt(sum(
+        L_z_precursor = sum(
             self.L_z_d_orb(Job, u, v, w, n, a, b, c, d, s, t, I, J)
             for s in range(2) for t in range(2) for a in range(5)
             for b in range(5) for c in range(5) for d in range(5)
             for u in range(3) for v in range(3) for w in range(3)
             for n in range(3) for I in range(Job.NAtom)
             for J in range(Job.NAtom)
-        ))
+        )
+        if L_z_precursor < 0:
+            return None
+        return 4*math.sqrt(L_z_precursor)
 
     def L_z_d_orb(self, Job, u, v, w, n, a, b, c, d, s, t, I, J):
         """

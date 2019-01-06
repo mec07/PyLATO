@@ -168,3 +168,43 @@ def save_2D_raw_data(x_vals, y_vals, results, x_col_name, y_col_name, values_col
                     print("{},{},{}".format(x_val, y_val, value))
 
     print("Saved {}, {}, {} to {}".format(y_col_name, x_col_name, values_col_name, filename))
+
+
+def save_2D_with_extra_info_raw_data(x_vals, y_vals, results, extra_info,
+                                     labels, filename):
+    """
+    Save the data for a 2D plot, i.e. there is a result for each x and y value,
+    with an extra piece of information for each result.
+
+    The x_vals & y_vals are expected to be lists or arrays.
+    The results and extra info are expected to be dictionaries.
+    The total number of results must equal len(x_vals)*len(y_vals).
+    The total number of results must equal the total number of extra_info.
+    The labels are expected to be a list of 4 elements, i.e. one for x_vals,
+    y_vals, results and extra_info.
+    """
+    assert len(x_vals)*len(y_vals) == len(results)
+    assert len(results) == len(extra_info)
+    assert len(labels) == 4
+
+    fieldnames = labels
+    with open(filename, 'w') as file_handle:
+        writer = csv.DictWriter(file_handle, fieldnames=fieldnames)
+        writer.writeheader()
+        print(fieldnames)
+
+        for x_index, x_val in enumerate(x_vals):
+            for y_index, y_val in enumerate(y_vals):
+                key = (x_index, y_index)
+                value = results[key]
+                info = extra_info[key]
+                if value is not None:
+                    writer.writerow({
+                        labels[0]: x_val,
+                        labels[1]: y_val,
+                        labels[2]: value,
+                        labels[3]: info,
+                    })
+                    print("{},{},{},{}".format(x_val, y_val, value, info))
+
+    print("Saved {}, {}, {}, {} to {}".format(*labels, filename))

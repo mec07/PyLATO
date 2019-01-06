@@ -60,6 +60,21 @@ class TestElectronic:
         assert np.array_equal(electronic.rho, expected_rho)
         assert np.array_equal(electronic.rhotot, expected_rho)
 
+    def test_quantum_number_S_is_None(self):
+        # Setup
+        Job = InitJob("test_data/JobDef_scase.json")
+
+        # Fake
+        def fake_magnetic_correlation(*args):
+            return -1
+        Job.Electron.magnetic_correlation = fake_magnetic_correlation
+
+        # Action
+        S = Job.Electron.quantum_number_S(Job)
+
+        # Result
+        assert S is None
+
     @pytest.mark.parametrize(
         ("name", "rho", "expected_S"),
         [
@@ -94,6 +109,39 @@ class TestElectronic:
 
         # Result
         assert S == expected_S
+
+    def test_quantum_number_L_z_p_orb_is_None(self):
+        # Setup
+        Job = InitJob("test_data/JobDef_pcase.json")
+
+        # Fake
+        def fake_L_z_p_orb(*args):
+            return -1
+
+        Job.Electron.L_z_p_orb_part_1 = fake_L_z_p_orb
+        Job.Electron.L_z_p_orb_part_2 = fake_L_z_p_orb
+
+        # Action
+        L_z = Job.Electron.quantum_number_L_z_p_orb(Job)
+
+        # Result
+        assert L_z is None
+
+    def test_quantum_number_L_z_d_orb_is_None(self):
+        # Setup
+        Job = InitJob("test_data/JobDef_pcase.json")
+
+        # Fake
+        def fake_L_z_d_orb(*args):
+            return -1
+
+        Job.Electron.L_z_d_orb = fake_L_z_d_orb
+
+        # Action
+        L_z = Job.Electron.quantum_number_L_z_d_orb(Job)
+
+        # Result
+        assert L_z is None
 
     @pytest.mark.parametrize(
         ("name", "rho", "expected_L_z"),

@@ -7,8 +7,10 @@ from unittest.mock import patch
 from pylato.main import main
 from pylato.exceptions import ChemicalPotentialError, SelfConsistencyError
 from scripts.utils import (
-    BackupFiles, InputDensity, JobDef, Model, save_1D_raw_data, save_2D_raw_data
+    BackupFiles, InputDensity, JobDef, Model, save_1D_raw_data,
+    save_2D_raw_data, save_2D_with_extra_info_raw_data
 )
+from scripts.generate_classification_data import get_classification
 
 """
 Run this script from the top level of the repo. If you run this from the
@@ -120,6 +122,7 @@ def generate_mag_mom_corr_dcase():
     electrons_of_interest = [6]
     with BackupFiles(jobdef_file, modelfile):
         jobdef.write_magnetic_correlation()
+        jobdef.write_groundstate_classification()
         for num_electrons in electrons_of_interest:
             jobdef.update_hamiltonian("dcase")
             jobdef.update_model("TBcanonical_d")
@@ -129,11 +132,12 @@ def generate_mag_mom_corr_dcase():
             mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
             dJ_val1 = 0.0
             dJ_val2 = 0.1
-            filename = "mag_mom_corr_dcase_{}_electrons_per_atom_dJ_{}.csv"
+            filename = "mag_mom_corr_and_class_dcase_{}_electrons_per_atom_dJ_{}.csv"
             mag_corr_result_filename_1 = os.path.join(
                 results_dir, filename.format(num_electrons, dJ_val1))
             mag_corr_result_filename_2 = os.path.join(
                 results_dir, filename.format(num_electrons, dJ_val2))
+            classification_file = os.path.join(results_dir, "classification.txt")
 
             execution_args = ['pylato/main.py', jobdef_file]
 
@@ -141,22 +145,44 @@ def generate_mag_mom_corr_dcase():
             J_array = np.linspace(0.005, 2.5, num=20)
             mag_corr_result_1 = {}
             mag_corr_result_2 = {}
+            classification_result_1 = {}
+            classification_result_2 = {}
             for U_index, U in enumerate(U_array):
                 for J_index, J in enumerate(J_array):
+                    key = (U_index, J_index)
                     if U >= J:
-                        mag_corr_result_1[(U_index, J_index)] = calculate_mag_corr_result(
-                            U, J, dJ_val1, model, mag_corr_file, execution_args)
-                        mag_corr_result_2[(U_index, J_index)] = calculate_mag_corr_result(
-                            U, J, dJ_val2, model, mag_corr_file, execution_args)
+                        mag_corr_result_1[key], classification_result_1[key] = (
+                            calculate_mag_corr_result(
+                                U, J, dJ_val1, model, mag_corr_file,
+                                execution_args,
+                                classification_file=classification_file)
+                        )
+                        mag_corr_result_2[key], classification_result_2[key] = (
+                            calculate_mag_corr_result(
+                                U, J, dJ_val2, model, mag_corr_file,
+                                execution_args,
+                                classification_file=classification_file)
+                        )
                     else:
-                        mag_corr_result_1[(U_index, J_index)] = None
-                        mag_corr_result_2[(U_index, J_index)] = None
+                        mag_corr_result_1[key] = None
+                        classification_result_1[key] = None
+                        mag_corr_result_2[key] = None
+                        classification_result_2[key] = None
 
             x_label = "U/|t|"
             y_label = "J/|t|"
             values_label = "C_avg"
-            save_2D_raw_data(U_array, J_array, mag_corr_result_1, x_label, y_label, values_label, mag_corr_result_filename_1)
-            save_2D_raw_data(U_array, J_array, mag_corr_result_2, x_label, y_label, values_label, mag_corr_result_filename_2)
+            extra_info_label = "classification"
+            save_2D_with_extra_info_raw_data(
+                x_vals=U_array, y_vals=J_array, results=mag_corr_result_1,
+                extra_info=classification_result_1,
+                labels=[x_label, y_label, values_label, extra_info_label],
+                filename=mag_corr_result_filename_1)
+            save_2D_with_extra_info_raw_data(
+                x_vals=U_array, y_vals=J_array, results=mag_corr_result_2,
+                extra_info=classification_result_2,
+                labels=[x_label, y_label, values_label, extra_info_label],
+                filename=mag_corr_result_filename_2)
 
 
 def generate_mag_mom_corr_vector_stoner_pcase():
@@ -202,11 +228,12 @@ def generate_mag_mom_corr_vector_stoner_dcase():
     jobdef = JobDef(jobdef_file)
     modelfile = "models/TBcanonical_d.json"
     model = Model(modelfile)
-    filename = "mag_mom_corr_vector_stoner_dcase_{}_electrons_per_atom.csv"
+    filename = "mag_mom_corr_and_class_vector_stoner_dcase_{}_electrons_per_atom.csv"
 
-    electrons_of_interest = [4, 6]
+    electrons_of_interest = [6]
     with BackupFiles(jobdef_file, modelfile):
         jobdef.write_magnetic_correlation()
+        jobdef.write_groundstate_classification()
         for num_electrons in electrons_of_interest:
             jobdef.update_hamiltonian("vector_stoner")
             jobdef.update_model("TBcanonical_d")
@@ -216,27 +243,41 @@ def generate_mag_mom_corr_vector_stoner_dcase():
             mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
             mag_corr_result_filename = os.path.join(
                 results_dir, filename.format(num_electrons))
+            classification_file = os.path.join(results_dir, "classification.txt")
 
             execution_args = ['pylato/main.py', jobdef_file]
 
             U_array = np.linspace(0.005, 10, num=20)
             J_array = np.linspace(0.005, 2.5, num=20)
             mag_corr_result = {}
+            classification_result = {}
             for U_index, U in enumerate(U_array):
                 for J_index, J in enumerate(J_array):
+                    key = (U_index, J_index)
                     if U >= J:
-                        mag_corr_result[(U_index, J_index)] = calculate_mag_corr_result(
-                            U, J, 0, model, mag_corr_file, execution_args)
+                        mag_corr_result[key], classification_result[key] = (
+                            calculate_mag_corr_result(
+                                U, J, 0, model, mag_corr_file,
+                                execution_args,
+                                classification_file=classification_file)
+                        )
                     else:
-                        mag_corr_result[(U_index, J_index)] = None
+                        mag_corr_result[key] = None
+                        classification_result[key] = None
 
             x_label = "U/|t|"
             y_label = "J/|t|"
             values_label = "C_avg"
-            save_2D_raw_data(U_array, J_array, mag_corr_result, x_label, y_label, values_label, mag_corr_result_filename)
+            extra_info_label = "classification"
+            save_2D_with_extra_info_raw_data(
+                x_vals=U_array, y_vals=J_array, results=mag_corr_result,
+                extra_info=classification_result,
+                labels=[x_label, y_label, values_label, extra_info_label],
+                filename=mag_corr_result_filename)
 
 
-def calculate_mag_corr_result(U, J, dJ, model, mag_corr_file, execution_args):
+def calculate_mag_corr_result(U, J, dJ, model, mag_corr_file, execution_args,
+                              classification_file=None):
     print("U = ", U)
     print("J = ", J)
     print("dJ = ", dJ)
@@ -247,13 +288,20 @@ def calculate_mag_corr_result(U, J, dJ, model, mag_corr_file, execution_args):
     with patch('sys.argv', execution_args):
         try:
             main()
-            return get_mag_corr(mag_corr_file)
-        except np.linalg.linalg.LinAlgError:
-            return None
-        except ChemicalPotentialError:
-            return None
-        except SelfConsistencyError:
-            return None
+            if classification_file:
+                return get_mag_corr(mag_corr_file), get_classification(classification_file)
+            else:
+                return get_mag_corr(mag_corr_file)
+        except np.linalg.linalg.LinAlgError as err:
+            print(err)
+        except ChemicalPotentialError as err:
+            print(err)
+        except SelfConsistencyError as err:
+            print(err)
+
+        if classification_file:
+            return None, None
+        return None
 
 
 def get_mag_corr(filename):
