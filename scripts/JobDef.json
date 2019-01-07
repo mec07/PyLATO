@@ -94,6 +94,10 @@
     "write_magnetic_correlation": 0,
     // write the total energy
     "write_total_energy": 0,
+    // write the spin quantum number
+    "write_quantum_number_S": 0,
+    // write the L_z quantum number
+    "write_quantum_number_L_z": 0,
     // write the groundstate wavefunction classification (only implemented for dimers)
     "write_groundstate_classification": 0,
 

@@ -10,7 +10,6 @@
 
     // Save results in following directory. This is optional. If this is not
     // included the results will be saved in the current directory.
-    //"results_dir": "/workspace/mec07/Development/output_PyLATO/",
     "results_dir": "../output_PyLATO",
 
     // atomic geometry
@@ -76,14 +75,14 @@
 
     // Output
     // write the spin on each site
-    "write_spins": 1,
+    "write_spins": 0,
     // write density matrix in "i    j    val" format, with j >= i to file, 1 is
     // on, 0 is off. Will be called "rho.txt".
     "write_rho":0,
     // write density matrix as a matrix (not recommended for large systems).
     "write_rho_mat":0,
     // write the on-site density matrices
-    "write_rho_on_site":1,
+    "write_rho_on_site":0,
     // write fock matrix in "i    j    val" format, with j >= i to file, 1 is
     // on, 0 is off. Will be called "fock.txt".
     "write_fock":0,
@@ -92,15 +91,15 @@
     // write the orbital occupations
     "write_orbital_occupations": 0,
     // write the magnetic correlation
-    "write_magnetic_correlation": 0,
+    "write_magnetic_correlation": 1,
     // write the total energy
     "write_total_energy": 1,
     // write the spin quantum number
-    "write_quantum_number_S": 0,
+    "write_quantum_number_S": 1,
     // write the L_z quantum number
-    "write_quantum_number_L_z": 0,
+    "write_quantum_number_L_z": 1,
     // write the groundstate wavefunction classification (only implemented for dimers)
-    "write_groundstate_classification": 0,
+    "write_groundstate_classification": 1,
 
     // number of bins for the density of states
     "dos_nbin": 20,
