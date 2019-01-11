@@ -19,4 +19,4 @@ Feature: Find the wavefunction classification
         Given the TBcanonical_d model is set to have U/|t| = 6
         And the TBcanonical_d model is set to have 2 electrons
         When PyLATO is run using the job definition file: "dcase_dimer.json"
-        Then the groundstate classification is "{}^1\Pi_{g}"
+        Then the groundstate classification is "{}^2\Pi_{g}"

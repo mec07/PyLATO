@@ -81,9 +81,11 @@ def generate_mag_mom_corr_pcase():
     modelfile = "models/TBcanonical_p.json"
     model = Model(modelfile)
 
+    electrons_of_interest = [2]
     with BackupFiles(jobdef_file, modelfile):
         jobdef.write_magnetic_correlation()
-        for num_electrons in range(1, 6):
+        jobdef.write_groundstate_classification()
+        for num_electrons in electrons_of_interest:
             jobdef.update_hamiltonian("pcase")
             jobdef.update_model("TBcanonical_p")
             model.update_num_electrons(num_electrons)
@@ -92,25 +94,38 @@ def generate_mag_mom_corr_pcase():
             mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
             mag_corr_result_filename = os.path.join(
                 results_dir,
-                "mag_mom_corr_pcase_{}_electrons_per_atom.csv".format(
+                "mag_mom_corr_and_class_pcase_{}_electrons_per_atom.csv".format(
                     num_electrons))
+            classification_file = os.path.join(results_dir, "classification.txt")
             execution_args = ['pylato/main.py', jobdef_file]
 
-            U_array = np.linspace(0.005, 10, num=20)
-            J_array = np.linspace(0.005, 2.5, num=20)
+            U_array = np.linspace(0.005, 10, num=50)
+            J_array = np.linspace(0.005, 2.5, num=50)
             mag_corr_result = {}
+            classification_result = {}
             for U_index, U in enumerate(U_array):
                 for J_index, J in enumerate(J_array):
+                    key = (U_index, J_index)
                     if U >= J:
-                        mag_corr_result[(U_index, J_index)] = calculate_mag_corr_result(
-                            U, J, 0, model, mag_corr_file, execution_args)
+                        mag_corr_result[key], classification_result[key] = (
+                            calculate_mag_corr_result(
+                                U, J, 0, model, mag_corr_file, execution_args,
+                                classification_file=classification_file)
+                        )
                     else:
-                        mag_corr_result[(U_index, J_index)] = None
+                        mag_corr_result[key] = None
+                        classification_result[key] = None
 
             x_label = "U/|t|"
             y_label = "J/|t|"
             values_label = "C_avg"
-            save_2D_raw_data(U_array, J_array, mag_corr_result, x_label, y_label, values_label, mag_corr_result_filename)
+            extra_info_label = "classification"
+            save_2D_with_extra_info_raw_data(
+                x_vals=U_array, y_vals=J_array, results=mag_corr_result,
+                extra_info=classification_result,
+                labels=[x_label, y_label, values_label, extra_info_label],
+                filename=mag_corr_result_filename
+            )
 
 
 def generate_mag_mom_corr_dcase():
@@ -190,11 +205,13 @@ def generate_mag_mom_corr_vector_stoner_pcase():
     jobdef = JobDef(jobdef_file)
     modelfile = "models/TBcanonical_p.json"
     model = Model(modelfile)
-    results_file = "mag_mom_corr_vector_stoner_pcase_{}_electrons_per_atom.csv"
+    results_file = "mag_mom_corr_and_class_vector_stoner_pcase_{}_electrons_per_atom.csv"
 
+    electrons_of_interest = [2]
     with BackupFiles(jobdef_file, modelfile):
         jobdef.write_magnetic_correlation()
-        for num_electrons in range(1, 6):
+        jobdef.write_groundstate_classification()
+        for num_electrons in electrons_of_interest:
             jobdef.update_hamiltonian("vector_stoner")
             jobdef.update_model("TBcanonical_p")
             model.update_num_electrons(num_electrons)
@@ -204,23 +221,37 @@ def generate_mag_mom_corr_vector_stoner_pcase():
             mag_corr_result_filename = os.path.join(
                 results_dir, results_file.format(num_electrons)
             )
+            classification_file = os.path.join(results_dir, "classification.txt")
             execution_args = ['pylato/main.py', jobdef_file]
 
-            U_array = np.linspace(0.005, 10, num=20)
-            J_array = np.linspace(0.005, 2.5, num=20)
+            U_array = np.linspace(0.005, 10, num=50)
+            J_array = np.linspace(0.005, 2.5, num=50)
             mag_corr_result = {}
+            classification_result = {}
             for U_index, U in enumerate(U_array):
                 for J_index, J in enumerate(J_array):
+                    key = (U_index, J_index)
                     if U >= J:
-                        mag_corr_result[(U_index, J_index)] = calculate_mag_corr_result(
-                            U, J, 0, model, mag_corr_file, execution_args)
+                        mag_corr_result[key], classification_result[key] = (
+                            calculate_mag_corr_result(
+                                U, J, 0, model, mag_corr_file, execution_args,
+                                classification_file=classification_file
+                            )
+                        )
                     else:
-                        mag_corr_result[(U_index, J_index)] = None
+                        mag_corr_result[key] = None
+                        classification_result[key] = None
 
             x_label = "U/|t|"
             y_label = "J/|t|"
             values_label = "C_avg"
-            save_2D_raw_data(U_array, J_array, mag_corr_result, x_label, y_label, values_label, mag_corr_result_filename)
+            extra_info_label = "classification"
+            save_2D_with_extra_info_raw_data(
+                x_vals=U_array, y_vals=J_array, results=mag_corr_result,
+                extra_info=classification_result,
+                labels=[x_label, y_label, values_label, extra_info_label],
+                filename=mag_corr_result_filename
+            )
 
 
 def generate_mag_mom_corr_vector_stoner_dcase():
@@ -318,7 +349,7 @@ def save_rho_mat(original_name, new_name):
 if __name__ == "__main__":
     # generate_mag_mom_corr_scase_local_minimum()
     # generate_mag_mom_corr_scase_global_minimum()
-    # generate_mag_mom_corr_pcase()
-    generate_mag_mom_corr_dcase()
-    # generate_mag_mom_corr_vector_stoner_pcase()
-    generate_mag_mom_corr_vector_stoner_dcase()
+    generate_mag_mom_corr_pcase()
+    # generate_mag_mom_corr_dcase()
+    generate_mag_mom_corr_vector_stoner_pcase()
+    # generate_mag_mom_corr_vector_stoner_dcase()
