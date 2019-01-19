@@ -228,9 +228,13 @@ class Electronic:
 
     def GR_Pulay(self, scf_iteration):
         """
-        This is the guaranteed reduction Pulay mixing scheme proposed by
-        Bowler and Gillan in 2008. If the number of density matrices to be
-        used, num_rho, is 1, it reduces to just linear mixing. 
+        This is the guaranteed reduction Pulay mixing scheme proposed in:
+            Bowler, D. R., and M. J. Gillan. "An efficient and robust technique
+            for achieving self consistency in electronic structure
+            calculations." Chemical Physics Letters 325.4 (2000): 473-476.
+
+        If the number of density matrices to be used, num_rho, is 1, it reduces
+        to linear mixing.
 
         The scf_iteration is a required input because when scf_iteration is
         less than num_rho then scf_iteration is the number of density matrices
@@ -239,7 +243,6 @@ class Electronic:
         The output is an updated self.rhotot to be used in the construction of
         the Fock matrix. Also, self.inputrho, self.outputrho and self.residue
         are updated for the next iteration.
-
         """
         num_rho = self.Job.Def['num_rho']
         # If the number of scf iterations is less than num_rho replace it by
