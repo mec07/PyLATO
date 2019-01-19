@@ -129,6 +129,7 @@ class Model(CommentJsonInteractor):
         self.data["species"][0]["NElectrons"] = num_electrons
         self.update_file()
 
+
 def save_1D_raw_data(x_vals, y_vals, x_col_name, y_col_name, filename):
     assert len(x_vals) == len(y_vals)
 
@@ -144,6 +145,38 @@ def save_1D_raw_data(x_vals, y_vals, x_col_name, y_col_name, filename):
                 print("{},{}".format(val, value))
 
     print("Saved {} by {} to {}".format(y_col_name, x_col_name, filename))
+
+
+def save_1D_with_extra_info_raw_data(x_vals, results, extra_info, labels,
+                                     filename):
+    """
+    Save the data for a 1D plot, i.e. there is a result for each x value,
+    with an extra piece of information for each result.
+
+    The x_vals & results are expected to be lists or arrays of the same length.
+    The total number of results must equal the total number of extra_info.
+    The labels are expected to be a list of 3 elements, i.e. one for x_vals,
+    results and extra_info.
+    """
+    assert len(x_vals) == len(results)
+    assert len(labels) == 3
+
+    with open(filename, 'w') as file_handle:
+        writer = csv.DictWriter(file_handle, fieldnames=labels)
+        writer.writeheader()
+        print(labels)
+
+        for index, x_value in enumerate(x_vals):
+            result = results[index]
+            if result is not None:
+                writer.writerow({
+                    labels[0]: x_value,
+                    labels[1]: result,
+                    labels[2]: extra_info[index]
+                })
+                print("{},{},{}".format(x_value, result, extra_info[index]))
+
+    print("Saved {}, {}, {} to {}".format(*labels, filename))
 
 
 def save_2D_raw_data(x_vals, y_vals, results, x_col_name, y_col_name, values_col_name, filename):

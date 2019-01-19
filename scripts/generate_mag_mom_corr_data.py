@@ -8,7 +8,7 @@ from pylato.main import main
 from pylato.exceptions import ChemicalPotentialError, SelfConsistencyError
 from scripts.utils import (
     BackupFiles, InputDensity, JobDef, Model, save_1D_raw_data,
-    save_2D_raw_data, save_2D_with_extra_info_raw_data
+    save_1D_with_extra_info_raw_data, save_2D_with_extra_info_raw_data
 )
 from scripts.generate_classification_data import get_classification
 
@@ -27,21 +27,32 @@ def generate_mag_mom_corr_scase_local_minimum():
     with BackupFiles(jobdef_file, modelfile):
         jobdef.write_magnetic_correlation()
         jobdef.update_hamiltonian("scase")
+        jobdef.write_groundstate_classification()
         jobdef.update_model("TBcanonical_s")
         results_dir = jobdef['results_dir']
         mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
-        mag_corr_array_filename = os.path.join(results_dir, "mag_mom_corr_scase_local_minimum.csv")
+        classification_file = os.path.join(results_dir, "classification.txt")
+        mag_corr_array_filename = os.path.join(results_dir, "mag_mom_corr_with_class_scase_local_minimum.csv")
         execution_args = ['pylato/main.py', jobdef_file]
 
         U_array = np.linspace(0.005, 10, num=100)
         mag_corr_array = []
+        classification_array = []
         for U in U_array:
-            mag_corr_array.append(calculate_mag_corr_result(
-                U, 0, 0, model, mag_corr_file, execution_args))
+            mag_corr, classification = calculate_mag_corr_result(
+                U, 0, 0, model, mag_corr_file, execution_args,
+                classification_file=classification_file)
+            mag_corr_array.append(mag_corr)
+            classification_array.append(classification)
 
         x_label = "U/|t|"
         y_label = "C_avg"
-        save_1D_raw_data(U_array, mag_corr_array, x_label, y_label, mag_corr_array_filename)
+        extra_info_label = "classification"
+        save_1D_with_extra_info_raw_data(
+            x_vals=U_array, results=mag_corr_array,
+            extra_info=classification_array,
+            labels=[x_label, y_label, extra_info_label],
+            filename=mag_corr_array_filename)
 
 
 def generate_mag_mom_corr_scase_global_minimum():
@@ -54,25 +65,37 @@ def generate_mag_mom_corr_scase_global_minimum():
 
     with BackupFiles(input_density_file, jobdef_file, modelfile):
         jobdef.write_magnetic_correlation()
+        jobdef.write_groundstate_classification()
         jobdef.update_hamiltonian("scase")
         jobdef.update_model("TBcanonical_s")
         jobdef.update_input_rho(input_density_file)
 
         results_dir = jobdef['results_dir']
         mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
-        mag_corr_array_filename = os.path.join(results_dir, "mag_mom_corr_scase_global_minimum.csv")
+        classification_file = os.path.join(results_dir, "classification.txt")
+        mag_corr_array_filename = os.path.join(results_dir, "mag_mom_corr_with_class_scase_global_minimum.csv")
         execution_args = ['pylato/main.py', jobdef_file]
 
         U_array = np.linspace(0.005, 10, num=100)
         mag_corr_array = []
+        classification_array = []
         for U in U_array:
             input_density.update_U(U)
-            mag_corr_array.append(calculate_mag_corr_result(
-                U, 0, 0, model, mag_corr_file, execution_args))
+
+            mag_corr, classification = calculate_mag_corr_result(
+                U, 0, 0, model, mag_corr_file, execution_args,
+                classification_file=classification_file)
+            mag_corr_array.append(mag_corr)
+            classification_array.append(classification)
 
         x_label = "U/|t|"
         y_label = "C_avg"
-        save_1D_raw_data(U_array, mag_corr_array, x_label, y_label, mag_corr_array_filename)
+        extra_info_label = "classification"
+        save_1D_with_extra_info_raw_data(
+            x_vals=U_array, results=mag_corr_array,
+            extra_info=classification_array,
+            labels=[x_label, y_label, extra_info_label],
+            filename=mag_corr_array_filename)
 
 
 def generate_mag_mom_corr_pcase():
@@ -85,9 +108,9 @@ def generate_mag_mom_corr_pcase():
     with BackupFiles(jobdef_file, modelfile):
         jobdef.write_magnetic_correlation()
         jobdef.write_groundstate_classification()
+        jobdef.update_hamiltonian("pcase")
+        jobdef.update_model("TBcanonical_p")
         for num_electrons in electrons_of_interest:
-            jobdef.update_hamiltonian("pcase")
-            jobdef.update_model("TBcanonical_p")
             model.update_num_electrons(num_electrons)
 
             results_dir = jobdef['results_dir']
@@ -138,9 +161,9 @@ def generate_mag_mom_corr_dcase():
     with BackupFiles(jobdef_file, modelfile):
         jobdef.write_magnetic_correlation()
         jobdef.write_groundstate_classification()
+        jobdef.update_hamiltonian("dcase")
+        jobdef.update_model("TBcanonical_d")
         for num_electrons in electrons_of_interest:
-            jobdef.update_hamiltonian("dcase")
-            jobdef.update_model("TBcanonical_d")
             model.update_num_electrons(num_electrons)
 
             results_dir = jobdef['results_dir']
@@ -211,9 +234,9 @@ def generate_mag_mom_corr_vector_stoner_pcase():
     with BackupFiles(jobdef_file, modelfile):
         jobdef.write_magnetic_correlation()
         jobdef.write_groundstate_classification()
+        jobdef.update_hamiltonian("vector_stoner")
+        jobdef.update_model("TBcanonical_p")
         for num_electrons in electrons_of_interest:
-            jobdef.update_hamiltonian("vector_stoner")
-            jobdef.update_model("TBcanonical_p")
             model.update_num_electrons(num_electrons)
 
             results_dir = jobdef['results_dir']
@@ -265,9 +288,9 @@ def generate_mag_mom_corr_vector_stoner_dcase():
     with BackupFiles(jobdef_file, modelfile):
         jobdef.write_magnetic_correlation()
         jobdef.write_groundstate_classification()
+        jobdef.update_hamiltonian("vector_stoner")
+        jobdef.update_model("TBcanonical_d")
         for num_electrons in electrons_of_interest:
-            jobdef.update_hamiltonian("vector_stoner")
-            jobdef.update_model("TBcanonical_d")
             model.update_num_electrons(num_electrons)
 
             results_dir = jobdef['results_dir']
@@ -347,9 +370,9 @@ def save_rho_mat(original_name, new_name):
 
 
 if __name__ == "__main__":
-    # generate_mag_mom_corr_scase_local_minimum()
-    # generate_mag_mom_corr_scase_global_minimum()
-    generate_mag_mom_corr_pcase()
+    generate_mag_mom_corr_scase_local_minimum()
+    generate_mag_mom_corr_scase_global_minimum()
+    # generate_mag_mom_corr_pcase()
     # generate_mag_mom_corr_dcase()
-    generate_mag_mom_corr_vector_stoner_pcase()
+    # generate_mag_mom_corr_vector_stoner_pcase()
     # generate_mag_mom_corr_vector_stoner_dcase()
