@@ -22,7 +22,9 @@ def PerformSelfConsistency(Job):
     if Job.isNoncollinearHami:
         Job.Electron.rhotot = Job.Electron.rho
 
-    max_loops = Job.Def['scf_max_loops']
+    max_loops = int(Job.Def['scf_max_loops'])
+    assert max_loops > 0, ("Performing self consistency calculation requires positive "
+                           f"value of scf_max_loops. Current value is: {max_loops}")
     for ii in range(max_loops):
         #
         # Build the fock matrix (adds the density matrix dependent terms)

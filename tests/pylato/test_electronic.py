@@ -434,6 +434,16 @@ class TestElectronic:
         # Result
         assert gerade == expected_gerade
 
+    def test_ungerade(self, monkeypatch):
+        # Setup
+        Job = InitJob("test_data/JobDef_scase.json")
+
+        # Fake
+        Job.psi = np.zeros(shape=(4, 4))
+        Job.Electron.symmetry_operation_result = lambda x, y, z: -1
+
+        assert Job.Electron.gerade(Job) == 'u'
+
     @pytest.mark.parametrize(
         ("job_file", "orbital", "initial_value", "expected_reflected_value"),
         [

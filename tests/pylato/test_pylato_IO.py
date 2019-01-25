@@ -1,10 +1,12 @@
 import os
 import pytest
 
+from functools import partial
+
 from pylato.exceptions import UnimplementedMethodError
 from pylato.pylato_IO import (
-    WriteTotalEnergy, classify_groundstate, get_spin_part_of_symbol,
-    get_angular_part_of_symbol, get_gerade_part_of_symbol
+    WriteTotalEnergy, WriteQuantumNumberS, WriteQuantumNumberLz, classify_groundstate,
+    get_spin_part_of_symbol, get_angular_part_of_symbol, get_gerade_part_of_symbol
 )
 
 
@@ -136,6 +138,45 @@ def test_get_angular_part_of_symbol(L_z, plus_minus, expected_symbol):
     ]
 )
 def test_get_gerade_part_of_symbol(gerade, expected_symbol):
-    Job = FakeJob(gerade=gerade)
+    Job = FakeJob()
+    Job.Electron = FakeElectron(gerade=gerade)
 
     assert get_gerade_part_of_symbol(Job) == expected_symbol
+
+
+def test_write_quantum_number_S_None():
+    # Setup
+    results_dir = "/tmp"
+    filename = "test_quantum_number_S.txt"
+    expected_body = ""
+    Job = FakeJob({'write_quantum_number_S': 1}, results_dir=results_dir)
+    Job.Electron = FakeElectron(S=None)
+
+    # Action & Result
+    helper_test_file_gets_created(filename, results_dir, expected_body,
+                                  partial(WriteQuantumNumberS, Job, filename))
+
+
+def test_write_quantum_number_L_z_None():
+    # Setup
+    results_dir = "/tmp"
+    filename = "test_quantum_number_L_z.txt"
+    expected_body = ""
+    Job = FakeJob({'write_quantum_number_L_z': 1}, results_dir=results_dir)
+    Job.Electron = FakeElectron(L_z=None)
+
+    # Action & Result
+    helper_test_file_gets_created(filename, results_dir, expected_body,
+                                  partial(WriteQuantumNumberLz, Job, filename))
+
+
+def helper_test_file_gets_created(filename, directory, expected_body,
+                                  function_to_test):
+    with TemporaryFile(filename, directory) as filepath:
+        # Action
+        function_to_test()
+
+        # Result
+        assert os.path.isfile(filepath)
+        with open(filepath, 'r') as fh:
+            assert fh.read() == expected_body
