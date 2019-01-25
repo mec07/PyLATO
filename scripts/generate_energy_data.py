@@ -82,22 +82,24 @@ def generate_energy_data_pcase():
 
     with BackupFiles(jobdef_file, modelfile):
         jobdef.write_total_energy()
+        jobdef.update_hamiltonian("pcase")
+        jobdef.update_model("TBcanonical_p")
+
+        results_dir = jobdef['results_dir']
+        energy_file = os.path.join(results_dir, "energy.txt")
+        execution_args = ['pylato/main.py', jobdef_file]
+
+        U_array = np.linspace(0.005, 10, num=20)
+        J_array = np.linspace(0.005, 2.5, num=20)
         for num_electrons in range(1, 6):
-            jobdef.update_hamiltonian("pcase")
-            jobdef.update_model("TBcanonical_p")
             model.update_num_electrons(num_electrons)
 
-            results_dir = jobdef['results_dir']
-            energy_file = os.path.join(results_dir, "energy.txt")
             energy_array_filename = os.path.join(
                 results_dir,
                 "total_energy_array_pcase_{}_electrons_per_atom.csv".format(
                     num_electrons)
             )
-            execution_args = ['pylato/main.py', jobdef_file]
 
-            U_array = np.linspace(0.005, 10, num=20)
-            J_array = np.linspace(0.005, 2.5, num=20)
             energy_result = {}
             for U_index, U in enumerate(U_array):
                 for J_index, J in enumerate(J_array):
@@ -119,16 +121,20 @@ def generate_energy_data_dcase():
     electrons_of_interest = [1, 2, 3, 4, 5, 6, 7, 8, 9]
     with BackupFiles(jobdef_file, modelfile):
         jobdef.write_total_energy()
-        for num_electrons in electrons_of_interest:
-            jobdef.update_hamiltonian("dcase")
-            jobdef.update_model("TBcanonical_d")
-            model.update_num_electrons(num_electrons)
+        jobdef.update_hamiltonian("dcase")
+        jobdef.update_model("TBcanonical_d")
 
-            results_dir = jobdef['results_dir']
-            energy_file = os.path.join(results_dir, "energy.txt")
-            dJ_val1 = 0.0
-            dJ_val2 = 0.1
-            filename = "total_energy_array_dcase_{}_electrons_per_atom_dJ_{}.csv"
+        results_dir = jobdef['results_dir']
+        energy_file = os.path.join(results_dir, "energy.txt")
+        filename = "total_energy_array_dcase_{}_electrons_per_atom_dJ_{}.csv"
+        execution_args = ['pylato/main.py', jobdef_file]
+
+        dJ_val1 = 0.0
+        dJ_val2 = 0.1
+        U_array = np.linspace(0.005, 10, num=5)
+        J_array = np.linspace(0.005, 2.5, num=5)
+        for num_electrons in electrons_of_interest:
+            model.update_num_electrons(num_electrons)
             energy_array_filename_1 = os.path.join(
                 results_dir,
                 filename.format(num_electrons, dJ_val1)
@@ -137,10 +143,6 @@ def generate_energy_data_dcase():
                 results_dir,
                 filename.format(num_electrons, dJ_val2)
             )
-            execution_args = ['pylato/main.py', jobdef_file]
-
-            U_array = np.linspace(0.005, 10, num=5)
-            J_array = np.linspace(0.005, 2.5, num=5)
             energy_result_1 = {}
             energy_result_2 = {}
             for U_index, U in enumerate(U_array):

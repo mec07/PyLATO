@@ -110,20 +110,21 @@ def generate_mag_mom_corr_pcase():
         jobdef.write_groundstate_classification()
         jobdef.update_hamiltonian("pcase")
         jobdef.update_model("TBcanonical_p")
+
+        results_dir = jobdef['results_dir']
+        mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
+        classification_file = os.path.join(results_dir, "classification.txt")
+        execution_args = ['pylato/main.py', jobdef_file]
+
+        U_array = np.linspace(0.005, 10, num=50)
+        J_array = np.linspace(0.005, 2.5, num=50)
         for num_electrons in electrons_of_interest:
             model.update_num_electrons(num_electrons)
 
-            results_dir = jobdef['results_dir']
-            mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
             mag_corr_result_filename = os.path.join(
                 results_dir,
                 "mag_mom_corr_and_class_pcase_{}_electrons_per_atom.csv".format(
                     num_electrons))
-            classification_file = os.path.join(results_dir, "classification.txt")
-            execution_args = ['pylato/main.py', jobdef_file]
-
-            U_array = np.linspace(0.005, 10, num=50)
-            J_array = np.linspace(0.005, 2.5, num=50)
             mag_corr_result = {}
             classification_result = {}
             for U_index, U in enumerate(U_array):
@@ -163,24 +164,25 @@ def generate_mag_mom_corr_dcase():
         jobdef.write_groundstate_classification()
         jobdef.update_hamiltonian("dcase")
         jobdef.update_model("TBcanonical_d")
+
+        results_dir = jobdef['results_dir']
+        mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
+        filename = "mag_mom_corr_and_class_dcase_{}_electrons_per_atom_dJ_{}.csv"
+        execution_args = ['pylato/main.py', jobdef_file]
+
+        dJ_val1 = 0.0
+        dJ_val2 = 0.1
+        U_array = np.linspace(0.005, 10, num=20)
+        J_array = np.linspace(0.005, 2.5, num=20)
         for num_electrons in electrons_of_interest:
             model.update_num_electrons(num_electrons)
 
-            results_dir = jobdef['results_dir']
-            mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
-            dJ_val1 = 0.0
-            dJ_val2 = 0.1
-            filename = "mag_mom_corr_and_class_dcase_{}_electrons_per_atom_dJ_{}.csv"
             mag_corr_result_filename_1 = os.path.join(
                 results_dir, filename.format(num_electrons, dJ_val1))
             mag_corr_result_filename_2 = os.path.join(
                 results_dir, filename.format(num_electrons, dJ_val2))
             classification_file = os.path.join(results_dir, "classification.txt")
 
-            execution_args = ['pylato/main.py', jobdef_file]
-
-            U_array = np.linspace(0.005, 10, num=20)
-            J_array = np.linspace(0.005, 2.5, num=20)
             mag_corr_result_1 = {}
             mag_corr_result_2 = {}
             classification_result_1 = {}
@@ -236,19 +238,20 @@ def generate_mag_mom_corr_vector_stoner_pcase():
         jobdef.write_groundstate_classification()
         jobdef.update_hamiltonian("vector_stoner")
         jobdef.update_model("TBcanonical_p")
+
+        results_dir = jobdef['results_dir']
+        mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
+        classification_file = os.path.join(results_dir, "classification.txt")
+        execution_args = ['pylato/main.py', jobdef_file]
+
+        U_array = np.linspace(0.005, 10, num=50)
+        J_array = np.linspace(0.005, 2.5, num=50)
         for num_electrons in electrons_of_interest:
             model.update_num_electrons(num_electrons)
 
-            results_dir = jobdef['results_dir']
-            mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
             mag_corr_result_filename = os.path.join(
                 results_dir, results_file.format(num_electrons)
             )
-            classification_file = os.path.join(results_dir, "classification.txt")
-            execution_args = ['pylato/main.py', jobdef_file]
-
-            U_array = np.linspace(0.005, 10, num=50)
-            J_array = np.linspace(0.005, 2.5, num=50)
             mag_corr_result = {}
             classification_result = {}
             for U_index, U in enumerate(U_array):
@@ -290,19 +293,19 @@ def generate_mag_mom_corr_vector_stoner_dcase():
         jobdef.write_groundstate_classification()
         jobdef.update_hamiltonian("vector_stoner")
         jobdef.update_model("TBcanonical_d")
+
+        results_dir = jobdef['results_dir']
+        mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
+        classification_file = os.path.join(results_dir, "classification.txt")
+        execution_args = ['pylato/main.py', jobdef_file]
+
+        U_array = np.linspace(0.005, 10, num=20)
+        J_array = np.linspace(0.005, 2.5, num=20)
         for num_electrons in electrons_of_interest:
             model.update_num_electrons(num_electrons)
 
-            results_dir = jobdef['results_dir']
-            mag_corr_file = os.path.join(results_dir, "mag_corr.txt")
             mag_corr_result_filename = os.path.join(
                 results_dir, filename.format(num_electrons))
-            classification_file = os.path.join(results_dir, "classification.txt")
-
-            execution_args = ['pylato/main.py', jobdef_file]
-
-            U_array = np.linspace(0.005, 10, num=20)
-            J_array = np.linspace(0.005, 2.5, num=20)
             mag_corr_result = {}
             classification_result = {}
             for U_index, U in enumerate(U_array):

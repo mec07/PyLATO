@@ -91,22 +91,22 @@
     // write the orbital occupations
     "write_orbital_occupations": 0,
     // write the magnetic correlation
-    "write_magnetic_correlation": 1,
+    "write_magnetic_correlation": 0,
     // write the total energy
-    "write_total_energy": 1,
+    "write_total_energy": 0,
     // write the spin quantum number
-    "write_quantum_number_S": 1,
+    "write_quantum_number_S": 0,
     // write the L_z quantum number
-    "write_quantum_number_L_z": 1,
+    "write_quantum_number_L_z": 0,
     // write the groundstate wavefunction classification (only implemented for dimers)
-    "write_groundstate_classification": 1,
+    "write_groundstate_classification": 0,
 
     // number of bins for the density of states
     "dos_nbin": 20,
 
     // Verbosity
     "verbose": 1,
-    "extraverbose": 1,
+    "extraverbose": 0,
 
     // InterSiteElectrostatics is set when the 1/r terms are to be included in SCC-TB.
     "InterSiteElectrostatics": 0
