@@ -1,5 +1,5 @@
 {   
-    // tight binding model
+    // tight binding model, "TBexp", "TBhydrcarbons", "TBcanonical_s", "TBcanonical_p" or "TBcanonical_d"
     "model": "TBhydrocarbons",
 
     // Hamiltonian, "collinear", "scase", "pcase", "dcase" or "vector_stoner"

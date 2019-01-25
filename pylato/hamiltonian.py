@@ -60,12 +60,7 @@ class Hamiltonian:
                                       complex( 0.0, 0.0), complex( 0.0,-1.0), complex( 0.0, 0.0)]])}
 
         if Job.Def["Hamiltonian"] == "dcase":
-            self.quad_xi_mat = np.zeros((5, 5, 5, 5), dtype='double')
-            for alpha in range(5):
-                for beta in range(5):
-                    for gamma in range(5):
-                        for chi in range(5):
-                            self.quad_xi_mat[alpha, beta, gamma, chi] = xicontfour(alpha, beta, gamma, chi)
+            self.quad_xi_mat = construct_quad_xi_mat()
 
     def spin_onsite_energy_shift(self, Job, spin1, spin2, atom):
         # Get the atom type
@@ -793,26 +788,55 @@ def map_atomic_to_index(atom, orbital, spin, num_atoms, num_orbitals):
     # add orbital contribution
     index += orbital
 
-    return index
+    return int(index)
 
 
-def xicontfour(alph,bet,gam,chi):
+xi = [
+    [
+        [-1.0/(2.0*math.sqrt(3)), 0.0, 0.0],
+        [0.0, -1.0/(2.0*math.sqrt(3)), 0.0],
+        [0.0, 0.0, 1/math.sqrt(3)]
+    ],
+    [
+        [0.0, 0.0, 0.5],
+        [0.0, 0.0, 0.0],
+        [0.5, 0.0, 0.0]
+    ],
+    [
+        [0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.5],
+        [0.0, 0.5, 0.0]
+    ],
+    [
+        [0.0, 0.5, 0.0],
+        [0.5, 0.0, 0.0],
+        [0.0, 0.0, 0.0]
+    ],
+    [
+        [0.5, 0.0, 0.0],
+        [0.0, -0.5, 0.0],
+        [0.0, 0.0, 0.0]
+    ]
+]
+
+
+def xicontfour(alpha, beta, gamma, chi):
     """
     The fourth contraction of the xi matrix.
     """
-    xi=[[[-1.0/(2.0*math.sqrt(3)),0.0,0.0],
-        [0.0,-1.0/(2.0*math.sqrt(3)),0.0],
-        [0.0,0.0,1/math.sqrt(3)]],
-        [[0.0,0.0,0.5],
-        [0.0,0.0,0.0],
-        [0.5,0.0,0.0]],
-        [[0.0,0.0,0.0],
-        [0.0,0.0,0.5],
-        [0.0,0.5,0.0]],
-        [[0.0,0.5,0.0],
-        [0.5,0.0,0.0],
-        [0.0,0.0,0.0]],
-        [[0.5,0.0,0.0],
-        [0.0,-0.5,0.0],
-        [0.0,0.0,0.0]]]
-    return sum(sum(sum(sum(xi[alph][s][t]*xi[bet][t][u]*xi[gam][u][v]*xi[chi][v][s] for s in range(3)) for t in range(3)) for u in range(3)) for v in range(3))
+    return sum(sum(sum(sum(
+        xi[alpha][s][t]*xi[beta][t][u]*xi[gamma][u][v]*xi[chi][v][s]
+        for s in range(3)) for t in range(3)) for u in range(3))
+        for v in range(3))
+
+
+def construct_quad_xi_mat():
+    quad_xi_mat = np.zeros((5, 5, 5, 5), dtype='double')
+    for alpha in range(5):
+        for beta in range(5):
+            for gamma in range(5):
+                for chi in range(5):
+                    quad_xi_mat[alpha, beta, gamma, chi] = xicontfour(alpha, beta, gamma, chi)
+
+    return quad_xi_mat
+

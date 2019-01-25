@@ -165,8 +165,9 @@ class TestHamiltonian:
 
         hami = Hamiltonian(Job)
         Job.Def["Hamiltonian"] = "invalid_hami_type"
+        expected_message = "Hamiltonian: 'invalid_hami_type' is unrecognised"
 
-        with pytest.raises(UnimplementedModelError):
+        with pytest.raises(UnimplementedModelError, message=expected_message):
             hami.add_Coulomb_term(Job, 0, 0, 1, 1, 1, 1, rho)
 
     @pytest.mark.parametrize(

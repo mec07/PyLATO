@@ -1,27 +1,26 @@
 {
-    // tight binding model
-    "model": "TBcanonical",
+    // tight binding model, "TBexp", "TBhydrcarbons", "TBcanonical_s", "TBcanonical_p" or "TBcanonical_d"
+    "model": "TBcanonical_d",
 
     // Hamiltonian, "collinear", "scase", "pcase", "dcase" or "vector_stoner"
-    "Hamiltonian": "pcase",
+    "Hamiltonian": "dcase",
 
     // Periodic boundary conditions: 1 (on) or 0 (off)
     "PBC": 0,
 
     // Save results in following directory. This is optional. If this is not
     // included the results will be saved in the current directory.
-    //"results_dir": "/workspace/mec07/Development/output_PyLATO/",
     "results_dir": "../output_PyLATO",
 
     // atomic geometry
     // Build cubic geometry: 1 (on) or 0 (off)
-    "build_geom":1,
+    "build_geom":0,
     // Crystal symmetry. Currently only have cubic, fcc and bcc implemented.
     "crystal":"bcc",
     // supercell. nx = 1, ny = 1 and nz = 1 corresponds to just the crystal basis
-    "nx":2,
-    "ny":2,
-    "nz":2,
+    "nx":1,
+    "ny":1,
+    "nz":1,
     // nearest neighbour separation in the cubic lattice
     "nearest_neighbour_sep":1.0,
     // geometry file name
@@ -49,20 +48,20 @@
     // Pulay mixing A
     "A": 0.1,
     // Optimisation routines:
-    // 1: the default that we implemented
+    // 1: GR Pulay mixing scheme
     // 2: the DIIS, pretty much equivalent results to 1
     "optimisation_routine":1,
     // Number of density matrices to mix. Reduces to linear mixing when num_rho = 1. Note that 5 seems to be the optimal value.
-    "num_rho":5,
+    "num_rho": 5,
     // McWeeny transformation: enforce idempotency in the density matrix, 1 (on), 0 (off).
-    "McWeeny":0,
-    "McWeeny_tol":1.0e-8,
-    "McWeeny_max_loops":100,
+    "McWeeny": 1,
+    "McWeeny_tol": 1.0e-8,
+    "McWeeny_max_loops": 100,
 
     // Genetic algorithm parameters
     //     -- this is an alternative to self-consistency, so self-consistency must
     //        be off for this to work.
-    "genetic_on": 1,
+    "genetic_on": 0,
     "population_size": 50,
     "max_num_evolutions": 50,
     "genetic_tol": 1.0e-8,
@@ -76,14 +75,14 @@
 
     // Output
     // write the spin on each site
-    "write_spins": 1,
+    "write_spins": 0,
     // write density matrix in "i    j    val" format, with j >= i to file, 1 is
     // on, 0 is off. Will be called "rho.txt".
     "write_rho":0,
     // write density matrix as a matrix (not recommended for large systems).
     "write_rho_mat":0,
     // write the on-site density matrices
-    "write_rho_on_site":1,
+    "write_rho_on_site":0,
     // write fock matrix in "i    j    val" format, with j >= i to file, 1 is
     // on, 0 is off. Will be called "fock.txt".
     "write_fock":0,
@@ -94,14 +93,20 @@
     // write the magnetic correlation
     "write_magnetic_correlation": 0,
     // write the total energy
-    "write_total_energy": 1,
+    "write_total_energy": 0,
+    // write the spin quantum number
+    "write_quantum_number_S": 0,
+    // write the L_z quantum number
+    "write_quantum_number_L_z": 0,
+    // write the groundstate wavefunction classification (only implemented for dimers)
+    "write_groundstate_classification": 0,
 
     // number of bins for the density of states
     "dos_nbin": 20,
 
     // Verbosity
     "verbose": 1,
-    "extraverbose": 1,
+    "extraverbose": 0,
 
     // InterSiteElectrostatics is set when the 1/r terms are to be included in SCC-TB.
     "InterSiteElectrostatics": 0

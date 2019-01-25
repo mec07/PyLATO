@@ -7,6 +7,10 @@ from features.support.fixtures import backup_file
 fixture_registry = {
     "fixture.backup.TBcanonical_s.json": fixture_call_params(
         backup_file, filename="models/TBcanonical_s.json"),
+    "fixture.backup.TBcanonical_p.json": fixture_call_params(
+        backup_file, filename="models/TBcanonical_p.json"),
+    "fixture.backup.TBcanonical_d.json": fixture_call_params(
+        backup_file, filename="models/TBcanonical_d.json"),
 }
 
 

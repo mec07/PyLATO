@@ -54,7 +54,7 @@
     // Number of density matrices to mix. Reduces to linear mixing when num_rho = 1. Note that 5 seems to be the optimal value.
     "num_rho":5,
     // McWeeny transformation: enforce idempotency in the density matrix, 1 (on), 0 (off).
-    "McWeeny":0,
+    "McWeeny":1,
     "McWeeny_tol":1.0e-8,
     "McWeeny_max_loops":100,
     // Print density matrix in "i    j    val" format, with j >= i to file, 1 is
@@ -88,6 +88,7 @@
     "write_orbital_occupations": 0,
     "write_magnetic_correlation": 0,
     "write_total_energy": 1,
+    "write_quantum_number_S": 1,
 
     // InterSiteElectrostatics is set when the 1/r terms are to be included in SCC-TB.
     "InterSiteElectrostatics": 0

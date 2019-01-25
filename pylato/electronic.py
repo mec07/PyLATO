@@ -12,12 +12,10 @@ import numpy as np
 import math
 import os
 import json
-import sys
-import time
-import random
 
+from pylato.exceptions import ChemicalPotentialError, UnimplementedMethodError
 from pylato.Fermi import fermi_0, fermi_non0
-from pylato.hamiltonian import map_atomic_to_index
+from pylato.hamiltonian import map_atomic_to_index, map_index_to_atomic, Kd, xi
 from pylato.verbosity import verboseprint
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -32,11 +30,9 @@ class Electronic:
         self.Job = Job
 
         # Set up the core charges, and count the number of electrons
-        self.zcore = np.zeros(self.Job.NAtom, dtype='double')
-
-        for a in range(0, self.Job.NAtom):
-            self.zcore[a] = self.Job.Model.atomic[self.Job.AtomType[a]]['NElectrons']
-        self.NElectrons = np.sum(self.zcore)
+        self.zcore = [int(Job.Model.atomic[Job.AtomType[a]]['NElectrons'])
+                      for a in range(Job.NAtom)]
+        self.NElectrons = sum(zcore for zcore in self.zcore)
 
         #
         # Allocate memory for the level occupancies and density matrix
@@ -97,8 +93,7 @@ class Electronic:
         while math.fabs(self.NElectrons-n) > n_tol*self.NElectrons:
             count+=1
             if count>max_loops:
-                print("ERROR: The chemical potential could not be found. The error became "+str(math.fabs(self.NElectrons-n)))
-                sys.exit()
+                raise ChemicalPotentialError("ERROR: The chemical potential could not be found. The error became "+str(math.fabs(self.NElectrons-n)))
             if n > self.NElectrons:
                 mu_u = mu
             elif n < self.NElectrons:
@@ -133,7 +128,7 @@ class Electronic:
            - self.rhotot[map_atomic_to_index(atom1, orbital1, spin1, self.Job.NAtom, self.Job.NOrb), map_atomic_to_index(atom1, orbital2, spin2, self.Job.NAtom, self.Job.NOrb)])
                 for atom1 in range(self.Job.NAtom) for orbital1 in range(self.Job.NOrb[atom1]) for spin1 in range(2)
                 for orbital2 in range(orbital1, self.Job.NOrb[atom1]) for spin2 in range(spin1, 2)
-                )/(self.Job.Electron.NElectrons**2)
+                )/(self.NElectrons**2)
 
     def idempotency_error(self, rho):
         """
@@ -167,21 +162,32 @@ class Electronic:
             return
 
         flag, iterations, err, rho_temp = self.McWeeny_iterations(rho_temp)
+        # Check that the number of electrons hasn't changed
+        num_electrons = sum(rho_temp[i, i] for i in range(len(rho_temp)))
+        if abs(num_electrons - self.NElectrons) > self.Job.Def['McWeeny_tol']:
+            verboseprint(
+                self.Job.Def['verbose'],
+                "McWeeny transformation changed the number of electrons, "
+                "difference = ", num_electrons - self.NElectrons)
+            # Turn off using the McWeeny transformation as once it doesn't work it seems to not work again.
+            self.Job.Def["McWeeny"] = 0
+            return
+
         # if the flag is false it means that idempotency was reduced below the tolerance
-        if flag is False:
+        if not flag:
             # if the iterations did not converge but the idempotency error has
             # gotten smaller then print a warning but treat as a success.
             if err < err_orig:
-                print("Max iterations, {} reached. Idempotency error = {}".format(iterations, err))
+                verboseprint(self.Job.Def['verbose'], "Max iterations, {} reached. Idempotency error = {}".format(iterations, err))
                 flag = True
             else:
-                print("McWeeny transformation unsuccessful. Proceeding using input density matrix.")
+                verboseprint(self.Job.Def['verbose'], "McWeeny transformation unsuccessful. Proceeding using input density matrix.")
                 # Turn off using the McWeeny transformation as once it doesn't work it seems to not work again.
                 self.Job.Def["McWeeny"] = 0
 
         # if this is going to be treated like a success then reassign rho_temp.
-        if flag is True:
-            if self.Job.isNonCollinearHami:
+        if flag:
+            if self.Job.isNoncollinearHami:
                 self.rhotot = rho_temp
             else:
                 self.rho = rho_temp
@@ -222,9 +228,13 @@ class Electronic:
 
     def GR_Pulay(self, scf_iteration):
         """
-        This is the guaranteed reduction Pulay mixing scheme proposed by
-        Bowler and Gillan in 2008. If the number of density matrices to be
-        used, num_rho, is 1, it reduces to just linear mixing. 
+        This is the guaranteed reduction Pulay mixing scheme proposed in:
+            Bowler, D. R., and M. J. Gillan. "An efficient and robust technique
+            for achieving self consistency in electronic structure
+            calculations." Chemical Physics Letters 325.4 (2000): 473-476.
+
+        If the number of density matrices to be used, num_rho, is 1, it reduces
+        to linear mixing.
 
         The scf_iteration is a required input because when scf_iteration is
         less than num_rho then scf_iteration is the number of density matrices
@@ -233,7 +243,6 @@ class Electronic:
         The output is an updated self.rhotot to be used in the construction of
         the Fock matrix. Also, self.inputrho, self.outputrho and self.residue
         are updated for the next iteration.
-
         """
         num_rho = self.Job.Def['num_rho']
         # If the number of scf iterations is less than num_rho replace it by
@@ -379,6 +388,347 @@ class Electronic:
 
         return C_avg
 
+    def quantum_number_S(self, Job):
+        """
+        The quantum number S can be calculated from the density matrix. The
+        formula for it is:
+            S = 0.5*(-1 + sqrt(1 + C))
+        where
+            C = sum_{IJ} <:m^I.m^J:> + 3*n_e
+        and n_e is the number of electrons. We can calculate <:m^I.m^J:> from
+        3.0*self.magnetic_correlation(I, J).
+
+        If there is only 1 electron then we can't exactly do a two electron
+        calculation. For just 1 electron, the answer is 0.5, so we just return
+        that.
+
+        Return None if unable to calculate S.
+        """
+        if self.NElectrons == 1:
+            return 0.5
+
+        C = sum(self.magnetic_correlation(I, J).real for I in range(Job.NAtom)
+                for J in range(Job.NAtom))*3.0 + 3.0*self.NElectrons
+        if (1 + C) < 0:
+            return None
+        return 0.5*(-1 + math.sqrt(1 + C))
+
+    def quantum_number_L_z(self, Job):
+        """
+        The quantum number L_z can be calculated from the density matrix. We
+        want to know it in order to classify dimer wavefunctions.
+
+        The formula varies, depending on whether we're simulating s, p or d
+        orbitals. The formula is quite complex because we are using cubic
+        harmonics instead of spherical harmonics.
+
+        For s orbitals L_z is clearly 0.
+
+        The way this has been calculated, it only works for multiple electrons
+        so if there is only 1 electron, exit early with 0 (because we're using
+        cubic harmonics).
+        """
+        # only 1 electron
+        if self.NElectrons == 1:
+            return 0
+
+        # s orbital atoms
+        if all([norb == 1 for norb in Job.NOrb]):
+            return 0
+
+        # p orbital atoms
+        if all([norb == 3 for norb in Job.NOrb]):
+            return self.quantum_number_L_z_p_orb(Job)
+
+        # d orbital atoms
+        if all([norb == 5 for norb in Job.NOrb]):
+            return self.quantum_number_L_z_d_orb(Job)
+
+        # other
+        message = ("Quantum Number L_z methods have only been implemented for "
+                   "simulations consisting of solely s, p or d orbital atoms")
+        raise UnimplementedMethodError(message)
+
+    def quantum_number_L_z_p_orb(self, Job):
+        """
+        The quantum number L_z can be calculated from the density matrix.
+
+        For p orbitals L_z:
+            L_z = sqrt(
+                sum_{IJ}sum_{ab}sum_{st}(1-delta_{az})(1-delta_{bz})*(
+                    rho^{ss}_{IbIa}rho^{tt}_{JaJb} - rho^{ts}_{JaIa}rho^{st}_{IbJb}
+                    - (rho^{ss}_{IbIa}rho^{tt}_{JbJa} - rho^{ts}_{JbIa}rho^{st}_{IbJa})
+                )
+                + sum_{Is}(rho^{ss}_{IxIx}+rho^{ss}_{IyIy})
+            )
+        where x, y and z are all Cartesian directions; s and t are spins; a and
+        b are spatial orbitals; and I and J are sites.
+
+        Return None if unable to calculate L_z.
+        """
+        L_z_part_1 = sum(
+            self.L_z_p_orb_part_1(Job, a, b, s, t, I, J)
+            for s in range(2) for t in range(2) for a in range(3)
+            for b in range(3) for I in range(Job.NAtom)
+            for J in range(Job.NAtom)
+        )
+        L_z_part_2 = sum(self.L_z_p_orb_part_2(Job, s, I)
+                         for s in range(2) for I in range(Job.NAtom))
+
+        L_z_precursor = L_z_part_1 + L_z_part_2
+        if L_z_precursor < 0:
+            return None
+        return math.sqrt(L_z_precursor)
+
+    def L_z_p_orb_part_1(self, Job, a, b, s, t, I, J):
+        """
+        This is just the first part of the calculation for L_z for p orbitals:
+            (1-delta_{az})(1-delta_{bz})*(
+                rho^{ss}_{IbIa}rho^{tt}_{JaJb} - rho^{ts}_{JaIa}rho^{st}_{IbJb}
+                - (rho^{ss}_{IbIa}rho^{tt}_{JbJa} - rho^{ts}_{JbIa}rho^{st}_{IbJa})
+            )
+        """
+        # Take care of the Kronecker deltas
+        if a == 2 or b == 2:
+            return 0
+
+        Ias = map_atomic_to_index(I, a, s, Job.NAtom, Job.NOrb)
+        Ibs = map_atomic_to_index(I, b, s, Job.NAtom, Job.NOrb)
+        Jat = map_atomic_to_index(J, a, t, Job.NAtom, Job.NOrb)
+        Jbt = map_atomic_to_index(J, b, t, Job.NAtom, Job.NOrb)
+
+        return (self.rho[Ibs, Ias]*self.rho[Jat, Jbt]
+                - self.rho[Jat, Ias]*self.rho[Ibs, Jbt]
+                - (self.rho[Ibs, Ias]*self.rho[Jbt, Jat]
+                   - self.rho[Jbt, Ias]*self.rho[Ibs, Jat])).real
+
+    def L_z_p_orb_part_2(self, Job, s, I):
+        """
+        This is just the second part of the calculation for L_z for p orbitals:
+            rho^{ss}_{IxIx} + rho^{ss}_{IyIy}
+        """
+        Ixs = map_atomic_to_index(I, 0, s, Job.NAtom, Job.NOrb)
+        Iys = map_atomic_to_index(I, 1, s, Job.NAtom, Job.NOrb)
+
+        return (self.rho[Ixs, Ixs] + self.rho[Iys, Iys]).real
+
+    def quantum_number_L_z_d_orb(self, Job):
+        """
+        For d orbitals L_z:
+            L_z = 4*sqrt(
+                sum_{IJ}sum_{abcd}sum_{st}sum_{uvwn}(1-delta_{zw})(1-delta_{zu})*(
+                    xi_{auv}xi_{bvw}xi_{dwn}xi_{cnu} - xi_{auv}xi_{bvw}xi_{cwn}xi_{dnu}
+                )*(
+                    rho^{ss}_{IbIa}rho^{tt}_{JcJd} - rho^{ts}_{JcIa}rho^{st}_{IbJd}
+                    + delta_{IJ}delta_{bd}delta_{st}rho^{ts}_{JcIa}
+                )
+            )
+        where z is a Cartesian direction; s and t are spins, a, b, c and d are
+        spatial orbitals; I and J are sites; and u, v, w and n range over 3.
+
+        Return None if unable to calculate L_z.
+        """
+        L_z_precursor = sum(
+            self.L_z_d_orb(Job, u, v, w, n, a, b, c, d, s, t, I, J)
+            for s in range(2) for t in range(2) for a in range(5)
+            for b in range(5) for c in range(5) for d in range(5)
+            for u in range(3) for v in range(3) for w in range(3)
+            for n in range(3) for I in range(Job.NAtom)
+            for J in range(Job.NAtom)
+        )
+        if L_z_precursor < 0:
+            return None
+        return 4*math.sqrt(L_z_precursor)
+
+    def L_z_d_orb(self, Job, u, v, w, n, a, b, c, d, s, t, I, J):
+        """
+        Calculate the L_z for d orbitals:
+            (1-delta_{zw})(1-delta_{zu})*(
+                xi_{auv}xi_{bvw}xi_{dwn}xi_{cnu} - xi_{auv}xi_{bvw}xi_{cwn}xi_{dnu}
+            )*(
+                rho^{ss}_{IbIa}rho^{tt}_{JcJd} - rho^{ts}_{JcIa}rho^{st}_{IbJd}
+                + delta_{IJ}delta_{bd}delta_{st}rho^{ts}_{JcIa}
+            )
+        """
+        # Take care of the Kronecker deltas
+        if w == 2 or u == 2:
+            return 0
+
+        Ias = map_atomic_to_index(I, a, s, Job.NAtom, Job.NOrb)
+        Ibs = map_atomic_to_index(I, b, s, Job.NAtom, Job.NOrb)
+        Jct = map_atomic_to_index(J, c, t, Job.NAtom, Job.NOrb)
+        Jdt = map_atomic_to_index(J, d, t, Job.NAtom, Job.NOrb)
+
+        return (
+            xi[a][u][v]*xi[b][v][w]*xi[d][w][n]*xi[c][n][u]
+            - xi[a][u][v]*xi[b][v][w]*xi[c][w][n]*xi[d][n][u]
+        )*(
+            self.rho[Ibs, Ias]*self.rho[Jct, Jdt]
+            - self.rho[Jct, Ias]*self.rho[Ibs, Jdt]
+            + Kd(I, J)*Kd(b, d)*Kd(s, t)*self.rho[Jct, Ias]
+        ).real
+
+    def gerade(self, Job):
+        """
+        Gerade means even in German. For dimers we want to know if inversion
+        through the midpoint changes the sign of the Slater determinant or not.
+
+        For simplicity, we assume that the Slater determinant is filled by
+        occupied wavefunctions, i.e. the NElectrons lowest energy eigenvectors,
+        rather than by the Fermi function above.
+
+        This symmetry operation causes occupations of orbitals to move to the
+        opposite atom (and multiply by minus 1 if they are p orbitals). We then
+        add up the minus signs from wavefunctions turning into each other and
+        wavefunctions gaining minus signs, as swapping columns of a determinant
+        is equivalent to multiplying by minus 1.
+
+        If the result is even, then the Slater determinant is gerade, and this
+        function will return 'g', if the result is odd then the Slater
+        determinant is ungerade and this function will return 'u'.
+        """
+        if not (Job.NAtom == 2) or not self.all_atoms_same_num_orbitals(Job):
+            raise UnimplementedMethodError(
+                "Calculating gerade/ungerade has only been implemented for "
+                "homonuclear dimers"
+            )
+
+        old_eigenvectors = [Job.psi[:, i] for i in range(self.NElectrons)]
+
+        # apply the changes to the eigenvectors
+        new_eigenvectors = self.perform_inversion(Job, old_eigenvectors)
+
+        # compare the new and the old eigenvectors
+        result = self.symmetry_operation_result(Job, new_eigenvectors,
+                                                old_eigenvectors)
+        if result == 1:
+            return 'g'
+        elif result == -1:
+            return 'u'
+
+    def all_atoms_same_num_orbitals(self, Job):
+        norb0 = Job.NOrb[0]
+        return all([norb == norb0 for norb in Job.NOrb])
+
+    def perform_inversion(self, Job, eigenvectors):
+        """
+        Assumptions:
+            * The system being simulated is a homonuclear dimer
+        """
+        # create new list of empty eigenvectors
+        new_eigenvectors = [np.zeros(len(eigenvectors[0]), dtype='complex')
+                            for j in range(self.NElectrons)]
+        for (vec_index, vector) in enumerate(eigenvectors):
+            for (val_index, value) in enumerate(vector):
+                i, a, s = map_index_to_atomic(val_index, Job.NAtom, Job.NOrb)
+                new_index = map_atomic_to_index((i + 1) % 2, a, s, Job.NAtom,
+                                                Job.NOrb)
+                new_eigenvectors[vec_index][new_index] = self.inverted_val(
+                    Job, i, value)
+
+        return new_eigenvectors
+
+    def inverted_val(self, Job, atom_index, val):
+        """
+        Assumptions:
+            * only dealing with s, p or d orbitals
+        """
+        # p orbitals get a minus sign
+        if Job.NOrb[atom_index] == 3:
+            return -1.0*val
+
+        return val
+
+    def symmetry_operation_result(self, Job, new_eigenvectors, old_eigenvectors):
+        """
+        Assumption:
+            * new_eigenvectors and old_eigenvectors are lists of numpy arrays
+        """
+        tol = Job.Def['scf_tol']
+        sign_changes = 0
+        new_order = []
+
+        # match up the eigenvectors
+        for (new_index, new_vec) in enumerate(new_eigenvectors):
+            for (old_index, old_vec) in enumerate(old_eigenvectors):
+                # Check for same vectors
+                if np.allclose(old_vec, new_vec, atol=tol):
+                    new_order.append(old_index)
+                    continue
+
+                # Check for same, but negative, vectors
+                if np.allclose(old_vec, (-1)*new_vec, atol=tol):
+                    # Add 1 to the count of sign changes for the change in sign
+                    sign_changes += 1
+                    new_order.append(old_index)
+                    continue
+
+        # If we have failed to match up the eigenvectors then return None
+        if len(new_order) != len(new_eigenvectors):
+            return None
+
+        sign_changes += num_swaps_to_sort(new_order)
+
+        return (-1)**sign_changes
+
+    def plus_minus(self, Job):
+        """
+        For dimers with L_z = 0, we need to know if reflection through a plane
+        that lies in the in axis of the dimer, e.g. xz or yz planes, will
+        cause a sign change or not.
+
+        The orbitals that would gain minus signs when considering the xz and yz
+        planes are the following.
+
+        xz plane:
+            p_y, d_{yz} and d_{xy} all gain minus signs
+
+        yz plane:
+            p_x, d_{xy} and d_{xz} all gain minus signs
+
+        We then add up the minus signs from wavefunctions either becoming
+        negative themselves or getting transformed into other wavefunctions (as
+        swapping columns of a determinant is equivalent to multiplying by -1).
+        """
+        old_eigenvectors = [Job.psi[:, i] for i in range(self.NElectrons)]
+
+        # apply the changes to the eigenvectors
+        new_eigenvectors = self.perform_reflection(Job, old_eigenvectors)
+
+        # compare the new and the old eigenvectors
+        result = self.symmetry_operation_result(Job, new_eigenvectors,
+                                                old_eigenvectors)
+        if result == 1:
+            return '+'
+        elif result == -1:
+            return '-'
+
+    def perform_reflection(self, Job, eigenvectors):
+        # create new list of empty eigenvectors
+        new_eigenvectors = [np.zeros(len(eigenvectors[0]), dtype='complex')
+                            for j in range(self.NElectrons)]
+        for (vec_index, vector) in enumerate(eigenvectors):
+            for (val_index, value) in enumerate(vector):
+                i, a, s = map_index_to_atomic(val_index, Job.NAtom, Job.NOrb)
+                reflected_value = self.get_reflected_value(Job, value, i, a)
+                new_eigenvectors[vec_index][val_index] = reflected_value
+
+        return new_eigenvectors
+
+    def get_reflected_value(self, Job, value, atom, orbital):
+        sign_change = 0
+        # p shell
+        if Job.NOrb[atom] == 3:
+            if orbital == 1:
+                sign_change = 1
+
+        # d shell
+        if Job.NOrb[atom] == 5:
+            if orbital in [2, 3]:
+                sign_change = 1
+
+        return value*(-1)**sign_change
+
     def optimisation_routine1(self, num_rho):
         """
         Optimisation routine where we try to solve for the norm squared of the
@@ -485,3 +835,18 @@ class Electronic:
             return alpha, 1
         # if successful then return result and no error code.
         return alpha, 0
+
+
+def num_swaps_to_sort(an_array):
+    """
+    Basic implementation of a buble sort in order to calculate the number of
+    swaps required to sort an array.
+    """
+    num_swaps = 0
+    temp = an_array[:]
+    for i in range(len(temp)):
+        for j in range(len(temp) - i - 1):
+            if temp[j] > temp[j+1]:
+                temp[j], temp[j+1] = temp[j+1], temp[j]
+                num_swaps += 1
+    return num_swaps

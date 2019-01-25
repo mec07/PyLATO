@@ -10,6 +10,8 @@ This module contains functions that perform input and output operations
 import numpy as np
 import os
 
+from pylato.exceptions import UnimplementedMethodError
+
 
 def DOS(e, nbin):
     """Produce a total density of states (NEEDS TO BE UPDATED TO PLOT THE DOS)"""
@@ -266,6 +268,83 @@ def WriteTotalEnergy(Job, filename="energy.txt"):
             f.write(str(Job.Hamilton.total_energy(Job)))
 
 
+def WriteQuantumNumberS(Job, filename="quantum_number_S.txt"):
+    """
+    Write out the spin quantum number.
+    """
+    if Job.Def.get('write_quantum_number_S') == 1:
+        with open(os.path.join(Job.results_dir, filename), 'w') as f:
+            S = Job.Electron.quantum_number_S(Job)
+            if S is None:
+                S = ""
+            f.write(str(S))
+
+
+def WriteQuantumNumberLz(Job, filename="quantum_number_L_z.txt"):
+    """
+    Write out the L_z quantum number.
+    """
+    if Job.Def.get('write_quantum_number_L_z') == 1:
+        with open(os.path.join(Job.results_dir, filename), 'w') as f:
+            L_z = Job.Electron.quantum_number_L_z(Job)
+            if L_z is None:
+                L_z = ""
+            f.write(str(L_z))
+
+
+def WriteGroundstateClassification(Job, filename="classification.txt"):
+    """
+    Write out the classification of the wavefunction -- it only works for
+    dimers right now.
+    """
+    if Job.Def.get('write_groundstate_classification') == 1:
+            classification = classify_groundstate(Job)
+            with open(os.path.join(Job.results_dir, filename), 'w') as fh:
+                fh.write(classification)
+
+
+def classify_groundstate(Job):
+    if Job.NAtom == 2:
+        spin_part = get_spin_part_of_symbol(Job)
+        angular_part = get_angular_part_of_symbol(Job)
+        gerade_part = get_gerade_part_of_symbol(Job)
+        if spin_part and angular_part and gerade_part:
+            return spin_part + angular_part + gerade_part
+
+    return ""
+
+
+def get_spin_part_of_symbol(Job):
+    S = Job.Electron.quantum_number_S(Job)
+    if S is None or (not_an_integer(S) and not_an_integer(S-0.5)):
+        return ""
+    return "{{}}^{}".format(round(2*S + 1))
+
+
+def get_angular_part_of_symbol(Job):
+    L_z_classification_symbols = ['\\Sigma', '\\Pi', '\\Delta', '\\Phi', '\\Gamma']
+    L_z = Job.Electron.quantum_number_L_z(Job)
+    if L_z is None or not_an_integer(L_z):
+        return ""
+    if round(L_z) == 0:
+        plus_minus = Job.Electron.plus_minus(Job)
+        if plus_minus:
+            return "{}^{{{}}}".format(L_z_classification_symbols[int(L_z)], plus_minus)
+        return ""
+    return L_z_classification_symbols[round(L_z)]
+
+
+def get_gerade_part_of_symbol(Job):
+    gerade = Job.Electron.gerade(Job)
+    if gerade:
+        return "_{{{}}}".format(gerade)
+    return ""
+
+
+def not_an_integer(val, tol=1e-8):
+    return abs(val - round(val)) > tol
+
+
 def WriteSimulationResults(Job):
     WriteSpins(Job)
     WriteRho(Job)
@@ -276,3 +355,6 @@ def WriteSimulationResults(Job):
     WriteOrbitalOccupations(Job)
     WriteMagneticCorrelation(Job, 0, 1)
     WriteTotalEnergy(Job)
+    WriteQuantumNumberS(Job)
+    WriteQuantumNumberLz(Job)
+    WriteGroundstateClassification(Job)

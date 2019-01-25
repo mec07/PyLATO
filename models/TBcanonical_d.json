@@ -1,12 +1,11 @@
-{   
-
+{
     "species": [
     // d-orbital bolonium data
     {
         "Name": "d-orbital bolonium", "ChemSymb": "d-Bo ",
         "NElectrons": 1, "NOrbitals": 5, "NShells": 1,
-        "l": [2], 
-        "U": 3.0, 
+        "l": [2],
+        "U": 3.0,
         "I": 0.7,
         "dJ": 0.01,
         "e":[
